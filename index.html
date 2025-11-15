@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watchlist</title>
+    <meta name="description" content="A shared watchlist for you and your friends.">
+    <meta property="og:title" content="Watchlist">
+    <meta property="og:description" content="A shared watchlist for you and your friends.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/src/theme.css?v=2">
+    <link rel="stylesheet" href="/output.css?v=2">
+</head>
+<body class="font-sans text-text-primary bg-bg-primary">
+
+    <div id="loading-spinner" class="fixed inset-0 bg-bg-primary flex flex-col justify-center items-center z-[60]">
+        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-accent-primary"></div>
+    </div>
+
+    <div class="sticky top-0 z-50">
+        <nav class="px-4 py-2">
+        <div class="container mx-auto flex items-center justify-between h-16">
+            <div class="flex items-center gap-2">
+                <div class="nav-pill flex items-center">
+                    <span class="font-bold text-white text-lg">Watchlist</span>
+                </div>
+            </div>
+            <div class="nav-pill user-pill">
+                <div class="relative">
+                    <button id="user-menu-btn" class="flex items-center text-sm text-white focus:outline-none">
+                        <div id="user-avatar-container" class="flex -space-x-2">
+                            <div id="user1-avatar-nav" class="w-8 h-8 rounded-full"></div>
+                            <div id="user2-avatar-nav" class="w-8 h-8 rounded-full"></div>
+                        </div>
+                        <span id="device-name" class="ml-2 font-semibold">User</span>
+                    </button>
+                    <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-bg-secondary rounded-md shadow-lg py-1 z-50">
+                        <a href="#" id="settings-btn" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">Settings</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+</div>
+
+    <div class="container mx-auto p-4 md:p-8 relative z-0">
+        <div class="mb-6">
+            <input type="text" id="search-bar" class="w-full bg-bg-secondary border-border-primary rounded-full text-center p-2" placeholder="Search for movies and shows...">
+        </div>
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-2">
+                 <div id="filter-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
+                    <button data-filter="all" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition btn-active">All</button>
+                    <button data-filter="watched" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Watched</button>
+                    <button data-filter="want-to-watch" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Want to Watch</button>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="view-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
+                    <button data-view="grid" class="view-btn btn-active px-4 py-2 rounded-full transition"><i class="fas fa-th-large"></i></button>
+                    <button data-view="list" class="view-btn px-4 py-2 rounded-full transition"><i class="fas fa-list"></i></button>
+                </div>
+                <button id="export-btn" class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition">Export</button>
+            </div>
+        </div>
+
+        <div id="content-area">
+            <div id="movie-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6"></div>
+            <div id="movie-list" class="hidden space-y-3"></div>
+        </div>
+    </div>
+
+    <div id="movie-modal" class="fixed inset-0 hidden items-center justify-center modal-hidden p-4 z-[55]" style="backdrop-filter: blur(8px);">
+        <div class="movie-modal-content bg-bg-secondary rounded-2xl shadow-xl w-full md:w-3/4 mx-auto overflow-hidden max-h-full overflow-y-auto">
+             <div class="relative">
+                <img id="modal-backdrop-image" src="" class="w-full h-64 md:h-96 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/800x400/111827/ef4444?text=Image+Not+Found';">
+                <div class="absolute inset-0 bg-gradient-to-t from-bg-secondary to-transparent"></div>
+                <button id="close-modal-btn" class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+                <div id="modal-logo-container" class="absolute bottom-4 left-4"></div>
+            </div>
+            <div class="p-6">
+                <h2 id="modal-title" class="text-3xl font-bold mb-2"></h2>
+                <div class="mb-4 flex justify-start">
+                    <div class="flex items-center space-x-3 text-sm text-text-muted bg-black/20 backdrop-blur-sm rounded-full px-4 py-2">
+                        <span id="modal-release-year"></span>
+                        <span>•</span>
+                        <span id="modal-runtime"></span>
+                        <span>•</span>
+                        <span id="modal-content-rating"></span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 my-4">
+                    <a id="modal-imdb-link" href="#" target="_blank" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+                        <i class="fab fa-imdb fa-2x"></i>
+                        <span id="modal-score" class="text-lg font-bold"></span>
+                    </a>
+                </div>
+                <p id="modal-overview" class="text-text-secondary mb-6">Overview goes here...</p>
+
+                <div class="border-t border-border-primary pt-4 space-y-4">
+                    <div id="notes-section" class="hidden">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-bg-tertiary p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <div id="juainny-avatar" class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">J</div>
+                                    <h4 class="text-md font-semibold text-text-secondary">Juainny's Rating</h4>
+                                </div>
+                                <div class="flex items-center justify-start gap-4">
+                                    <div id="juainny-rating" class="our-rating text-lg text-text-muted"></div>
+                                    <input type="number" step="0.5" min="0" max="10" id="juainny-rating-input" class="rating-input w-16 bg-bg-primary border-border-primary rounded-md text-center">
+                                </div>
+                                <textarea id="juainny-notes" rows="3" class="mt-2 block w-full rounded-md bg-bg-primary border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary"></textarea>
+                            </div>
+                            <div class="bg-bg-tertiary p-4 rounded-lg">
+                                <div class="flex items-center mb-2">
+                                    <div id="erick-avatar" class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">E</div>
+                                    <h4 class="text-md font-semibold text-text-secondary">Erick's Rating</h4>
+                                </div>
+                                <div class="flex items-center justify-start gap-4">
+                                    <div id="erick-rating" class="our-rating text-lg text-text-muted"></div>
+                                    <input type="number" step="0.5" min="0" max="10" id="erick-rating-input" class="rating-input w-16 bg-bg-primary border-border-primary rounded-md text-center">
+                                </div>
+                                <textarea id="erick-notes" rows="3" class="mt-2 block w-full rounded-md bg-bg-primary border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="toggle-watched-btn" class="w-full bg-success hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                            Mark as Watched
+                        </button>
+                         <button id="toggle-want-to-watch-btn" class="w-full bg-blue-600 hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                            Add to Watchlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/index.js"></script>
+  <footer>
+    <p>
+      Vibe code with Gemini <img src="gemini.svg" alt="Gemini Logo" width="20" height="20"> ❤️
+    </p>
+  </footer>
+</body>
+</html>
