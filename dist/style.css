@@ -1,0 +1,233 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media (max-width: 768px) {
+    #sidebar {
+        width: 100%;
+    }
+}
+
+.sidebar-open {
+    transform: translateX(0);
+}
+
+.body-no-scroll {
+    overflow: hidden;
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  border-top: 1px solid #374151;
+}
+
+footer p {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+footer img {
+  margin: 0 10px;
+}
+
+.mood-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+}
+
+.mood-modal-overlay.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mood-modal-overlay.visible {
+  opacity: 1;
+}
+
+.mood-modal {
+  border-radius: 0.5rem;
+  padding: 2rem;
+  max-width: 90%;
+  width: 500px;
+  transform: scale(0.95);
+  transition: transform 0.3s ease-in-out;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.mood-modal-overlay.visible .mood-modal {
+  transform: scale(1);
+}
+
+#movie-modal {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.modal-hidden {
+    opacity: 0;
+    transform: scale(0.95);
+    pointer-events: none;
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .mood-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    #mood-controls {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    #modal-mood-display {
+        margin-top: 0.5rem;
+    }
+
+    #remove-mood-btn {
+        margin-left: 0;
+        margin-top: 0.5rem;
+    }
+}
+
+.mood-option {
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--color-bg-tertiary);
+  transition: all 0.2s ease-in-out;
+  text-align: center;
+}
+
+.mood-option:hover {
+  background-color: var(--color-border-primary);
+}
+
+.mood-option.selected {
+  background-color: var(--color-accent-primary);
+  transform: scale(1.05);
+  box-shadow: 0 0 15px var(--color-accent-primary);
+}
+
+.mood-option.user1-glow {
+    box-shadow: 0 0 15px var(--color-accent-secondary);
+}
+
+.mood-option.user2-glow {
+    box-shadow: 0 0 15px var(--color-success);
+}
+
+.mood-option img {
+  filter: grayscale(100%);
+  width: 4rem;
+  height: 4rem;
+  margin-bottom: 0.5rem;
+  margin-left: auto;
+  margin-right: auto;
+  transition: transform 0.2s ease-in-out;
+}
+
+.mood-option:hover img {
+    transform: scale(1.1) rotate(15deg);
+}
+
+.mood-option:nth-child(2n):hover img {
+    transform: scale(1.1) rotate(-15deg);
+}
+
+.mood-option:nth-child(3n):hover img {
+    transform: scale(1.1) rotate(25deg);
+}
+
+.mood-option:nth-child(4n):hover img {
+    transform: scale(1.1) rotate(-25deg);
+}
+
+img {
+    user-drag: none;
+    -webkit-user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+.user-select-btn {
+    background-color: #374151;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    margin: 0 0.5rem;
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.user-select-btn:hover {
+    background-color: #4b5563;
+}
+
+.user-select-btn.selected {
+    background-color: #ef4444;
+    color: white;
+}
+
+.user-select-btn.user1-highlight {
+    background-color: #3b82f6; /* blue-500 */
+    box-shadow: 0 0 10px #3b82f6;
+}
+
+.user-select-btn.user2-highlight {
+    background-color: #16a34a; /* green-600 */
+    box-shadow: 0 0 10px #16a34a;
+}
+
+.emoji-banner {
+    z-index: 1;
+}
+
+.mood-emoji-container {
+    z-index: 1;
+    transition: transform 0.2s ease-in-out;
+}
+
+.mood-emoji-container:hover {
+    transform: rotate(15deg);
+}
+
+.status-overlay {
+    display: none;
+}
+
+.movie-card.watched .status-overlay,
+.movie-card.rejected .status-overlay {
+    display: flex;
+}
+
+.star-container .star {
+    cursor: pointer;
+}
+
+.star-container .star.filled,
+.star-container .star.half-filled {
+    color: var(--color-star-filled);
+}
