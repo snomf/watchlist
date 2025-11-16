@@ -1,40 +1,66 @@
 import { supabase } from './supabase-client.js';
 
-async function getMedia() {
+const TMDB_API_KEY = '25e3d089cc8e37a56bf6a1984daf3c5c';
+
+async function getWatchlistMedia() {
     const { data: media, error } = await supabase
         .from('media')
         .select('*');
 
     if (error) {
         console.error('Error fetching media:', error);
-        return;
+        return [];
     }
+    return media;
+}
 
+async function renderMedia(media) {
     const movieGrid = document.getElementById('movie-grid');
     if (!movieGrid) {
         console.error('Movie grid element not found!');
         return;
     }
 
-    // Clear any existing content
     movieGrid.innerHTML = '';
 
-    // Render each media item
-    media.forEach(item => {
+    for (const item of media) {
+        let posterUrl = 'https://placehold.co/500x750?text=No+Image';
+        let title = item.title || item.name;
+        let type = item.media_type || item.type;
+        let tmdb_id = item.id || item.tmdb_id;
+
+        if (item.tmdb_id) {
+            const endpoint = item.type === 'movie' ? 'movie' : 'tv';
+            const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${item.tmdb_id}?api_key=${TMDB_API_KEY}`;
+            try {
+                const response = await fetch(tmdbUrl);
+                if (response.ok) {
+                    const tmdbData = await response.json();
+                    if (tmdbData.poster_path) {
+                        posterUrl = `https://image.tmdb.org/t/p/w500${tmdbData.poster_path}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching from TMDB:', error);
+            }
+        }
+
         const movieCard = document.createElement('div');
         movieCard.classList.add('movie-card', 'bg-bg-secondary', 'rounded-lg', 'shadow-lg', 'overflow-hidden');
+        movieCard.dataset.tmdbId = tmdb_id;
 
-        // A simple representation for now
         movieCard.innerHTML = `
+            <img src="${posterUrl}" alt="${title}" class="w-full h-auto">
             <div class="p-4">
-                <h3 class="text-white font-bold text-lg">${item.title}</h3>
-                <p class="text-gray-400 text-sm">${item.type}</p>
+                <h3 class="text-white font-bold text-lg">${title}</h3>
+                <p class="text-gray-400 text-sm">${type}</p>
             </div>
         `;
-
         movieGrid.appendChild(movieCard);
-    });
+    }
 }
 
-// Run the function when the page loads
-document.addEventListener('DOMContentLoaded', getMedia);
+document.addEventListener('DOMContentLoaded', async () => {
+    const watchlistMedia = await getWatchlistMedia();
+    renderMedia(watchlistMedia);
+});
