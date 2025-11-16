@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
+    "@supabase/supabase-js": "^2.81.1",
     "autoprefixer": "^10.4.19",
     "canvas-confetti": "^1.9.3",
     "firebase": "^12.0.0",
