@@ -139,9 +139,7 @@
                     <button data-filter="movie" class="filter-btn btn-active px-4 py-2 text-sm font-semibold rounded-full transition">Movies</button>
                     <button data-filter="tv" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">TV Shows</button>
                 </div>
-                <button id="non-mcu-filter-btn" class="bg-bg-secondary rounded-full p-2 text-sm font-semibold transition btn-active">
-                    <img src="x4.svg" alt="Non-MCU" class="h-4 w-4"/>
-                </button>
+                <input type="text" id="search-bar" class="bg-bg-secondary text-text-primary rounded-full px-4 py-2" placeholder="Search for movies or shows...">
             </div>
             <div class="flex items-center gap-4">
                 <button id="random-movie-btn" class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
@@ -378,9 +376,9 @@
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
-    <script type="module" src="/supabase-client.js"></script>
-    <script type="module" src="/features/ratings.js"></script>
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="/src/supabase-client.js"></script>
+    <script type="module" src="/src/features/ratings.js"></script>
+    <script type="module" src="/src/app.js"></script>
   <footer>
     <p>
       <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg" alt="Gemini Logo" width="20" height="20"> ❤️
