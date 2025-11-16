@@ -2,8 +2,10 @@
 > marvel-marathon@1.0.0 dev
 > vite
 
+3:30:47 AM [vite] (client) Re-optimizing dependencies because lockfile has changed
+Port 5173 is in use, trying another one...
 
-  VITE v7.0.5  ready in 543 ms
+  VITE v7.0.5  ready in 319 ms
 
-  ➜  Local:   http://localhost:5173/
+  ➜  Local:   http://localhost:5174/
   ➜  Network: use --host to expose
