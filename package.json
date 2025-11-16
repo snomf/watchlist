@@ -15,6 +15,7 @@
     "@fortawesome/fontawesome-free": "^7.0.0",
     "@supabase/supabase-js": "^2.81.1",
     "autoprefixer": "^10.4.19",
+    "axios": "^1.13.2",
     "canvas-confetti": "^1.9.3",
     "firebase": "^12.0.0",
     "postcss": "^8.4.38",

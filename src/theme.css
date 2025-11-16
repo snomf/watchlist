@@ -314,3 +314,16 @@
         background-attachment: scroll;
     }
 }
+
+/* --- SEARCH BAR STYLES --- */
+#search-bar {
+    padding: 0.75rem 1.5rem; /* Increased padding */
+    font-size: 1.125rem; /* Larger font size */
+    border: 2px solid transparent;
+    transition: border-color 0.3s ease-in-out;
+}
+
+#search-bar:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+}
