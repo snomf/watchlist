@@ -1,27 +1,19 @@
 
-function searchMedia(query, callback) {
+async function searchMedia(query) {
     const apiKey = import.meta.env.VITE_TMDB_API_KEY;
     const url = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
 
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', url, true);
-
-    xhr.onload = function () {
-        if (this.status >= 200 && this.status < 400) {
-            const data = JSON.parse(this.response);
-            callback(data.results);
-        } else {
-            console.error('Error fetching from TMDB:', this.statusText);
-            callback([]);
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`TMDB API request failed with status ${response.status}`);
         }
-    };
-
-    xhr.onerror = function () {
-        console.error('Error fetching from TMDB: Network error');
-        callback([]);
-    };
-
-    xhr.send();
+        const data = await response.json();
+        return data.results;
+    } catch (error) {
+        console.error('Error fetching from TMDB:', error);
+        return [];
+    }
 }
 
 function renderMedia(media) {
@@ -39,7 +31,7 @@ function renderMedia(media) {
         const movieCard = document.createElement('div');
         movieCard.classList.add('movie-card', 'bg-bg-secondary', 'rounded-lg', 'shadow-lg', 'overflow-hidden');
 
-        const posterUrl = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
+        const posterUrl = `https.image.tmdb.org/t/p/w500${item.poster_path}`;
 
         movieCard.innerHTML = `
             <img src="${posterUrl}" alt="${item.title || item.name}" class="w-full h-auto">
@@ -60,10 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const searchBar = document.getElementById('search-bar');
     if (searchBar) {
-        searchBar.addEventListener('input', (e) => {
+        searchBar.addEventListener('input', async (e) => {
             const query = e.target.value;
             if (query.length > 2) {
-                searchMedia(query, renderMedia);
+                const media = await searchMedia(query);
+                renderMedia(media);
             }
         });
     }
