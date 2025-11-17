@@ -1,0 +1,27 @@
+<!--
+  This is an example of a movie poster with reactions overlaid.
+  - The `[VARIABLE]` placeholders should be replaced with actual data.
+  - The comments indicate where the AI should add its own logic.
+-->
+<div class="movie-card relative rounded-lg overflow-hidden cursor-pointer shadow-lg transition-transform duration-200">
+    <!-- AI: The emoji banner will be dynamically populated with user reactions. -->
+    <div class="emoji-banner absolute top-0 left-0 w-full h-12 bg-transparent z-10 flex justify-between items-center px-2">
+        <div class="mood-emoji-container">
+            <img src="/moods/[USER_1_REACTION_IMAGE]" alt="[USER_1_REACTION_NAME]" class="w-8 h-8">
+        </div>
+        <div class="mood-emoji-container">
+            <img src="/moods/[USER_2_REACTION_IMAGE]" alt="[USER_2_REACTION_NAME]" class="w-8 h-8">
+        </div>
+    </div>
+    <img src="[POSTER_IMAGE_URL]" alt="[MOVIE_TITLE]" class="w-full h-full object-cover" loading="lazy" onerror="this.onerror=null;this.src='https://placehold.co/500x750/1f2937/ef4444?text=No+Poster';">
+    <!-- AI: This overlay is shown when a movie is marked as watched or rejected. -->
+    <div class="absolute inset-0 bg-black bg-opacity-50" style="opacity: 0; transition: opacity 0.3s;"></div>
+    <div class="status-overlay absolute inset-0 flex justify-center items-center">
+        <!-- Example of a watched icon: <i class="fas fa-check-circle text-green-500 fa-4x"></i> -->
+        <!-- Example of a rejected icon: <i class="fas fa-times-circle text-red-500 fa-4x"></i> -->
+    </div>
+    <!-- AI: This title is shown if there is no poster image. -->
+    <div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black to-transparent">
+        <h3 class="font-bold text-sm text-white text-shadow-lg">[MOVIE_TITLE]</h3>
+    </div>
+</div>

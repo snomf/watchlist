@@ -1,0 +1,70 @@
+<!--
+  This is a template for the settings modal.
+  - The `[VARIABLE]` placeholders should be replaced with actual data.
+  - The comments indicate where the AI should add its own logic.
+-->
+<div id="settings-modal" class="fixed inset-0 z-[55] hidden items-center justify-center modal-hidden p-4">
+    <div class="modal-backdrop fixed inset-0" onclick="closeSettingsModal()"></div>
+    <div class="bg-bg-secondary rounded-lg shadow-xl z-50 w-full md:w-1/2 mx-auto modal-content relative max-h-full overflow-y-auto">
+        <button id="close-settings-modal-btn" class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-4">Settings</h2>
+            <div class="border border-border-primary rounded-lg p-4 mb-4">
+                <h3 class="text-lg font-semibold mb-2">Device Name</h3>
+                <input type="text" id="device-name-input" class="w-full bg-bg-primary border-border-primary rounded-md text-center p-2" placeholder="Enter device name" value="[DEVICE_NAME]">
+                <p class="text-xs text-text-muted mt-2">This will only change the text that appears next to the user avatars in the top bar on this device.</p>
+                <button id="reset-device-name-btn" class="text-xs text-accent-primary hover:underline mt-2">Reset device name</button>
+            </div>
+            <div class="border border-border-primary rounded-lg p-4">
+                <h3 class="text-lg font-semibold mb-2">Theme</h3>
+                <div id="theme-picker" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <!-- AI: This section should be dynamically populated with available themes. -->
+                    <button data-theme="dark" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Dark</button>
+                    <button data-theme="night" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Night</button>
+                    <!-- Add more theme buttons as needed -->
+                </div>
+                <p class="text-xs text-text-muted mt-2">*no light theme haha</p>
+            </div>
+            <div class="border border-border-primary rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold mb-2">Avatars</h3>
+                <div class="flex gap-4">
+                    <!-- AI: This section should be populated with the users in the group. -->
+                    <button id="avatar-picker-user1-btn" class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
+                        <span>[USER_1_NAME]'s Avatar</span>
+                        <div id="user1-avatar-preview" class="w-10 h-10 rounded-full mt-2">
+                            <!-- AI: User 1's avatar will be rendered here. -->
+                        </div>
+                    </button>
+                    <button id="avatar-picker-user2-btn" class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
+                        <span>[USER_2_NAME]'s Avatar</span>
+                        <div id="user2-avatar-preview" class="w-10 h-10 rounded-full mt-2">
+                            <!-- AI: User 2's avatar will be rendered here. -->
+                        </div>
+                    </button>
+                </div>
+            </div>
+            <div class="border border-border-primary rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold mb-2">Jarvis Settings</h3>
+                <div class="space-y-4">
+                    <label for="quota-conservation-toggle" class="flex items-center justify-between cursor-pointer">
+                        <span class="text-text-primary">Quota Conservation</span>
+                        <div class="relative">
+                            <input type="checkbox" id="quota-conservation-toggle" class="sr-only peer" [QUOTA_CONSERVATION_CHECKED]>
+                            <div class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary"></div>
+                        </div>
+                    </label>
+                    <label for="ai-disabled-toggle" class="flex items-center justify-between cursor-pointer">
+                        <span class="text-text-primary">AI Disabled</span>
+                        <div class="relative">
+                            <input type="checkbox" id="ai-disabled-toggle" class="sr-only peer" [AI_DISABLED_CHECKED]>
+                            <div class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            <!-- ... (The rest of the settings modal) ... -->
+        </div>
+    </div>
+</div>

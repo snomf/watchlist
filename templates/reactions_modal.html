@@ -1,0 +1,40 @@
+<!--
+  This is a template for the reactions modal.
+  - The `[VARIABLE]` placeholders should be replaced with actual data.
+  - The comments indicate where the AI should add its own logic.
+-->
+<div class="mood-modal-overlay">
+    <div class="mood-modal bg-bg-secondary text-text-primary">
+        <button id="close-mood-modal-btn" class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        <h2 class="text-2xl font-bold mb-6 text-center">How did this movie make you react?</h2>
+        <div class="flex justify-center mb-6 gap-4">
+            <!-- AI: This section should be dynamically populated with the users in the group. -->
+            <button class="user-select-btn bg-bg-tertiary flex items-center gap-2" data-user="user1">
+                <div class="w-8 h-8 rounded-full user1-avatar-preview">
+                    <!-- AI: User 1's avatar will be rendered here. -->
+                </div>
+                <span>[USER_1_NAME]</span>
+            </button>
+            <button class="user-select-btn bg-bg-tertiary flex items-center gap-2" data-user="user2">
+                <div class="w-8 h-8 rounded-full user2-avatar-preview">
+                    <!-- AI: User 2's avatar will be rendered here. -->
+                </div>
+                <span>[USER_2_NAME]</span>
+            </button>
+        </div>
+        <div class="mood-grid">
+            <!-- AI: This grid will be populated with the available moods/reactions. -->
+            <!-- Example of a mood option: -->
+            <div class="mood-option" data-mood="[MOOD_NAME]" role="button" aria-label="[MOOD_NAME]">
+                <img src="/moods/[MOOD_IMAGE]" alt="[MOOD_NAME]">
+                <span class="mood-label">[MOOD_NAME]</span>
+            </div>
+            <!-- Add more mood options as needed -->
+        </div>
+        <div class="mt-8 text-center">
+            <button id="mood-done-btn" class="bg-accent-primary hover:bg-accent-secondary text-text-on-accent font-bold py-2 px-8 rounded-lg transition" disabled>Done</button>
+        </div>
+    </div>
+</div>
