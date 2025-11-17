@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
+import { initializeSettings, loadAndApplySettings } from './settings.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -164,18 +165,27 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl) {
  * @param {number} tmdbId - The TMDB ID of the selected media.
  * @param {string} type - The type of media ('movie' or 'tv').
  */
+let currentMediaItem = null; // To store the full media item for the open modal
+
 async function openMovieModal(tmdbId, type) {
+    console.log('openModal function was called with item ID:', tmdbId);
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
 
+    // Store the tmdbId in the modal for later use
+    modal.dataset.tmdbId = tmdbId;
+
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}`;
+    const appendToResponse = 'credits,images,videos,release_dates,external_ids';
+    const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
 
     try {
         const response = await fetch(tmdbUrl);
         if (!response.ok) throw new Error('Failed to fetch modal data.');
 
         const data = await response.json();
+
+        // --- Basic Info ---
         document.getElementById('modal-title').textContent = data.title || data.name;
         document.getElementById('modal-overview').textContent = data.overview;
 
@@ -183,15 +193,73 @@ async function openMovieModal(tmdbId, type) {
         document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
 
         const runtime = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 'N/A');
-        document.getElementById('modal-runtime').textContent = `${runtime} min`;
+        document.getElementById('modal-runtime').textContent = runtime ? `${runtime} min` : 'N/A';
 
-        document.getElementById('modal-score').textContent = data.vote_average ? data.vote_average.toFixed(1) : 'N/A';
+        // --- Content Rating ---
+        let contentRating = 'N/A';
+        if (type === 'movie' && data.release_dates) {
+            const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
+            if (usRelease) {
+                const rating = usRelease.release_dates.find(rd => rd.certification !== '');
+                if (rating) contentRating = rating.certification;
+            }
+        } else if (type === 'tv' && data.content_ratings) {
+            const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+            if (usRating) contentRating = usRating.rating;
+        }
+        document.getElementById('modal-content-rating').textContent = contentRating;
 
+        // --- IMDb Score & Link ---
+        const imdbId = data.external_ids.imdb_id;
+        const imdbScore = data.vote_average ? data.vote_average.toFixed(1) : 'N/A';
+        document.getElementById('modal-score').textContent = imdbScore;
+        const imdbLink = document.getElementById('modal-imdb-link');
+        if (imdbId) {
+            imdbLink.href = `https://www.imdb.com/title/${imdbId}`;
+            imdbLink.style.display = 'flex';
+        } else {
+            imdbLink.style.display = 'none';
+        }
+
+        // --- Backdrop Image ---
         const backdropUrl = data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : 'https://placehold.co/800x400?text=No+Image';
         document.getElementById('modal-backdrop-image').src = backdropUrl;
 
+        // --- Fetch and Display User Ratings & Notes ---
+        const { data: mediaItem, error } = await supabase
+            .from('media')
+            .select('*')
+            .eq('tmdb_id', tmdbId)
+            .single();
+
+        if (error) console.error('Error fetching media item for ratings:', error);
+
+        currentMediaItem = mediaItem; // Store for the discard functionality
+
+        document.getElementById('juainny-rating').textContent = mediaItem?.juainny_rating || 'Not Rated';
+        document.getElementById('juainny-rating-input').value = mediaItem?.juainny_rating || '';
+        document.getElementById('juainny-notes').value = mediaItem?.juainny_notes || '';
+
+        document.getElementById('erick-rating').textContent = mediaItem?.erick_rating || 'Not Rated';
+        document.getElementById('erick-rating-input').value = mediaItem?.erick_rating || '';
+        document.getElementById('erick-notes').value = mediaItem?.erick_notes || '';
+
+        // Show the notes section
+        document.getElementById('notes-section').classList.remove('hidden');
+
+        // --- Update Supabase with backdrop path ---
+        if (data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
+            const { error: updateError } = await supabase
+                .from('media')
+                .update({ backdrop_path: data.backdrop_path })
+                .eq('tmdb_id', tmdbId);
+            if (updateError) console.error('Error updating backdrop path:', updateError);
+        }
+
+        // --- Show Modal ---
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+
     } catch (error) {
         console.error('Error opening movie modal:', error);
     }
@@ -205,10 +273,87 @@ function setupModalCloseButton() {
     const modal = document.getElementById('movie-modal');
     if (closeModalBtn && modal) {
         closeModalBtn.addEventListener('click', () => {
+            hideSaveBanner();
             modal.classList.add('hidden');
             modal.classList.remove('flex');
         });
     }
+}
+
+/**
+ * Shows the save banner when unsaved changes are detected.
+ */
+function showSaveBanner() {
+    const saveBanner = document.getElementById('save-banner');
+    if (saveBanner) saveBanner.classList.remove('hidden');
+}
+
+/**
+ * Hides the save banner.
+ */
+function hideSaveBanner() {
+    const saveBanner = document.getElementById('save-banner');
+    if (saveBanner) saveBanner.classList.add('hidden');
+}
+
+/**
+ * Saves the current ratings and notes to Supabase.
+ */
+async function saveRatingsAndNotes() {
+    const modal = document.getElementById('movie-modal');
+    const tmdbId = modal.dataset.tmdbId;
+    if (!tmdbId) return;
+
+    const updates = {
+        juainny_rating: document.getElementById('juainny-rating-input').value || null,
+        juainny_notes: document.getElementById('juainny-notes').value || null,
+        erick_rating: document.getElementById('erick-rating-input').value || null,
+        erick_notes: document.getElementById('erick-notes').value || null,
+    };
+
+    const { error } = await supabase.from('media').update(updates).eq('tmdb_id', tmdbId);
+    if (error) {
+        console.error('Error saving ratings and notes:', error);
+    } else {
+        console.log('Ratings and notes saved successfully.');
+        // Update the displayed ratings
+        document.getElementById('juainny-rating').textContent = updates.juainny_rating || 'Not Rated';
+        document.getElementById('erick-rating').textContent = updates.erick_rating || 'Not Rated';
+        hideSaveBanner();
+    }
+}
+
+/**
+ * Discards the changes made to the ratings and notes.
+ */
+function discardRatingsAndNotesChanges() {
+    if (!currentMediaItem) return;
+    document.getElementById('juainny-rating-input').value = currentMediaItem.juainny_rating || '';
+    document.getElementById('juainny-notes').value = currentMediaItem.juainny_notes || '';
+    document.getElementById('erick-rating-input').value = currentMediaItem.erick_rating || '';
+    document.getElementById('erick-notes').value = currentMediaItem.erick_notes || '';
+    hideSaveBanner();
+}
+
+
+/**
+ * Sets up event listeners for the ratings and notes input fields.
+ */
+function setupRatingAndNotesListeners() {
+    const inputs = [
+        'juainny-rating-input', 'juainny-notes',
+        'erick-rating-input', 'erick-notes'
+    ];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', showSaveBanner);
+    });
+
+    const saveBtn = document.getElementById('save-changes-banner-btn');
+    if (saveBtn) saveBtn.addEventListener('click', saveRatingsAndNotes);
+
+    const discardBtn = document.getElementById('discard-changes-banner-btn');
+    if (discardBtn) discardBtn.addEventListener('click', discardRatingsAndNotesChanges);
 }
 
 // --- INITIALIZATION ---
@@ -256,6 +401,24 @@ async function initializeApp() {
 
     // Setup other UI elements
     setupModalCloseButton();
+    setupRatingAndNotesListeners();
+    initializeSettings();
+    loadAndApplySettings();
+    setupUserMenu();
+}
+
+/**
+ * Sets up the event listener for the user menu button.
+ */
+function setupUserMenu() {
+    const userMenuBtn = document.getElementById('user-menu-btn');
+    const userMenu = document.getElementById('user-menu');
+
+    if (userMenuBtn && userMenu) {
+        userMenuBtn.addEventListener('click', () => {
+            userMenu.classList.toggle('hidden');
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
