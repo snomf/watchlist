@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
+import { initializeSettings, loadAndApplySettings } from './settings.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -154,7 +155,10 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl) {
             <h3 class="text-white font-bold text-lg truncate">${title}</h3>
         </div>
     `;
-    movieCard.addEventListener('click', () => openMovieModal(tmdbId, type));
+    movieCard.addEventListener('click', () => {
+        console.log(`Movie card clicked for tmdbId: ${tmdbId}`);
+        openMovieModal(tmdbId, type);
+    });
     grid.appendChild(movieCard);
 }
 
@@ -165,8 +169,13 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl) {
  * @param {string} type - The type of media ('movie' or 'tv').
  */
 async function openMovieModal(tmdbId, type) {
+    console.log('--- MOVIE MODAL FUNCTION CALLED ---');
+    console.log('Attempting to open movie modal for tmdbId:', tmdbId);
     const modal = document.getElementById('movie-modal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('Movie modal element not found in the DOM.');
+        return;
+    }
 
     const endpoint = type === 'movie' ? 'movie' : 'tv';
     const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}`;
@@ -256,6 +265,24 @@ async function initializeApp() {
 
     // Setup other UI elements
     setupModalCloseButton();
+    initializeSettings();
+    loadAndApplySettings();
+    setupUserMenu();
+}
+
+/**
+ * Sets up the event listener for the user menu button.
+ */
+function setupUserMenu() {
+    const userMenuBtn = document.getElementById('user-menu-btn');
+    const userMenu = document.getElementById('user-menu');
+
+    if (userMenuBtn && userMenu) {
+        userMenuBtn.addEventListener('click', () => {
+            console.log('User menu button clicked.');
+            userMenu.classList.toggle('hidden');
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
