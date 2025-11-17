@@ -132,7 +132,7 @@
         </div>
     </div>
 
-    <div id="movie-modal" class="fixed inset-0 hidden items-center justify-center modal-hidden p-4 z-[55]" style="backdrop-filter: blur(8px);">
+    <div id="movie-modal" class="fixed inset-0 hidden items-center justify-center modal-hidden p-4 z-[100]" style="backdrop-filter: blur(8px);">
         <div class="movie-modal-content bg-bg-secondary rounded-2xl shadow-xl w-full md:w-3/4 mx-auto overflow-hidden max-h-full overflow-y-auto">
              <div class="relative">
                 <img id="modal-backdrop-image" src="" class="w-full h-64 md:h-96 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/800x400/111827/ef4444?text=Image+Not+Found';">
@@ -239,7 +239,7 @@
         this little site sysncs across both of our devices (so hard to make) and has posters (so hard to get).
     </div>
 
-    <div id="settings-modal" class="fixed inset-0 z-[55] hidden items-center justify-center modal-hidden p-4">
+    <div id="settings-modal" class="fixed inset-0 z-[100] hidden items-center justify-center modal-hidden p-4">
         <div class="modal-backdrop fixed inset-0" onclick="closeSettingsModal()"></div>
         <div class="bg-bg-secondary rounded-lg shadow-xl z-50 w-full md:w-1/2 mx-auto modal-content relative max-h-full overflow-y-auto">
             <button id="close-settings-modal-btn" class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
@@ -343,7 +343,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
     <script type="module" src="/src/supabase-client.js"></script>
     <script type="module" src="/src/features/ratings.js"></script>
+    <script type="module" src="/src/settings.js"></script>
     <script type="module" src="/src/app.js"></script>
+    <script type="module" src="/src/settings.js"></script>
   <footer>
     <p>
       <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg" alt="Gemini Logo" width="20" height="20"> ❤️

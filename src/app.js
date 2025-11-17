@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
+import { initializeSettings, loadAndApplySettings } from './settings.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -166,7 +167,10 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl) {
  */
 async function openMovieModal(tmdbId, type) {
     const modal = document.getElementById('movie-modal');
-    if (!modal) return;
+    if (!modal) {
+        console.error('Movie modal element not found in the DOM.');
+        return;
+    }
 
     const endpoint = type === 'movie' ? 'movie' : 'tv';
     const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}`;
@@ -256,6 +260,23 @@ async function initializeApp() {
 
     // Setup other UI elements
     setupModalCloseButton();
+    initializeSettings();
+    loadAndApplySettings();
+    setupUserMenu();
+}
+
+/**
+ * Sets up the event listener for the user menu button.
+ */
+function setupUserMenu() {
+    const userMenuBtn = document.getElementById('user-menu-btn');
+    const userMenu = document.getElementById('user-menu');
+
+    if (userMenuBtn && userMenu) {
+        userMenuBtn.addEventListener('click', () => {
+            userMenu.classList.toggle('hidden');
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
