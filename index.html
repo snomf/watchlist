@@ -94,42 +94,8 @@
     </div>
 
     <div class="container mx-auto p-4 md:p-8 relative z-0">
-        <h1 id="ai-heading" class="text-2xl font-bold mb-4 text-left">Our fun little timeline</h1>
-
-        <div class="bg-bg-secondary rounded-lg shadow-lg p-6 mb-8">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-accent-primary">Watchlist Stats</h2>
-                <a href="stats.html" class="text-base bg-accent-primary hover:bg-accent-secondary text-text-primary font-semibold px-5 py-2.5 rounded-full transition pulse-button">
-                    Report Card →
-                </a>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="text-center">
-                    <p class="text-4xl font-bold" id="hours-watched">0h 0m</p>
-                    <p class="text-gray-400">Time Watched</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-4xl font-bold" id="hours-left">0h 0m</p>
-                    <p class="text-gray-400">Time Left</p>
-                </div>
-                <div class="text-center">
-                    <p class="text-4xl font-bold" id="movies-watched">0 / 0</p>
-                    <p class="text-gray-400">Items Watched</p>
-                </div>
-            </div>
-            <div class="mt-6 flex items-center gap-4">
-                <span id="progress-percent" class="text-lg font-semibold text-accent-primary">0%</span>
-                <div class="w-full bg-bg-tertiary rounded-full h-4">
-                    <div id="progress-bar" class="bg-accent-primary h-4 rounded-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-            </div>
-            <div class="mt-4 text-center">
-                <button id="extend-stats-btn" class="text-sm text-gray-400 hover:text-white">
-                    Show More Stats <i class="fas fa-chevron-down ml-1 transition-transform"></i>
-                </button>
-            </div>
-            <div id="extended-stats" class="hidden mt-6 pt-6 border-t border-gray-700">
-                 </div>
+        <div class="flex justify-center mb-6">
+            <input type="text" id="search-bar" class="bg-bg-secondary text-text-primary rounded-full px-4 py-2 w-full max-w-md" placeholder="Search for movies or shows...">
         </div>
 
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -139,9 +105,6 @@
                     <button data-filter="movie" class="filter-btn btn-active px-4 py-2 text-sm font-semibold rounded-full transition">Movies</button>
                     <button data-filter="tv" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">TV Shows</button>
                 </div>
-                <button id="non-mcu-filter-btn" class="bg-bg-secondary rounded-full p-2 text-sm font-semibold transition btn-active">
-                    <img src="x4.svg" alt="Non-MCU" class="h-4 w-4"/>
-                </button>
             </div>
             <div class="flex items-center gap-4">
                 <button id="random-movie-btn" class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
@@ -378,9 +341,9 @@
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
-    <script type="module" src="/supabase-client.js"></script>
-    <script type="module" src="/features/ratings.js"></script>
-    <script type="module" src="/app.js"></script>
+    <script type="module" src="/src/supabase-client.js"></script>
+    <script type="module" src="/src/features/ratings.js"></script>
+    <script type="module" src="/src/app.js"></script>
   <footer>
     <p>
       <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg" alt="Gemini Logo" width="20" height="20"> ❤️
