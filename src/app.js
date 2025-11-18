@@ -100,10 +100,28 @@ let currentView = 'grid';
  */
 function renderContent() {
     const movieGrid = document.getElementById('movie-grid');
+async function searchTMDB(query) {
+    if (!query) return [];
+    const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
+    try {
+        const response = await fetch(searchUrl);
+        const data = await response.json();
+        // Filter out results that aren't movies or TV shows
+        return data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+    } catch (error) {
+        console.error('Error searching TMDB:', error);
+        return [];
+    }
+}
+
+function renderContent() {
+    const movieGrid = document.getElementById('movie-grid');
     const movieList = document.getElementById('movie-list');
 
     // 1. Filter the media
-    if (currentFilter !== 'all') {
+    if (currentFilter === 'all') {
+        filteredMedia = currentMedia;
+    } else {
         filteredMedia = currentMedia.filter(item => {
             const itemType = item.type || item.media_type; // 'movie', 'series', or 'tv'
             if (currentFilter === 'movie') {

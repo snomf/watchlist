@@ -137,8 +137,17 @@ export function initializeSettings() {
 
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+            const selectedTheme = btn.dataset.theme;
+
+            // Immediately apply the theme
+            document.documentElement.setAttribute('data-theme', selectedTheme);
+
+            // Update the UI to show the active theme
             document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('border-accent-primary'));
             btn.classList.add('border-accent-primary');
+
+            // Trigger save
+            saveSettings();
         });
     });
 

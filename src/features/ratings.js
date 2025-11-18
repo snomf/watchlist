@@ -1,11 +1,26 @@
-export async function initializeStarRating(containerId, initialRating = 0, onRatingChange) {
+export function initializeStarRating(containerId, initialRating = 0, onRatingChange) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Fetch and insert the HTML template
-    const response = await fetch('/templates/rating-stars.html');
-    const html = await response.text();
-    container.innerHTML = html.replace(/{userId}/g, containerId);
+    const html = `
+        <div class="rating-stars-container flex items-center" data-user-id="${containerId}">
+            <div class="stars" aria-label="Rating">
+                <i class="rating-star fas fa-star" data-value="1"></i>
+                <i class="rating-star fas fa-star" data-value="2"></i>
+                <i class="rating-star fas fa-star" data-value="3"></i>
+                <i class="rating-star fas fa-star" data-value="4"></i>
+                <i class="rating-star fas fa-star" data-value="5"></i>
+                <i class="rating-star fas fa-star" data-value="6"></i>
+                <i class="rating-star fas fa-star" data-value="7"></i>
+                <i class="rating-star fas fa-star" data-value="8"></i>
+                <i class="rating-star fas fa-star" data-value="9"></i>
+                <i class="rating-star fas fa-star" data-value="10"></i>
+            </div>
+            <input type="number" step="0.5" min="0" max="10" class="rating-input-manual w-16 bg-bg-primary border-border-primary rounded-md text-center ml-2">
+            <input type="hidden" class="rating-input-hidden" name="rating-${containerId}" value="0">
+        </div>
+    `;
+    container.innerHTML = html;
 
     const starsContainer = container.querySelector('.stars');
     const manualInput = container.querySelector('.rating-input-manual');
