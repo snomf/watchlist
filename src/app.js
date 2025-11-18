@@ -529,9 +529,11 @@ async function saveRatingsAndNotes() {
             .single();
     } else {
         // Insert new item
+        let itemType = currentMediaItem.type;
+        if (itemType === 'tv') itemType = 'series'; // Normalize to 'series'
         response = await supabase
             .from('media')
-            .insert([{ ...updates, tmdb_id: tmdbId, type: currentMediaItem.type, title: currentMediaItem.title }])
+            .insert([{ ...updates, tmdb_id: tmdbId, type: itemType, title: currentMediaItem.title, poster_path: currentMediaItem.poster_path }])
             .select()
             .single();
     }
@@ -738,6 +740,9 @@ function updateWatchedButtonUI(mediaItem) {
 }
 
 async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
+    let itemType = type;
+    if (itemType === 'tv') itemType = 'series'; // Normalize to 'series'
+
     let { data: mediaItem, error } = await supabase
         .from('media')
         .select('*')
@@ -770,7 +775,7 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
     // If item does not exist, create it
     const { data: newItem, error: insertError } = await supabase
         .from('media')
-        .insert({ tmdb_id: tmdbId, type: type, title: title, poster_path: posterPath })
+        .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath })
         .select()
         .single();
 
