@@ -218,7 +218,35 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         <div class="absolute bottom-0 left-0 right-0 p-4">
             <h3 class="text-white font-bold text-lg truncate">${title}</h3>
         </div>
+        <button class="bookmark-icon absolute bottom-2 right-2 text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+            <i class="fas fa-bookmark"></i>
+        </button>
     `;
+
+    // Stop propagation on the bookmark icon to prevent the modal from opening
+    const bookmarkBtn = movieCard.querySelector('.bookmark-icon');
+    bookmarkBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const posterPath = posterUrl.includes('image.tmdb.org') ? posterUrl.replace('https://image.tmdb.org/t/p/w500', '') : null;
+        const mediaItem = await ensureMediaItemExists(tmdbId, type, title, posterPath);
+        if (!mediaItem) return;
+
+        const newWantToWatch = !mediaItem.want_to_watch;
+        const updates = { want_to_watch: newWantToWatch };
+        if (newWantToWatch) {
+            updates.currently_watching = false;
+        }
+
+        const { error } = await supabase.from('media').update(updates).eq('tmdb_id', tmdbId);
+
+        if (error) {
+            console.error('Error updating bookmark from grid:', error);
+        } else {
+            // Visually update the icon
+            bookmarkBtn.classList.toggle('text-accent-primary', newWantToWatch);
+        }
+    });
+
     movieCard.addEventListener('click', () => openMovieModal(tmdbId, type));
     grid.appendChild(movieCard);
 }
@@ -383,6 +411,7 @@ async function openMovieModal(tmdbId, type) {
             tmdb_id: tmdbId,
             type: type,
             title: data.title || data.name,
+            poster_path: data.poster_path,
             favorited_by: [],
             watched: false,
             juainny_rating: null,
@@ -708,7 +737,7 @@ function updateWatchedButtonUI(mediaItem) {
     }
 }
 
-async function ensureMediaItemExists(tmdbId, type, title) {
+async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
     let { data: mediaItem, error } = await supabase
         .from('media')
         .select('*')
@@ -720,20 +749,36 @@ async function ensureMediaItemExists(tmdbId, type, title) {
         return null;
     }
 
-    if (!mediaItem) {
-        const { data: newItem, error: insertError } = await supabase
-            .from('media')
-            .insert({ tmdb_id: tmdbId, type: type, title: title })
-            .select()
-            .single();
-
-        if (insertError) {
-            console.error('Error creating new media item:', insertError);
-            return null;
+    // If item exists, check if it needs a poster_path update
+    if (mediaItem) {
+        if (posterPath && !mediaItem.poster_path) {
+            const { data: updatedItem, error: updateError } = await supabase
+                .from('media')
+                .update({ poster_path: posterPath })
+                .eq('tmdb_id', tmdbId)
+                .select()
+                .single();
+            if (updateError) {
+                console.error('Error updating poster path:', updateError);
+                return mediaItem; // return original item on error
+            }
+            return updatedItem; // return the updated item
         }
-        return newItem;
+        return mediaItem; // return existing item if no update needed
     }
-    return mediaItem;
+
+    // If item does not exist, create it
+    const { data: newItem, error: insertError } = await supabase
+        .from('media')
+        .insert({ tmdb_id: tmdbId, type: type, title: title, poster_path: posterPath })
+        .select()
+        .single();
+
+    if (insertError) {
+        console.error('Error creating new media item:', insertError);
+        return null;
+    }
+    return newItem;
 }
 
 
@@ -744,8 +789,8 @@ function setupWatchedButtons() {
     const bookmarkBtn = document.getElementById('bookmark-btn');
 
     const handleWatchedToggle = async (isReject) => {
-        const { tmdb_id, type, title } = currentMediaItem;
-        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title);
+        const { tmdb_id, type, title, poster_path } = currentMediaItem;
+        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
         if (!mediaItem) return;
 
         const newWatchedStatus = isReject ? false : !currentMediaItem.watched;
@@ -772,17 +817,20 @@ function setupWatchedButtons() {
         } else {
             currentMediaItem = data;
             updateWatchedButtonUI(currentMediaItem);
-            const index = allMedia.findIndex(item => item.tmdb_id === tmdbId);
+            const index = allMedia.findIndex(item => item.tmdb_id === tmdb_id);
             if (index > -1) {
-                allMedia[index] = { ...allMedia[index], ...updates };
+                allMedia[index] = data; // Replace the old item with the updated one
+            } else {
+                // If the item wasn't in allMedia, it's a new item from search. Add it.
+                allMedia.push(data);
             }
             renderContent();
         }
     };
 
     currentlyWatchingBtn.addEventListener('click', async () => {
-        const { tmdb_id, type, title } = currentMediaItem;
-        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title);
+        const { tmdb_id, type, title, poster_path } = currentMediaItem;
+        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
         if (!mediaItem) return;
 
         const updates = { currently_watching: true, want_to_watch: false, watched: false };
@@ -803,8 +851,8 @@ function setupWatchedButtons() {
     });
 
     bookmarkBtn.addEventListener('click', async () => {
-        const { tmdb_id, type, title } = currentMediaItem;
-        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title);
+        const { tmdb_id, type, title, poster_path } = currentMediaItem;
+        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
         if (!mediaItem) return;
 
         const newWantToWatch = !currentMediaItem.want_to_watch;
@@ -942,21 +990,41 @@ async function initializeApp() {
     const searchBar = document.getElementById('search-bar');
     const sortSelect = document.getElementById('sort-select');
 
+    const homeBtn = document.getElementById('home-btn');
+    const logoContainer = document.getElementById('logo-container');
+    const currentlyWatchingSection = document.getElementById('currently-watching-section');
+    const wantToWatchSection = document.getElementById('want-to-watch-section');
+
+    const exitSearchMode = () => {
+        searchBar.value = '';
+        currentMedia = allMedia;
+        sortSelect.value = 'default';
+        currentSort = 'default';
+        sortSelect.disabled = false;
+        homeBtn.classList.add('hidden');
+        currentlyWatchingSection.classList.remove('hidden');
+        wantToWatchSection.classList.remove('hidden');
+        renderContent();
+    };
+
     searchBar.addEventListener('input', async (e) => {
         const searchTerm = e.target.value.trim();
         if (searchTerm === '') {
-            currentMedia = allMedia; // If search is cleared, show original watchlist
-            sortSelect.value = 'default';
-            currentSort = 'default';
-            sortSelect.disabled = false;
+            exitSearchMode();
         } else {
+            homeBtn.classList.remove('hidden');
+            currentlyWatchingSection.classList.add('hidden');
+            wantToWatchSection.classList.add('hidden');
             const searchResults = await searchTMDB(searchTerm);
-            currentMedia = searchResults; // Update currentMedia with search results
+            currentMedia = searchResults;
             currentSort = 'popularity';
             sortSelect.disabled = true;
+            renderContent();
         }
-        renderContent(); // Re-render with the new media (and current filter/view)
     });
+
+    homeBtn.addEventListener('click', exitSearchMode);
+    logoContainer.addEventListener('click', exitSearchMode);
 
     // Setup other UI elements
     setupModalCloseButton();
@@ -1017,7 +1085,7 @@ function setupCarouselEditMode() {
             carousel.querySelectorAll('.movie-card').forEach(card => {
                 card.classList.add('shake');
                 const removeBtn = document.createElement('button');
-                removeBtn.className = 'absolute top-0 right-0 bg-danger text-white rounded-full w-6 h-6 flex items-center justify-center';
+                removeBtn.className = 'absolute inset-0 bg-black bg-opacity-50 text-white flex items-center justify-center text-4xl';
                 removeBtn.innerHTML = '<i class="fas fa-times"></i>';
                 removeBtn.onclick = async () => {
                     const tmdbId = card.dataset.tmdbId;
