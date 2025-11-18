@@ -101,8 +101,16 @@ async function searchTMDB(query) {
     try {
         const response = await fetch(searchUrl);
         const data = await response.json();
-        // Filter out results that aren't movies or TV shows
-        return data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+
+        let results = data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv');
+
+        // Check the setting
+        const { data: settings } = await supabase.from('settings').select('hide_search_results_without_images').single();
+        if (settings?.hide_search_results_without_images) {
+            results = results.filter(item => item.poster_path);
+        }
+
+        return results;
     } catch (error) {
         console.error('Error searching TMDB:', error);
         return [];
@@ -294,9 +302,20 @@ async function openMovieModal(tmdbId, type) {
             .eq('tmdb_id', tmdbId)
             .single();
 
-        if (error) console.error('Error fetching media item for ratings:', error);
+        if (error && error.code !== 'PGRST116') { // PGRST116 = 'Not a single row was found'
+            console.error('Error fetching media item for ratings:', error);
+        }
 
-        currentMediaItem = mediaItem; // Store for the discard functionality
+        currentMediaItem = mediaItem || {
+            tmdb_id: tmdbId,
+            type: type,
+            favorited_by: [],
+            watched: false,
+            juainny_rating: null,
+            erick_rating: null,
+            juainny_notes: null,
+            erick_notes: null,
+        };
 
         // --- Initialize Star Ratings ---
         await initializeStarRating('juainny-rating-container', mediaItem?.juainny_rating || 0, debouncedSave);

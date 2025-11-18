@@ -65,12 +65,14 @@ async function populateWallpaperSelector() {
 async function saveSettings() {
     const selectedTheme = document.querySelector('.theme-btn.border-accent-primary')?.dataset.theme;
     const selectedWallpaper = document.getElementById('movie-banner-select').value;
+    const hideImages = document.getElementById('hide-search-images-toggle').checked;
 
     const { error } = await supabase
         .from('settings')
         .update({
             theme: selectedTheme,
             wallpaper_url: selectedWallpaper,
+            hide_search_results_without_images: hideImages,
         })
         .eq('id', 1);
 
@@ -89,7 +91,7 @@ async function saveSettings() {
 export async function loadAndApplySettings() {
     const { data, error } = await supabase
         .from('settings')
-        .select('theme, wallpaper_url')
+        .select('theme, wallpaper_url, hide_search_results_without_images')
         .eq('id', 1)
         .single();
 
@@ -101,11 +103,14 @@ export async function loadAndApplySettings() {
     }
 
     // Apply and set active theme
-    const { theme, wallpaper_url } = data;
+    const { theme, wallpaper_url, hide_search_results_without_images } = data;
     document.documentElement.setAttribute('data-theme', theme || 'night');
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('border-accent-primary', btn.dataset.theme === theme);
     });
+
+    // Set the toggle
+    document.getElementById('hide-search-images-toggle').checked = hide_search_results_without_images;
 
     // Apply wallpaper
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');
