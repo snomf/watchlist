@@ -318,16 +318,16 @@ async function openMovieModal(tmdbId, type) {
         };
 
         // --- Initialize Star Ratings ---
-        await initializeStarRating('juainny-rating-container', mediaItem?.juainny_rating || 0, debouncedSave);
-        await initializeStarRating('erick-rating-container', mediaItem?.erick_rating || 0, debouncedSave);
+        await initializeStarRating('juainny-rating-container', currentMediaItem?.juainny_rating || 0, debouncedSave);
+        await initializeStarRating('erick-rating-container', currentMediaItem?.erick_rating || 0, debouncedSave);
 
         // --- Favorites ---
-        updateFavoriteGlow(mediaItem);
+        updateFavoriteGlow(currentMediaItem);
 
         // --- Watched Status ---
-        updateWatchedButtonUI(mediaItem);
+        updateWatchedButtonUI(currentMediaItem);
 
-        document.getElementById('juainny-notes').value = mediaItem?.juainny_notes || '';
+        document.getElementById('juainny-notes').value = currentMediaItem?.juainny_notes || '';
         document.getElementById('erick-notes').value = mediaItem?.erick_notes || '';
 
         // Show the notes section
