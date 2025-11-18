@@ -775,7 +775,7 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
     // If item does not exist, create it
     const { data: newItem, error: insertError } = await supabase
         .from('media')
-        .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath })
+        .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath, source: 'added' })
         .select()
         .single();
 
@@ -803,6 +803,7 @@ function setupWatchedButtons() {
         let updates = { watched: newWatchedStatus };
         if (isReject) {
             updates.currently_watching = false;
+            updates.source = null;
         }
 
         if (newWatchedStatus) {
