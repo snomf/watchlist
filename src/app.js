@@ -464,8 +464,9 @@ function updateFavoriteGlow(mediaItem) {
     const modalContent = document.querySelector('.movie-modal-content');
     const movieCard = document.querySelector(`.movie-card[data-tmdb-id="${mediaItem.tmdb_id}"]`);
 
-    const favoritedByJuainny = mediaItem.favorited_by.includes('juainny');
-    const favoritedByErick = mediaItem.favorited_by.includes('erick');
+    const favoritedBy = mediaItem.favorited_by || [];
+    const favoritedByJuainny = favoritedBy.includes('juainny');
+    const favoritedByErick = favoritedBy.includes('erick');
 
     [modalContent, movieCard].forEach(el => {
         if (!el) return;
@@ -495,13 +496,15 @@ function setupFavoriteButton() {
             if (userId === 'remove-all') {
                 currentFavorites = [];
             } else if (userId === 'user1') {
+                const isFavorited = currentFavorites.includes('juainny');
                 currentFavorites = currentFavorites.filter(u => u !== 'juainny');
-                if (!currentMediaItem.favorited_by.includes('juainny')) {
+                if (!isFavorited) {
                     currentFavorites.push('juainny');
                 }
             } else if (userId === 'user2') {
+                const isFavorited = currentFavorites.includes('erick');
                 currentFavorites = currentFavorites.filter(u => u !== 'erick');
-                if (!currentMediaItem.favorited_by.includes('erick')) {
+                if (!isFavorited) {
                     currentFavorites.push('erick');
                 }
             }
