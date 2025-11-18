@@ -11,6 +11,7 @@
     <meta property="og:image" content="banner.png">
     <meta property="og:url" content="https://marvelmarathon.netlify.app/">
     <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/theme.css?v=2">
     <link rel="stylesheet" href="/output.css?v=2">
@@ -37,7 +38,7 @@
                     <span class="font-bold text-white text-lg">Watchlist</span>
                     <i id="info-tooltip-icon" class="fas fa-question-circle ml-2 text-gray-400 cursor-pointer"></i>
                 </div>
-                <div class="nav-pill notification-pill">
+                <div class="nav-pill notification-pill hidden">
                     <button id="notification-btn" class="relative text-gray-300 hover:text-white focus:outline-none focus:text-white">
                         <i class="fas fa-bell"></i>
                         <span id="notification-count" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full" style="display: none;"></span>
@@ -101,14 +102,14 @@
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <div class="flex items-center gap-2">
                 <div id="filter-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
-                    <button data-filter="all" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">All</button>
-                    <button data-filter="movie" class="filter-btn btn-active px-4 py-2 text-sm font-semibold rounded-full transition">Movies</button>
+                    <button data-filter="all" class="filter-btn btn-active px-4 py-2 text-sm font-semibold rounded-full transition">All</button>
+                    <button data-filter="movie" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Movies</button>
                     <button data-filter="tv" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">TV Shows</button>
                 </div>
             </div>
             <div class="flex items-center gap-4">
                 <button id="random-movie-btn" class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
-                    <i class="fas fa-dice"></i> Feeling Lucky?
+                    <i class="fas fa-dice mr-2"></i> Feeling Lucky?
                 </button>
                 <div id="view-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
                     <button data-view="grid" class="view-btn btn-active px-4 py-2 rounded-full transition"><i class="fas fa-th-large"></i></button>
@@ -121,14 +122,9 @@
             <div id="movie-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 <!-- Media items will be dynamically inserted here -->
             </div>
-        </div>
-    </div>
-
-    <div id="save-banner" class="hidden fixed bottom-4 right-4 bg-gray-700 text-white p-3 rounded-lg shadow-lg flex items-center gap-4 z-50">
-        <span>You have unsaved changes.</span>
-        <div class="flex gap-2">
-            <button id="save-changes-banner-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors">Save</button>
-            <button id="discard-changes-banner-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md text-sm transition-colors">Discard</button>
+            <div id="movie-list" class="hidden">
+                <!-- List items will be dynamically inserted here -->
+            </div>
         </div>
     </div>
 
@@ -141,7 +137,7 @@
                 <button id="close-modal-btn" class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                <div id="modal-logo-container" class="absolute bottom-4 left-4"></div>
+                <div id="modal-title-container" class="absolute bottom-4 left-4"></div>
                 <div class="absolute top-4 left-4 flex items-center space-x-2" id="mood-controls">
                     <button id="add-mood-btn" class="bg-blue-600 hover:bg-blue-700 text-text-primary font-bold py-2 px-4 rounded-full transition flex items-center justify-center">
                         <i class="fas fa-plus mr-2"></i>
@@ -179,6 +175,7 @@
                         </div>
                     </div>
                     <a id="modal-imdb-link" href="#" target="_blank" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+                        <i class="fas fa-star text-yellow-400 mr-1"></i>
                         <i class="fab fa-imdb fa-2x"></i>
                         <span id="modal-score" class="text-lg font-bold"></span>
                     </a>
@@ -201,9 +198,8 @@
                                     <div id="juainny-avatar" class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">J</div>
                                     <h4 class="text-md font-semibold text-text-secondary">Juainny's Rating</h4>
                                 </div>
-                                <div class="flex items-center justify-start gap-4">
-                                    <div id="juainny-rating" class="our-rating text-lg text-text-muted"></div>
-                                    <input type="number" step="0.5" min="0" max="10" id="juainny-rating-input" class="rating-input w-16 bg-bg-primary border-border-primary rounded-md text-center">
+                                <div id="juainny-rating-container">
+                                    <!-- Star rating component will be injected here -->
                                 </div>
                                 <textarea id="juainny-notes" rows="3" class="mt-2 block w-full rounded-md bg-bg-primary border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary"></textarea>
                             </div>
@@ -212,9 +208,8 @@
                                     <div id="erick-avatar" class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">E</div>
                                     <h4 class="text-md font-semibold text-text-secondary">Erick's Rating</h4>
                                 </div>
-                                <div class="flex items-center justify-start gap-4">
-                                    <div id="erick-rating" class="our-rating text-lg text-text-muted"></div>
-                                    <input type="number" step="0.5" min="0" max="10" id="erick-rating-input" class="rating-input w-16 bg-bg-primary border-border-primary rounded-md text-center">
+                                <div id="erick-rating-container">
+                                    <!-- Star rating component will be injected here -->
                                 </div>
                                 <textarea id="erick-notes" rows="3" class="mt-2 block w-full rounded-md bg-bg-primary border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary"></textarea>
                             </div>
@@ -224,7 +219,7 @@
                         <button id="toggle-watched-btn" class="w-full bg-success hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
                             Mark as Watched
                         </button>
-                        <button id="toggle-rejected-btn" class="w-[30%] bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                        <button id="toggle-rejected-btn" class="w-auto bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -256,13 +251,8 @@
                 <div class="border border-border-primary rounded-lg p-4">
                     <h3 class="text-lg font-semibold mb-2">Theme</h3>
                     <div id="theme-picker" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <button data-theme="dark" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Dark</button>
-                        <button data-theme="night" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Night</button>
-                        <button data-theme="spiderman" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Spiderman</button>
-                        <button data-theme="ironman" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Iron Man</button>
-                        <button data-theme="hulk" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Hulk</button>
-                        <button data-theme="black-widow" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Black Widow</button>
-                        <button data-theme="war-machine" class="theme-btn p-4 rounded-lg border-2 border-border-primary">War Machine</button>
+                        <button data-theme="night" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Night Mode</button>
+                        <button data-theme="endgame" class="theme-btn p-4 rounded-lg border-2 border-border-primary">Avengers Endgame</button>
                     </div>
                     <p class="text-xs text-text-muted mt-2">*no light theme haha</p>
                 </div>
@@ -279,42 +269,8 @@
                         </button>
                     </div>
                 </div>
-                <div class="border border-border-primary rounded-lg p-4 mt-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold">Next Up Wallpaper</h3>
-                        <label for="next-up-wallpaper-toggle" class="inline-flex relative items-center cursor-pointer">
-                            <input type="checkbox" value="" id="next-up-wallpaper-toggle" class="sr-only peer">
-                            <div class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary"></div>
-                        </label>
-                    </div>
-                    <p class="text-sm text-text-secondary mb-4">Automatically set wallpaper to the next item in your marathon.</p>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="next-up-wallpaper-type" class="block text-sm font-medium text-text-secondary">Content Type</label>
-                            <select id="next-up-wallpaper-type" class="mt-1 block w-full rounded-md bg-bg-tertiary border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary">
-                                <option value="all">All</option>
-                                <option value="movie">Movies</option>
-                                <option value="tv">TV Shows</option>
-                            </select>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <label for="next-up-wallpaper-non-mcu" class="block text-sm font-medium text-text-secondary">Include Non-MCU</label>
-                            <label for="next-up-wallpaper-non-mcu" class="inline-flex relative items-center cursor-pointer">
-                                <input type="checkbox" value="" id="next-up-wallpaper-non-mcu" class="sr-only peer">
-                                <div class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary"></div>
-                            </label>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <label for="next-up-wallpaper-tv" class="block text-sm font-medium text-text-secondary">Include TV Shows</label>
-                            <label for="next-up-wallpaper-tv" class="inline-flex relative items-center cursor-pointer">
-                                <input type="checkbox" value="" id="next-up-wallpaper-tv" class="sr-only peer">
-                                <div class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary"></div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
                 <div class="mt-6">
-                    <h3 class="text-lg font-semibold mb-2">Or, select a manual wallpaper</h3>
+                    <h3 class="text-lg font-semibold mb-2">Select a manual wallpaper</h3>
                     <div class="space-y-4">
                         <div>
                             <label for="movie-banner-select" class="block text-sm font-medium text-text-secondary">Movie Banner</label>

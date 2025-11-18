@@ -1,6 +1,7 @@
 import { supabase } from './supabase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
 import { initializeSettings, loadAndApplySettings } from './settings.js';
+import { initializeStarRating } from './features/ratings.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -85,52 +86,87 @@ async function syncWithTMDB(localMedia) {
     return updatedMedia;
 }
 
+// --- STATE ---
+let allMedia = [];
+let currentMedia = [];
+let filteredMedia = []; // To hold the currently visible media
+let currentFilter = 'all';
+let currentView = 'grid';
+
+// --- RENDERING ---
+
 /**
- * Renders a list of media items (from the watchlist) to the grid.
- * @param {Array} media - An array of media objects from Supabase.
+ * Main render function. Filters and displays media based on current state.
  */
-async function renderMedia(media) {
+function renderContent() {
     const movieGrid = document.getElementById('movie-grid');
-    if (!movieGrid) return;
-    movieGrid.innerHTML = '';
+    const movieList = document.getElementById('movie-list');
 
-    for (const item of media) {
-        const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://placehold.co/500x750?text=No+Image';
-        createMovieCard(movieGrid, item.title, item.type, item.tmdb_id, posterUrl);
+    // 1. Filter the media
+    if (currentFilter !== 'all') {
+        filteredMedia = currentMedia.filter(item => {
+            const itemType = item.type || item.media_type; // 'movie', 'series', or 'tv'
+            if (currentFilter === 'movie') {
+                return itemType === 'movie';
+            }
+            if (currentFilter === 'tv') {
+                return itemType === 'tv' || itemType === 'series';
+            }
+            return false;
+        });
     }
-}
 
-/**
- * Searches TMDB for movies and TV shows.
- * @param {string} query - The search term.
- * @returns {Array} - A list of search results.
- */
-async function searchTMDB(query) {
-    if (!query) return [];
-    const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
-    try {
-        const response = await fetch(searchUrl);
-        const data = await response.json();
-        // Filter out results that aren't movies or TV shows
-        return data.results.filter(item => item.media_type === 'movie' || item.media_type === 'tv');
-    } catch (error) {
-        console.error('Error searching TMDB:', error);
-        return [];
-    }
-}
+    // 2. Render based on the current view
+    if (currentView === 'grid') {
+        movieGrid.innerHTML = '';
+        movieList.innerHTML = '';
+        movieGrid.style.display = 'grid';
+        movieList.style.display = 'none';
 
-/**
- * Renders a list of search results to the grid.
- * @param {Array} results - An array of media objects from the TMDB search.
- */
-function renderSearchResults(results) {
-    const movieGrid = document.getElementById('movie-grid');
-    if (!movieGrid) return;
-    movieGrid.innerHTML = '';
+        if (filteredMedia.length === 0) {
+            movieGrid.innerHTML = '<p class="text-text-muted col-span-full text-center">No results found.</p>';
+            return;
+        }
 
-    for (const item of results) {
-        const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://placehold.co/500x750?text=No+Image';
-        createMovieCard(movieGrid, item.title || item.name, item.media_type, item.id, posterUrl);
+        for (const item of filteredMedia) {
+            const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://placehold.co/500x750?text=No+Image';
+            const title = item.title || item.name;
+            const type = item.type || item.media_type;
+            const tmdbId = item.tmdb_id || item.id;
+            createMovieCard(movieGrid, title, type, tmdbId, posterUrl, item.watched);
+        }
+    } else { // currentView === 'list'
+        movieGrid.innerHTML = '';
+        movieList.innerHTML = '';
+        movieGrid.style.display = 'none';
+        movieList.style.display = 'block';
+
+        if (filteredMedia.length === 0) {
+            movieList.innerHTML = '<p class="text-text-muted text-center">No results found.</p>';
+            return;
+        }
+
+        const listContainer = document.createElement('div');
+        listContainer.className = 'bg-bg-secondary p-4 md:p-6 rounded-lg shadow-lg';
+
+        filteredMedia.forEach(item => {
+            const title = item.title || item.name;
+            const type = item.type || item.media_type;
+            const tmdbId = item.tmdb_id || item.id;
+
+            const listItem = document.createElement('div');
+            listItem.className = 'flex items-center py-1';
+            listItem.innerHTML = `
+                <span class="text-text-muted mr-2">-</span>
+                <a href="#" class="text-text-primary hover:text-accent-primary underline transition-colors" data-tmdb-id="${tmdbId}" data-type="${type}">${title}</a>
+            `;
+            listItem.querySelector('a').addEventListener('click', (e) => {
+                e.preventDefault();
+                openMovieModal(tmdbId, type);
+            });
+            listContainer.appendChild(listItem);
+        });
+        movieList.appendChild(listContainer);
     }
 }
 
@@ -142,9 +178,12 @@ function renderSearchResults(results) {
  * @param {number} tmdbId - The TMDB ID.
  * @param {string} posterUrl - The URL for the poster image.
  */
-function createMovieCard(grid, title, type, tmdbId, posterUrl) {
+function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
     const movieCard = document.createElement('div');
     movieCard.className = 'movie-card relative rounded-lg shadow-lg overflow-hidden cursor-pointer group';
+    if (isWatched) {
+        movieCard.classList.add('watched');
+    }
     movieCard.dataset.tmdbId = tmdbId;
     movieCard.dataset.type = type;
 
@@ -185,8 +224,19 @@ async function openMovieModal(tmdbId, type) {
         const data = await response.json();
 
         // --- Basic Info ---
-        document.getElementById('modal-title').textContent = data.title || data.name;
         document.getElementById('modal-overview').textContent = data.overview;
+
+        // --- Logo ---
+        const titleElement = document.getElementById('modal-title');
+        titleElement.innerHTML = ''; // Clear previous content
+        const bestLogo = data.images?.logos?.find(logo => logo.iso_639_1 === 'en' && !logo.file_path.endsWith('.svg')) || data.images?.logos?.[0];
+
+        if (bestLogo) {
+            const logoUrl = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
+            titleElement.innerHTML = `<img src="${logoUrl}" alt="${data.title || data.name} Logo" class="max-h-24">`;
+        } else {
+            titleElement.textContent = data.title || data.name;
+        }
 
         const releaseDate = data.release_date || data.first_air_date || '';
         document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
@@ -235,12 +285,17 @@ async function openMovieModal(tmdbId, type) {
 
         currentMediaItem = mediaItem; // Store for the discard functionality
 
-        document.getElementById('juainny-rating').textContent = mediaItem?.juainny_rating || 'Not Rated';
-        document.getElementById('juainny-rating-input').value = mediaItem?.juainny_rating || '';
-        document.getElementById('juainny-notes').value = mediaItem?.juainny_notes || '';
+        // --- Initialize Star Ratings ---
+        await initializeStarRating('juainny-rating-container', mediaItem?.juainny_rating || 0, debouncedSave);
+        await initializeStarRating('erick-rating-container', mediaItem?.erick_rating || 0, debouncedSave);
 
-        document.getElementById('erick-rating').textContent = mediaItem?.erick_rating || 'Not Rated';
-        document.getElementById('erick-rating-input').value = mediaItem?.erick_rating || '';
+        // --- Favorites ---
+        updateFavoriteGlow(mediaItem);
+
+        // --- Watched Status ---
+        updateWatchedButtonUI(mediaItem);
+
+        document.getElementById('juainny-notes').value = mediaItem?.juainny_notes || '';
         document.getElementById('erick-notes').value = mediaItem?.erick_notes || '';
 
         // Show the notes section
@@ -273,7 +328,6 @@ function setupModalCloseButton() {
     const modal = document.getElementById('movie-modal');
     if (closeModalBtn && modal) {
         closeModalBtn.addEventListener('click', () => {
-            hideSaveBanner();
             modal.classList.add('hidden');
             modal.classList.add('modal-hidden');
             modal.classList.remove('flex');
@@ -281,21 +335,17 @@ function setupModalCloseButton() {
     }
 }
 
-/**
- * Shows the save banner when unsaved changes are detected.
- */
-function showSaveBanner() {
-    const saveBanner = document.getElementById('save-banner');
-    if (saveBanner) saveBanner.classList.remove('hidden');
+// --- DEBOUNCE UTILITY ---
+function debounce(func, delay) {
+    let timeout;
+    return function(...args) {
+        const context = this;
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(context, args), delay);
+    };
 }
 
-/**
- * Hides the save banner.
- */
-function hideSaveBanner() {
-    const saveBanner = document.getElementById('save-banner');
-    if (saveBanner) saveBanner.classList.add('hidden');
-}
+const debouncedSave = debounce(saveRatingsAndNotes, 500); // 500ms delay
 
 /**
  * Saves the current ratings and notes to Supabase.
@@ -305,10 +355,13 @@ async function saveRatingsAndNotes() {
     const tmdbId = modal.dataset.tmdbId;
     if (!tmdbId) return;
 
+    const juainnyRating = document.querySelector('#juainny-rating-container .rating-input-hidden').value;
+    const erickRating = document.querySelector('#erick-rating-container .rating-input-hidden').value;
+
     const updates = {
-        juainny_rating: document.getElementById('juainny-rating-input').value || null,
+        juainny_rating: parseFloat(juainnyRating) || null,
         juainny_notes: document.getElementById('juainny-notes').value || null,
-        erick_rating: document.getElementById('erick-rating-input').value || null,
+        erick_rating: parseFloat(erickRating) || null,
         erick_notes: document.getElementById('erick-notes').value || null,
     };
 
@@ -316,52 +369,229 @@ async function saveRatingsAndNotes() {
     if (error) {
         console.error('Error saving ratings and notes:', error);
     } else {
-        console.log('Ratings and notes saved successfully.');
-        // Update the displayed ratings
-        document.getElementById('juainny-rating').textContent = updates.juainny_rating || 'Not Rated';
-        document.getElementById('erick-rating').textContent = updates.erick_rating || 'Not Rated';
-        hideSaveBanner();
+        console.log('Ratings and notes auto-saved successfully.');
     }
 }
-
-/**
- * Discards the changes made to the ratings and notes.
- */
-function discardRatingsAndNotesChanges() {
-    if (!currentMediaItem) return;
-    document.getElementById('juainny-rating-input').value = currentMediaItem.juainny_rating || '';
-    document.getElementById('juainny-notes').value = currentMediaItem.juainny_notes || '';
-    document.getElementById('erick-rating-input').value = currentMediaItem.erick_rating || '';
-    document.getElementById('erick-notes').value = currentMediaItem.erick_notes || '';
-    hideSaveBanner();
-}
-
 
 /**
  * Sets up event listeners for the ratings and notes input fields.
  */
 function setupRatingAndNotesListeners() {
-    const inputs = [
-        'juainny-rating-input', 'juainny-notes',
-        'erick-rating-input', 'erick-notes'
-    ];
-    inputs.forEach(id => {
+    // Listener for textareas
+    const notesInputs = ['juainny-notes', 'erick-notes'];
+    notesInputs.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.addEventListener('input', showSaveBanner);
+        if (el) el.addEventListener('input', debouncedSave);
     });
 
-    const saveBtn = document.getElementById('save-changes-banner-btn');
-    if (saveBtn) saveBtn.addEventListener('click', saveRatingsAndNotes);
+    // The onRatingChange callback in initializeStarRating will trigger the debounced save
+}
 
-    const discardBtn = document.getElementById('discard-changes-banner-btn');
-    if (discardBtn) discardBtn.addEventListener('click', discardRatingsAndNotesChanges);
+// --- EVENT LISTENERS ---
+
+function setupFeelingLuckyButton() {
+    const luckyButton = document.getElementById('random-movie-btn');
+    if (luckyButton) {
+        luckyButton.addEventListener('click', () => {
+            if (filteredMedia.length === 0) {
+                // Optionally, provide feedback to the user
+                console.log("No movies to choose from!");
+                return;
+            }
+            const randomItem = filteredMedia[Math.floor(Math.random() * filteredMedia.length)];
+            const tmdbId = randomItem.tmdb_id || randomItem.id;
+            const type = randomItem.type || randomItem.media_type;
+            openMovieModal(tmdbId, type);
+        });
+    }
+}
+
+function setupFilterControls() {
+    const filterControls = document.getElementById('filter-controls');
+    filterControls.addEventListener('click', (e) => {
+        if (e.target.matches('.filter-btn')) {
+            const filter = e.target.dataset.filter;
+            if (filter === currentFilter) return;
+
+            // Update state
+            currentFilter = filter;
+
+            // Update UI
+            filterControls.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('btn-active');
+            });
+            e.target.classList.add('btn-active');
+
+            // Re-render
+            renderContent();
+        }
+    });
+}
+
+function updateFavoriteGlow(mediaItem) {
+    const modalContent = document.querySelector('.movie-modal-content');
+    const movieCard = document.querySelector(`.movie-card[data-tmdb-id="${mediaItem.tmdb_id}"]`);
+
+    const favoritedByJuainny = mediaItem.favorited_by.includes('juainny');
+    const favoritedByErick = mediaItem.favorited_by.includes('erick');
+
+    [modalContent, movieCard].forEach(el => {
+        if (!el) return;
+        el.classList.remove('favorite-glow', 'super-favorite-glow');
+        if (favoritedByJuainny && favoritedByErick) {
+            el.classList.add('super-favorite-glow');
+        } else if (favoritedByJuainny || favoritedByErick) {
+            el.classList.add('favorite-glow');
+        }
+    });
+}
+
+function setupFavoriteButton() {
+    const favoriteBtn = document.getElementById('favorite-btn');
+    const userMenu = document.getElementById('user-selection-menu');
+
+    favoriteBtn.addEventListener('click', () => {
+        userMenu.classList.toggle('hidden');
+    });
+
+    userMenu.addEventListener('click', async (e) => {
+        if (e.target.matches('button')) {
+            const userId = e.target.id.replace('-btn', ''); // 'user1', 'user2', 'remove-all'
+            const tmdbId = currentMediaItem.tmdb_id;
+            let currentFavorites = currentMediaItem.favorited_by || [];
+
+            if (userId === 'remove-all') {
+                currentFavorites = [];
+            } else if (userId === 'user1') {
+                currentFavorites = currentFavorites.filter(u => u !== 'juainny');
+                if (!currentMediaItem.favorited_by.includes('juainny')) {
+                    currentFavorites.push('juainny');
+                }
+            } else if (userId === 'user2') {
+                currentFavorites = currentFavorites.filter(u => u !== 'erick');
+                if (!currentMediaItem.favorited_by.includes('erick')) {
+                    currentFavorites.push('erick');
+                }
+            }
+
+            const { data, error } = await supabase
+                .from('media')
+                .update({ favorited_by: currentFavorites })
+                .eq('tmdb_id', tmdbId)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error updating favorites:', error);
+            } else {
+                currentMediaItem = data;
+                updateFavoriteGlow(currentMediaItem);
+            }
+            userMenu.classList.add('hidden');
+        }
+    });
+}
+
+function updateWatchedButtonUI(mediaItem) {
+    const watchedBtn = document.getElementById('toggle-watched-btn');
+
+    if (mediaItem.watched) {
+        watchedBtn.textContent = 'Mark as Unwatched';
+        watchedBtn.classList.replace('bg-success', 'bg-gray-600');
+    } else {
+        watchedBtn.textContent = 'Mark as Watched';
+        watchedBtn.classList.replace('bg-gray-600', 'bg-success');
+    }
+}
+
+function setupWatchedButtons() {
+    const watchedBtn = document.getElementById('toggle-watched-btn');
+    const rejectedBtn = document.getElementById('toggle-rejected-btn');
+
+    const handleWatchedToggle = async (isReject) => {
+        const tmdbId = currentMediaItem.tmdb_id;
+        const newWatchedStatus = isReject ? false : !currentMediaItem.watched;
+
+        const { data, error } = await supabase
+            .from('media')
+            .update({ watched: newWatchedStatus })
+            .eq('tmdb_id', tmdbId)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error updating watched status:', error);
+        } else {
+            currentMediaItem = data;
+            updateWatchedButtonUI(currentMediaItem);
+            // We need to update the `allMedia` array as well so the main view updates
+            const index = allMedia.findIndex(item => item.tmdb_id === tmdbId);
+            if (index > -1) {
+                allMedia[index].watched = newWatchedStatus;
+            }
+            renderContent();
+        }
+    };
+
+    watchedBtn.addEventListener('click', () => handleWatchedToggle(false));
+    rejectedBtn.addEventListener('click', () => handleWatchedToggle(true));
+}
+
+function setupTooltips() {
+    const tooltipElement = document.getElementById('tooltip');
+
+    document.addEventListener('mouseover', (e) => {
+        if (e.target.matches('[title]')) {
+            const title = e.target.getAttribute('title');
+            e.target.setAttribute('data-original-title', title);
+            e.target.removeAttribute('title');
+
+            tooltipElement.textContent = title;
+            tooltipElement.classList.remove('hidden');
+
+            const rect = e.target.getBoundingClientRect();
+            tooltipElement.style.left = `${rect.left + (rect.width / 2) - (tooltipElement.offsetWidth / 2)}px`;
+            tooltipElement.style.top = `${rect.top - tooltipElement.offsetHeight - 5}px`;
+        }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        if (e.target.matches('[data-original-title]')) {
+            e.target.setAttribute('title', e.target.getAttribute('data-original-title'));
+            e.target.removeAttribute('data-original-title');
+            tooltipElement.classList.add('hidden');
+        }
+    });
+}
+
+function setupViewControls() {
+    const viewControls = document.getElementById('view-controls');
+    viewControls.addEventListener('click', (e) => {
+        const button = e.target.closest('.view-btn');
+        if (button) {
+            const view = button.dataset.view;
+            if (view === currentView) return;
+
+            // Update state
+            currentView = view;
+
+            // Update UI
+            viewControls.querySelectorAll('.view-btn').forEach(btn => {
+                btn.classList.remove('btn-active');
+            });
+            button.classList.add('btn-active');
+
+            // Re-render
+            renderContent();
+        }
+    });
 }
 
 // --- INITIALIZATION ---
 
-let allMedia = []; // To store the initial watchlist
-
 async function initializeApp() {
+    try {
+    console.log('Initializing app...');
     const urlParams = new URLSearchParams(window.location.search);
     const shouldHardReset = urlParams.get('hardrefresh') === 'true';
 
@@ -373,7 +603,7 @@ async function initializeApp() {
 
     // Show a loading indicator while we fetch and sync
     const loadingSpinner = document.getElementById('loading-spinner');
-    if (loadingSpinner) loadingSpinner.style.display = 'block';
+    if (loadingSpinner) loadingSpinner.style.display = 'flex';
 
     // Fetch the initial watchlist
     let watchlistMedia = await getWatchlistMedia();
@@ -381,9 +611,13 @@ async function initializeApp() {
     // Sync data with TMDB
     watchlistMedia = await syncWithTMDB(watchlistMedia);
 
-    // Store the synced media and render it
+    // Store the synced media
     allMedia = watchlistMedia;
-    renderMedia(allMedia);
+    console.log('Synced Media:', allMedia);
+    currentMedia = allMedia; // Set currentMedia to the full list initially
+
+    // Initial render
+    renderContent();
 
     // Hide the loading spinner
     if (loadingSpinner) loadingSpinner.style.display = 'none';
@@ -393,19 +627,29 @@ async function initializeApp() {
     searchBar.addEventListener('input', async (e) => {
         const searchTerm = e.target.value.trim();
         if (searchTerm === '') {
-            renderMedia(allMedia); // If search is cleared, show original watchlist
+            currentMedia = allMedia; // If search is cleared, show original watchlist
         } else {
             const searchResults = await searchTMDB(searchTerm);
-            renderSearchResults(searchResults);
+            currentMedia = searchResults; // Update currentMedia with search results
         }
+        renderContent(); // Re-render with the new media (and current filter/view)
     });
 
     // Setup other UI elements
     setupModalCloseButton();
     setupRatingAndNotesListeners();
+    setupFilterControls();
+    setupViewControls();
+    setupFeelingLuckyButton();
+    setupTooltips();
+    setupFavoriteButton();
+    setupWatchedButtons();
     initializeSettings();
     loadAndApplySettings();
     setupUserMenu();
+    } catch (error) {
+        console.error('Error during app initialization:', error);
+    }
 }
 
 /**
@@ -423,3 +667,9 @@ function setupUserMenu() {
 }
 
 document.addEventListener('DOMContentLoaded', initializeApp);
+
+if (import.meta.hot) {
+    import.meta.hot.on('vite:error', (err) => {
+        console.error(err);
+    });
+}

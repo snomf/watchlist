@@ -89,18 +89,20 @@ async function saveSettings() {
 export async function loadAndApplySettings() {
     const { data, error } = await supabase
         .from('settings')
-        .select('*')
+        .select('theme, wallpaper_url')
         .eq('id', 1)
         .single();
 
     if (error || !data) {
         console.error('Error loading settings:', error);
+        // Fallback to a default theme if settings are not found
+        document.documentElement.setAttribute('data-theme', 'night');
         return;
     }
 
     // Apply and set active theme
     const { theme, wallpaper_url } = data;
-    document.documentElement.setAttribute('data-theme', theme || 'dark');
+    document.documentElement.setAttribute('data-theme', theme || 'night');
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('border-accent-primary', btn.dataset.theme === theme);
     });

@@ -1,118 +1,33 @@
-:root {
-    --color-bg-primary: #111827;
-    --color-bg-secondary: #1f2937;
-    --color-bg-tertiary: #374151;
-    --color-text-primary: #f9fafb;
-    --color-text-secondary: #d1d5db;
-    --color-text-muted: #9ca3af;
-    --color-accent-primary: #ef4444;
-    --color-accent-secondary: #f87171;
-    --color-border-primary: #4b5563;
-    --color-success: #4ade80;
-    --color-danger: #f87171;
-    --color-text-on-accent: #ffffff;
-    --color-star-filled: #facc15;
-}
-
-.theme-night {
+:root, [data-theme="night"] {
     --color-bg-primary: #0a0a0a;
     --color-bg-secondary: #1a1a1a;
     --color-bg-tertiary: #2a2a2a;
     --color-text-primary: #e5e5e5;
     --color-text-secondary: #a3a3a3;
     --color-text-muted: #737373;
-    --color-accent-primary: #8b5cf6;
-    --color-accent-secondary: #a78bfa;
+    --color-accent-primary: #f97316; /* Orange */
+    --color-accent-secondary: #fb923c; /* Lighter Orange */
     --color-border-primary: #404040;
     --color-success: #4ade80;
     --color-danger: #f87171;
     --color-text-on-accent: #ffffff;
-    --color-star-filled: #f0abfc;
-}
-
-.theme-spiderman {
-    --color-bg-primary: #010517;
-    --color-bg-secondary: #10183b;
-    --color-bg-tertiary: #1c2a5e;
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #e0e0e0;
-    --color-text-muted: #a0a0a0;
-    --color-accent-primary: #d92a2a;
-    --color-accent-secondary: #2a75d9;
-    --color-border-primary: #2a4d8f;
-    --color-success: #34d399;
-    --color-danger: #ef4444;
-    --color-text-on-accent: #ffffff;
-    --color-star-filled: #38bdf8;
-}
-
-.theme-ironman {
-    --color-bg-primary: #100a0a;
-    --color-bg-secondary: #2a0c0c;
-    --color-bg-tertiary: #403a3a;
-    --color-text-primary: #f5f0e1;
-    --color-text-secondary: #e0d8c6;
-    --color-text-muted: #a39a8b;
-    --color-accent-primary: #aa0505;
-    --color-accent-secondary: #f0c14b;
-    --color-border-primary: #5c4a2a;
-    --color-success: #4ade80;
-    --color-danger: #aa0505;
-    --color-danger: #aa0505;
-    --color-text-on-accent: #f5f0e1;
     --color-star-filled: #facc15;
 }
 
-.theme-hulk {
-    --color-bg-primary: #2d0b4c;
-    --color-bg-secondary: #1a3b1a;
-    --color-bg-tertiary: #4a0e8b;
-    --color-text-primary: #f0fdf4;
-    --color-text-secondary: #dcfce7;
-    --color-text-muted: #bbf7d0;
-    --color-accent-primary: #7ed321;
-    --color-accent-secondary: #9013fe;
-    --color-border-primary: #86efac;
-    --color-success: #7ed321;
-    --color-danger: #9013fe;
-    --color-text-on-accent: #1a3b1a;
-    --color-star-filled: #fde047;
-}
-
-.theme-black-widow {
-    --color-bg-primary: #0c0c0c;
-    --color-bg-secondary: #1a1a1a;
-    --color-bg-tertiary: #2a2a2a;
-    --color-text-primary: #f1f5f9;
-    --color-text-secondary: #e2e8f0;
-    --color-text-muted: #94a3b8;
-    --color-accent-primary: #ff0000;
-    --color-accent-secondary: #8b0000;
-    --color-border-primary: #4b0000;
+[data-theme="endgame"] {
+    --color-bg-primary: #100c2a;
+    --color-bg-secondary: #1c1642;
+    --color-bg-tertiary: #2c246b;
+    --color-text-primary: #e9d5ff;
+    --color-text-secondary: #c084fc;
+    --color-text-muted: #9333ea;
+    --color-accent-primary: #a855f7; /* Purple */
+    --color-accent-secondary: #c084fc; /* Lighter Purple */
+    --color-border-primary: #581c87;
     --color-success: #4ade80;
-    --color-danger: #ff0000;
+    --color-danger: #f87171;
     --color-text-on-accent: #ffffff;
-    --color-star-filled: #f59e0b;
-}
-
-.theme-war-machine {
-    --color-bg-primary: #333333;
-    --color-bg-secondary: #555555;
-    --color-bg-tertiary: #777777;
-    --color-text-primary: #ffffff;
-    --color-text-secondary: #e0e0e0;
-    --color-text-muted: #c0c0c0;
-    --color-accent-primary: #c0c0c0;
-    --color-accent-secondary: #ffffff;
-    --color-border-primary: #999999;
-    --color-success: #4ade80;
-    --color-danger: #ef4444;
-    --color-text-on-accent: #000000;
-    --color-star-filled: #ef4444;
-}
-
-.theme-war-machine #random-movie-btn {
-    color: var(--color-text-on-accent);
+    --color-star-filled: #f0abfc;
 }
 
 .nav-pill {
@@ -313,6 +228,42 @@
     body {
         background-attachment: scroll;
     }
+
+    .nav-pill {
+        padding: 0.5rem 0.75rem;
+    }
+
+    #movie-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .movie-modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+
+    #modal-backdrop-image {
+        height: 12rem; /* 192px */
+    }
+
+    .p-6 {
+        padding: 1rem;
+    }
+
+    .grid-cols-1.md\\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .flex-col.sm\\:flex-row {
+        flex-direction: column;
+    }
+
+    .nav-pill span {
+        display: none;
+    }
 }
 
 /* --- SEARCH BAR STYLES --- */
@@ -326,4 +277,53 @@
 #search-bar:focus {
     outline: none;
     border-color: var(--color-accent-primary);
+}
+
+/* --- STAR RATING --- */
+.rating-stars-container .stars {
+    display: inline-flex;
+    color: var(--color-text-muted);
+    cursor: pointer;
+}
+
+.rating-star {
+    position: relative;
+    font-size: 1.5rem;
+    transition: color 0.2s;
+}
+
+.rating-star.filled,
+.rating-star.half-filled::before {
+    color: var(--color-star-filled);
+}
+
+.rating-star.half-filled::before {
+    content: '\f005'; /* Font Awesome solid star */
+    position: absolute;
+    left: 0;
+    width: 50%;
+    overflow: hidden;
+}
+
+.stars:hover .rating-star {
+    color: var(--color-star-filled);
+}
+
+.rating-star:hover ~ .rating-star {
+    color: var(--color-text-muted);
+}
+
+.movie-card.watched::after {
+    content: 'WATCHED';
+    position: absolute;
+    top: 1rem;
+    right: -2.5rem;
+    background-color: var(--color-success);
+    color: var(--color-text-on-accent);
+    padding: 0.25rem 2rem;
+    font-size: 0.75rem;
+    font-weight: bold;
+    transform: rotate(45deg);
+    transform-origin: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }

@@ -1,4 +1,0 @@
-Failed to resolve dependency: react, present in client 'optimizeDeps.include'
-Failed to resolve dependency: react-dom, present in client 'optimizeDeps.include'
-Failed to resolve dependency: react/jsx-dev-runtime, present in client 'optimizeDeps.include'
-Failed to resolve dependency: react/jsx-runtime, present in client 'optimizeDeps.include'
