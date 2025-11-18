@@ -339,7 +339,7 @@ async function openMovieModal(tmdbId, type) {
         document.getElementById('notes-section').classList.remove('hidden');
 
         // --- Update Supabase with backdrop path ---
-        if (data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
+        if (mediaItem && data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
             const { error: updateError } = await supabase
                 .from('media')
                 .update({ backdrop_path: data.backdrop_path })
@@ -483,6 +483,9 @@ function setupFeelingLuckyButton() {
 
 function sortMedia() {
     switch (currentSort) {
+        case 'popularity':
+            filteredMedia.sort((a, b) => b.popularity - a.popularity);
+            break;
         case 'alphabetical':
             filteredMedia.sort((a, b) => (a.title || a.name).localeCompare(b.title || b.name));
             break;
@@ -738,13 +741,20 @@ async function initializeApp() {
 
     // Setup search bar
     const searchBar = document.getElementById('search-bar');
+    const sortSelect = document.getElementById('sort-select');
+
     searchBar.addEventListener('input', async (e) => {
         const searchTerm = e.target.value.trim();
         if (searchTerm === '') {
             currentMedia = allMedia; // If search is cleared, show original watchlist
+            sortSelect.value = 'default';
+            currentSort = 'default';
+            sortSelect.disabled = false;
         } else {
             const searchResults = await searchTMDB(searchTerm);
             currentMedia = searchResults; // Update currentMedia with search results
+            currentSort = 'popularity';
+            sortSelect.disabled = true;
         }
         renderContent(); // Re-render with the new media (and current filter/view)
     });
