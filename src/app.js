@@ -95,11 +95,6 @@ let currentView = 'grid';
 
 // --- RENDERING ---
 
-/**
- * Main render function. Filters and displays media based on current state.
- */
-function renderContent() {
-    const movieGrid = document.getElementById('movie-grid');
 async function searchTMDB(query) {
     if (!query) return [];
     const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
