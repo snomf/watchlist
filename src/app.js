@@ -92,6 +92,7 @@ let currentMedia = [];
 let filteredMedia = []; // To hold the currently visible media
 let currentFilter = 'all';
 let currentView = 'grid';
+let currentSort = 'default';
 
 // --- RENDERING ---
 
@@ -137,7 +138,10 @@ function renderContent() {
         });
     }
 
-    // 2. Render based on the current view
+    // 2. Sort the media
+    sortMedia();
+
+    // 3. Render based on the current view
     if (currentView === 'grid') {
         movieGrid.innerHTML = '';
         movieList.innerHTML = '';
@@ -316,6 +320,7 @@ async function openMovieModal(tmdbId, type) {
             juainny_notes: null,
             erick_notes: null,
         };
+        console.log('currentMediaItem set to:', currentMediaItem);
 
         // --- Initialize Star Ratings ---
         await initializeStarRating('juainny-rating-container', currentMediaItem?.juainny_rating || 0, debouncedSave);
@@ -385,7 +390,10 @@ const debouncedSave = debounce(saveRatingsAndNotes, 500); // 500ms delay
 async function saveRatingsAndNotes() {
     const modal = document.getElementById('movie-modal');
     const tmdbId = modal.dataset.tmdbId;
-    if (!tmdbId) return;
+    if (!tmdbId) {
+        console.error('saveRatingsAndNotes: tmdbId not found on modal');
+        return;
+    }
 
     const juainnyRating = document.querySelector('#juainny-rating-container .rating-input-hidden').value;
     const erickRating = document.querySelector('#erick-rating-container .rating-input-hidden').value;
@@ -397,11 +405,46 @@ async function saveRatingsAndNotes() {
         erick_notes: document.getElementById('erick-notes').value || null,
     };
 
-    const { error } = await supabase.from('media').update(updates).eq('tmdb_id', tmdbId);
+    console.log('Saving to Supabase:', { tmdbId, updates });
+
+    // Check if the item exists in the database
+    const { data: existingItem, error: fetchError } = await supabase
+        .from('media')
+        .select('tmdb_id')
+        .eq('tmdb_id', tmdbId)
+        .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking for existing media:', fetchError);
+        return;
+    }
+
+    let response;
+    if (existingItem) {
+        // Update existing item
+        response = await supabase
+            .from('media')
+            .update(updates)
+            .eq('tmdb_id', tmdbId)
+            .select()
+            .single();
+    } else {
+        // Insert new item
+        response = await supabase
+            .from('media')
+            .insert([{ ...updates, tmdb_id: tmdbId, type: currentMediaItem.type, title: currentMediaItem.title }])
+            .select()
+            .single();
+    }
+
+    const { data, error } = response;
+
     if (error) {
         console.error('Error saving ratings and notes:', error);
     } else {
-        console.log('Ratings and notes auto-saved successfully.');
+        console.log('Ratings and notes auto-saved successfully. Response:', data);
+        // Update currentMediaItem with the latest data
+        currentMediaItem = data;
     }
 }
 
@@ -436,6 +479,42 @@ function setupFeelingLuckyButton() {
             openMovieModal(tmdbId, type);
         });
     }
+}
+
+function sortMedia() {
+    switch (currentSort) {
+        case 'alphabetical':
+            filteredMedia.sort((a, b) => (a.title || a.name).localeCompare(b.title || b.name));
+            break;
+        case 'release_date':
+            filteredMedia.sort((a, b) => {
+                const dateA = new Date(a.release_date || a.first_air_date);
+                const dateB = new Date(b.release_date || b.first_air_date);
+                return dateB - dateA;
+            });
+            break;
+        case 'length':
+            filteredMedia.sort((a, b) => (b.runtime || b.episode_run_time?.[0] || 0) - (a.runtime || a.episode_run_time?.[0] || 0));
+            break;
+        case 'default':
+        default:
+            const fetched = filteredMedia.filter(item => item.source === 'fetched').sort((a, b) => a.id - b.id);
+            const notFetched = filteredMedia.filter(item => item.source !== 'fetched').sort((a, b) => {
+                const dateA = new Date(a.release_date || a.first_air_date);
+                const dateB = new Date(b.release_date || b.first_air_date);
+                return dateB - dateA;
+            });
+            filteredMedia = [...notFetched, ...fetched];
+            break;
+    }
+}
+
+function setupSortControls() {
+    const sortSelect = document.getElementById('sort-select');
+    sortSelect.addEventListener('change', (e) => {
+        currentSort = e.target.value;
+        renderContent();
+    });
 }
 
 function setupFilterControls() {
@@ -679,6 +758,7 @@ async function initializeApp() {
     setupTooltips();
     setupFavoriteButton();
     setupWatchedButtons();
+    setupSortControls();
     initializeSettings();
     loadAndApplySettings();
     setupUserMenu();

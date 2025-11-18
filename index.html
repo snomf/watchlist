@@ -106,6 +106,15 @@
                     <button data-filter="movie" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Movies</button>
                     <button data-filter="tv" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">TV Shows</button>
                 </div>
+                <div class="relative">
+                    <select id="sort-select" class="bg-bg-secondary text-text-primary rounded-full px-4 py-2 appearance-none">
+                        <option value="default">Default</option>
+                        <option value="alphabetical">Alphabetical (A-Z)</option>
+                        <option value="release_date">Release Date (Newest)</option>
+                        <option value="length">Length (Longest)</option>
+                    </select>
+                    <i class="fas fa-sort absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted"></i>
+                </div>
             </div>
             <div class="flex items-center gap-4">
                 <button id="random-movie-btn" class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
