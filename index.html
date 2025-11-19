@@ -103,14 +103,14 @@
         </div>
 
         <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <div class="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2">
-                <div id="filter-controls" class="flex items-center bg-bg-secondary rounded-full p-1 overflow-x-auto whitespace-nowrap">
-                    <button data-filter="all" class="filter-btn btn-active px-4 py-2 text-sm font-semibold rounded-full transition flex-shrink-0">All</button>
-                    <button data-filter="movie" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition flex-shrink-0">Movies</button>
-                    <button data-filter="tv" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition flex-shrink-0">TV Shows</button>
+            <div class="flex items-center gap-2">
+                <div id="filter-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
+                    <button data-filter="all" class="filter-btn btn-active px-4 py-2 text-sm font-semibold rounded-full transition">All</button>
+                    <button data-filter="movie" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Movies</button>
+                    <button data-filter="tv" class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">TV Shows</button>
                 </div>
-                <div class="relative w-full sm:w-auto mt-2 sm:mt-0">
-                    <select id="sort-select" class="w-full bg-bg-secondary text-text-primary rounded-full px-4 py-2 appearance-none">
+                <div class="relative">
+                    <select id="sort-select" class="bg-bg-secondary text-text-primary rounded-full px-4 py-2 appearance-none">
                         <option value="default">Default</option>
                         <option value="alphabetical">Alphabetical (A-Z)</option>
                         <option value="release_date">Release Date (Newest)</option>
@@ -172,7 +172,7 @@
                     </button>
                 </div>
             </div>
-            <h2 class="text-2xl font-bold mb-4">All Media</h2>
+            <h2 class="text-2xl font-bold mb-4">Watched Media</h2>
             <div id="movie-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 <!-- Media items will be dynamically inserted here -->
             </div>
@@ -229,7 +229,6 @@
                         </div>
                     </div>
                     <a id="modal-imdb-link" href="#" target="_blank" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
-                        <i class="fas fa-star text-yellow-400 mr-1"></i>
                         <i class="fab fa-imdb fa-2x"></i>
                         <span id="modal-score" class="text-lg font-bold"></span>
                     </a>
@@ -242,14 +241,9 @@
 
                 <div class="border-t border-border-primary pt-4 space-y-4">
                     <div id="tv-progress-section" class="hidden">
-                        <div class="flex justify-between items-center mb-2">
-                            <h3 class="text-lg font-semibold">Series Progress</h3>
-                            <button id="edit-tv-progress-btn" class="text-text-primary hover:text-accent-primary transition">
-                                <i class="fas fa-pencil-alt"></i>
-                            </button>
-                        </div>
-                        <div id="tv-progress-container" class="space-y-2 max-h-64 overflow-y-auto p-2 bg-bg-primary rounded-lg">
-                            <!-- TV progress will be rendered here -->
+                        <h3 class="text-lg font-semibold mb-2">Episode Progress</h3>
+                        <div id="tv-progress-container" class="max-h-64 overflow-y-auto bg-bg-tertiary p-4 rounded-lg">
+                            <!-- Seasons and episodes will be dynamically inserted here -->
                         </div>
                     </div>
                     <div id="notes-section" class="hidden">
@@ -283,6 +277,9 @@
                     <div class="flex flex-col gap-2">
                         <button id="currently-watching-btn" class="w-full bg-blue-600 hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
                             Currently Watching
+                        </button>
+                        <button id="remove-currently-watching-btn" class="hidden w-full bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                            Remove from Currently Watching
                         </button>
                         <div class="flex gap-2">
                             <button id="toggle-watched-btn" class="w-full bg-success hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">

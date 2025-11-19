@@ -362,3 +362,56 @@
 .shake {
     animation: shake 0.8s infinite;
 }
+
+/* Hide scrollbar for episode carousel */
+.episode-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.episode-carousel {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Star Rating Styles */
+.star-rating-widget {
+    position: relative;
+}
+
+.star-container {
+    position: relative;
+    font-size: 1.5rem; /* Default star size */
+    cursor: pointer;
+}
+
+.star-half {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    z-index: 10;
+}
+
+.star-half.left {
+    left: 0;
+}
+
+.star-half.right {
+    right: 0;
+}
+
+.star-icon {
+    position: relative;
+    z-index: 1;
+    transition: color 0.2s;
+}
+
+/* Responsive star sizes */
+@media (max-width: 640px) {
+    .star-container {
+        font-size: 1.25rem; /* Smaller stars on mobile */
+    }
+     .rating-input-manual {
+        width: 3.5rem; /* Smaller input on mobile */
+    }
+}

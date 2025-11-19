@@ -2,109 +2,76 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Ensure the container is empty before initializing
-    container.innerHTML = '';
-
-    const html = `
-        <div class="rating-stars-container">
-            <div class="stars" aria-label="Rating">
-                ${[...Array(10)].map((_, i) => `<i class="rating-star fas fa-star" data-value="${i + 1}"></i>`).join('')}
+    container.innerHTML = `
+        <div class="star-rating-widget flex items-center gap-2">
+            <div class="stars-wrapper flex">
+                ${[...Array(10)].map((_, i) => `
+                    <div class="star-container" data-value="${i + 1}">
+                        <div class="star-half left" data-value="${i + 0.5}"></div>
+                        <div class="star-half right" data-value="${i + 1}"></div>
+                        <i class="star-icon fas fa-star text-gray-500"></i>
+                    </div>
+                `).join('')}
             </div>
-            <input type="number" step="0.1" min="0" max="10" class="rating-input-manual w-16 bg-bg-primary border-border-primary rounded-md text-center ml-2">
+            <input type="number" step="0.5" min="0" max="10" class="rating-input-manual w-16 bg-bg-primary border-border-primary rounded-md text-center">
             <input type="hidden" class="rating-input-hidden" name="rating-${containerId}">
         </div>
     `;
-    container.innerHTML = html;
 
-    const starsContainer = container.querySelector('.stars');
+    const starsWrapper = container.querySelector('.stars-wrapper');
     const manualInput = container.querySelector('.rating-input-manual');
     const hiddenInput = container.querySelector('.rating-input-hidden');
-    const stars = Array.from(container.querySelectorAll('.rating-star'));
+    const starContainers = Array.from(container.querySelectorAll('.star-container'));
 
     let currentRating = parseFloat(initialRating) || 0;
 
-    function updateStars(rating) {
-        const numericRating = parseFloat(rating);
-        const displayRating = Math.round(numericRating * 2) / 2; // Round to nearest 0.5 for display
+    const updateView = (rating) => {
+        const roundedRating = Math.round(rating * 2) / 2; // Round to nearest 0.5
 
-        stars.forEach(star => {
+        starContainers.forEach(star => {
             const starValue = parseFloat(star.dataset.value);
-            star.classList.remove('filled', 'half-filled');
-            if (starValue <= displayRating) {
-                star.classList.add('filled');
-            } else if (starValue - 0.5 === displayRating) {
-                star.classList.add('half-filled');
+            const icon = star.querySelector('.star-icon');
+            icon.classList.remove('fas', 'fa-star', 'fa-star-half-alt', 'far', 'fa-star'); // Reset classes
+
+            if (roundedRating >= starValue) {
+                icon.className = 'star-icon fas fa-star text-yellow-400'; // Full star
+            } else if (roundedRating >= starValue - 0.5) {
+                icon.className = 'star-icon fas fa-star-half-alt text-yellow-400'; // Half star
+            } else {
+                icon.className = 'star-icon far fa-star text-gray-500'; // Empty star
             }
         });
+        manualInput.value = rating.toFixed(1);
+        hiddenInput.value = rating;
+    };
 
-        manualInput.value = numericRating.toFixed(1);
-        hiddenInput.value = numericRating;
-    }
-
-    function handleMouseMove(e) {
-        const { left, width } = e.currentTarget.getBoundingClientRect();
-        const hoverX = e.clientX - left;
-        const percentage = hoverX / width;
-        const isHalf = percentage <= 0.5;
-
-        const hoverValue = parseFloat(e.currentTarget.dataset.value);
-        const displayHoverValue = hoverValue - (isHalf ? 0.5 : 0);
-
-        stars.forEach(s => {
-            const sValue = parseFloat(s.dataset.value);
-            s.classList.remove('filled', 'half-filled');
-            if (sValue <= displayHoverValue) {
-                s.classList.add('filled');
-            } else if (sValue - 0.5 === displayHoverValue) {
-                s.classList.add('half-filled');
-            }
-        });
-    }
-
-    function handleClick(e) {
-        const { left, width } = e.currentTarget.getBoundingClientRect();
-        const clickX = e.clientX - left;
-        const percentage = clickX / width;
-        const isHalf = percentage <= 0.5;
-
-        const newValue = parseFloat(e.currentTarget.dataset.value) - (isHalf ? 0.5 : 0);
-        currentRating = newValue;
-
-        updateStars(currentRating);
+    const setRating = (newRating) => {
+        currentRating = newRating;
+        updateView(currentRating);
         if (onRatingChange) {
             onRatingChange(currentRating);
         }
-    }
+    };
 
-    stars.forEach(star => {
-        star.addEventListener('mousemove', handleMouseMove);
-        star.addEventListener('click', handleClick);
+    starContainers.forEach(star => {
+        ['.left', '.right'].forEach(selector => {
+            const half = star.querySelector(selector);
+            const ratingValue = parseFloat(half.dataset.value);
+
+            half.addEventListener('mouseenter', () => updateView(ratingValue));
+            half.addEventListener('click', () => setRating(ratingValue));
+        });
     });
 
-    manualInput.addEventListener('input', () => {
+    starsWrapper.addEventListener('mouseleave', () => updateView(currentRating));
+
+    manualInput.addEventListener('change', () => {
         let value = parseFloat(manualInput.value);
         if (isNaN(value)) value = 0;
-        if (value < 0) value = 0;
-        if (value > 10) value = 10;
-
-        currentRating = value;
-        updateStars(currentRating); // Visually update stars based on precise value rounded to .5
-        if (onRatingChange) {
-            onRatingChange(currentRating); // Pass the precise value
-        }
+        value = Math.max(0, Math.min(10, value)); // Clamp value
+        setRating(value);
     });
 
-    // Also handle 'change' for when user finishes editing (e.g., blurs away)
-    manualInput.addEventListener('change', () => {
-         if (onRatingChange) {
-            onRatingChange(currentRating);
-        }
-    });
-
-    starsContainer.addEventListener('mouseleave', () => {
-        updateStars(currentRating);
-    });
-
-    // Set initial state
-    updateStars(currentRating);
+    // Initial setup
+    setRating(currentRating);
 }
