@@ -404,17 +404,17 @@ function renderCarousel(containerId, mediaItems) {
             <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
             
-             <!-- Reactions Overlay -->
+            <!-- Reactions Overlay -->
             <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                ${allMedia.find(item => item.tmdb_id == tmdbId)?.juainny_reaction ? `
+                ${item.juainny_reaction ? `
                     <div class="relative w-8 h-8 group/reaction">
-                        <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                        <img src="moods/${item.juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
                         <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-purple-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">J</div>
                     </div>
                 ` : ''}
-                ${allMedia.find(item => item.tmdb_id == tmdbId)?.erick_reaction ? `
+                ${item.erick_reaction ? `
                     <div class="relative w-8 h-8 group/reaction">
-                        <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                        <img src="moods/${item.erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
                         <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">E</div>
                     </div>
                 ` : ''}
@@ -461,8 +461,24 @@ async function openMovieModal(tmdbId, type) {
     // Store the tmdbId in the modal for later use
     modal.dataset.tmdbId = tmdbId;
 
+    // --- Optimistic Render (Performance) ---
+    // Try to find data in allMedia or currentMediaItem to render immediately
+    const preloadedData = allMedia.find(i => i.tmdb_id == tmdbId) || (currentMediaItem && currentMediaItem.tmdb_id == tmdbId ? currentMediaItem : null);
+
+    if (preloadedData) {
+        document.getElementById('modal-overview').textContent = preloadedData.overview || 'Loading...';
+        document.getElementById('modal-title').textContent = preloadedData.title || preloadedData.name || 'Loading...';
+        const releaseDate = preloadedData.release_date || preloadedData.first_air_date || '';
+        document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
+
+        // Show modal immediately with available data
+        modal.classList.remove('hidden');
+        modal.classList.remove('modal-hidden');
+        modal.classList.add('flex');
+    }
+
     const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const appendToResponse = 'credits,images,videos,release_dates,external_ids';
+    const appendToResponse = 'credits,images,videos,release_dates,external_ids,content_ratings'; // Added content_ratings explicitly
     const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
 
     try {
@@ -470,6 +486,12 @@ async function openMovieModal(tmdbId, type) {
         if (!response.ok) throw new Error('Failed to fetch modal data.');
 
         const data = await response.json();
+
+        // Update currentMediaItem with fresh data (merging with existing if possible to keep DB fields)
+        // But wait, data is from TMDB, it doesn't have our DB fields (reactions, etc.)
+        // We should merge it carefully or just use it for display.
+        // Actually, let's just use it for display and keep currentMediaItem as the DB source of truth if possible.
+        // But we need to update the modal with the rich data.
 
         // --- Basic Info ---
         document.getElementById('modal-overview').textContent = data.overview;
@@ -505,13 +527,15 @@ async function openMovieModal(tmdbId, type) {
                 const rating = usRelease.release_dates.find(rd => rd.certification !== '');
                 if (rating) contentRating = rating.certification;
             }
-        } else if (type === 'tv' && data.content_ratings) {
-            const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
-            if (usRating) {
-                contentRating = usRating.rating;
-            } else if (data.content_ratings.results.length > 0) {
-                // Fallback to first available rating if US is missing
-                contentRating = data.content_ratings.results[0].rating;
+        } else if (type === 'tv') {
+            // Check content_ratings from append_to_response
+            if (data.content_ratings && data.content_ratings.results) {
+                const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                if (usRating) {
+                    contentRating = usRating.rating;
+                } else if (data.content_ratings.results.length > 0) {
+                    contentRating = data.content_ratings.results[0].rating;
+                }
             }
         }
 
@@ -2092,6 +2116,31 @@ async function saveReaction(tmdbId, user, mood) {
     const updates = {};
     if (user === 'user1') updates.juainny_reaction = mood;
     if (user === 'user2') updates.erick_reaction = mood;
+
+    // Ensure item exists in DB before updating
+    // We need to get the current title/poster/type if possible, but if we're in the modal, we have currentMediaItem
+    let title = '';
+    let poster_path = '';
+    let type = 'movie'; // default
+
+    if (currentMediaItem && currentMediaItem.tmdb_id == tmdbId) {
+        title = currentMediaItem.title || currentMediaItem.name;
+        poster_path = currentMediaItem.poster_path;
+        type = currentMediaItem.type || (currentMediaItem.title ? 'movie' : 'tv'); // infer if missing
+    } else {
+        // Try to find in allMedia
+        const found = allMedia.find(i => i.tmdb_id == tmdbId);
+        if (found) {
+            title = found.title || found.name;
+            poster_path = found.poster_path;
+            type = found.type;
+        }
+    }
+
+    // If we still don't have title/type, ensureMediaItemExists might fetch or create a barebones entry.
+    // But usually we are reacting to something visible.
+
+    await ensureMediaItemExists(tmdbId, type, title, poster_path);
 
     // Optimistic update
     if (currentMediaItem && currentMediaItem.tmdb_id == tmdbId) {
