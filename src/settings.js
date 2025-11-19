@@ -73,9 +73,16 @@ async function saveSettings() {
             theme: selectedTheme,
             wallpaper_url: selectedWallpaper,
             hide_search_results_without_images: hideImages,
-            device_name: document.getElementById('device-name-input').value,
         })
         .eq('id', 1);
+
+    // Save device name to localStorage
+    const deviceName = document.getElementById('device-name-input').value;
+    localStorage.setItem('device_name', deviceName);
+
+    // Update UI immediately
+    const deviceNameDisplay = document.getElementById('device-name');
+    if (deviceNameDisplay) deviceNameDisplay.textContent = deviceName || 'User';
 
     if (error) {
         console.error('Error saving settings:', error);
@@ -92,7 +99,7 @@ async function saveSettings() {
 export async function loadAndApplySettings() {
     const { data, error } = await supabase
         .from('settings')
-        .select('theme, wallpaper_url, hide_search_results_without_images, device_name')
+        .select('theme, wallpaper_url, hide_search_results_without_images')
         .eq('id', 1)
         .single();
 
@@ -104,7 +111,7 @@ export async function loadAndApplySettings() {
     }
 
     // Apply and set active theme
-    const { theme, wallpaper_url, hide_search_results_without_images, device_name } = data;
+    const { theme, wallpaper_url, hide_search_results_without_images } = data;
     document.documentElement.setAttribute('data-theme', theme || 'night');
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('border-accent-primary', btn.dataset.theme === theme);
@@ -127,11 +134,12 @@ export async function loadAndApplySettings() {
     const bannerSelect = document.getElementById('movie-banner-select');
     if (bannerSelect) bannerSelect.value = wallpaper_url || '';
 
-    // Set device name
+    // Set device name from localStorage
+    const savedDeviceName = localStorage.getItem('device_name');
     const deviceNameInput = document.getElementById('device-name-input');
     const deviceNameDisplay = document.getElementById('device-name');
-    if (deviceNameInput) deviceNameInput.value = device_name || '';
-    if (deviceNameDisplay) deviceNameDisplay.textContent = device_name || 'User';
+    if (deviceNameInput) deviceNameInput.value = savedDeviceName || '';
+    if (deviceNameDisplay) deviceNameDisplay.textContent = savedDeviceName || 'User';
 }
 
 /**

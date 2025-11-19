@@ -514,6 +514,19 @@ async function openMovieModal(tmdbId, type) {
                 contentRating = data.content_ratings.results[0].rating;
             }
         }
+
+        // Fallback for runtime if 0
+        if (type === 'tv' && (!data.episode_run_time || data.episode_run_time.length === 0)) {
+            // Try to find runtime in last_episode_to_air or next_episode_to_air
+            if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
+                document.getElementById('modal-runtime').textContent = formatRuntime(data.last_episode_to_air.runtime);
+                updateEndTime(data.last_episode_to_air.runtime);
+            } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
+                document.getElementById('modal-runtime').textContent = formatRuntime(data.next_episode_to_air.runtime);
+                updateEndTime(data.next_episode_to_air.runtime);
+            }
+        }
+
         document.getElementById('modal-content-rating').textContent = contentRating;
 
         // --- Title Tooltip ---
@@ -976,7 +989,7 @@ async function toggleEpisodeWatched(seasonNumber, episodeNumber, watched) {
     if (error) {
         console.error('Error updating episode progress:', error);
         // Revert on error
-        renderSeasonEpisodes(tmdbId, seasonNumber);
+        renderSeasonEpisodes(currentSeasonNumber); // Re-render current season to reflect actual state
     }
 }
 
@@ -1043,6 +1056,63 @@ async function handleMarkSeasonWatched() {
         onConflict: 'media_id,viewer,season_number,episode_number'
     });
     if (error) console.error('Error updating season progress:', error);
+}
+
+async function markAllEpisodesWatched(tmdbId) {
+    try {
+        const { data: mediaData, error: mediaError } = await supabase
+            .from('media')
+            .select('id')
+            .eq('tmdb_id', tmdbId)
+            .single();
+
+        if (mediaError) {
+            console.error('Error fetching media for markAllEpisodesWatched:', mediaError);
+            throw new Error('Could not find media in database');
+        }
+
+        const internalMediaId = mediaData.id;
+
+        const response = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
+        if (!response.ok) throw new Error('Failed to fetch TV series details');
+        const seriesDetails = await response.json();
+
+        const allEpisodesToUpsert = [];
+        for (const season of seriesDetails.seasons) {
+            if (season.season_number > 0 && season.episode_count > 0) {
+                const seasonResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`);
+                if (!seasonResponse.ok) throw new Error(`Failed to fetch season ${season.season_number} details`);
+                const seasonDetails = await seasonResponse.json();
+
+                seasonDetails.episodes.forEach(episode => {
+                    ['user1', 'user2'].forEach(viewer => {
+                        allEpisodesToUpsert.push({
+                            media_id: internalMediaId,
+                            viewer: viewer,
+                            season_number: season.season_number,
+                            episode_number: episode.episode_number,
+                            watched: true
+                        });
+                    });
+                });
+            }
+        }
+
+        if (allEpisodesToUpsert.length > 0) {
+            const { error } = await supabase.from('episode_progress').upsert(allEpisodesToUpsert, {
+                onConflict: 'media_id,viewer,season_number,episode_number'
+            });
+            if (error) {
+                console.error('Error marking all episodes watched:', error);
+            } else {
+                console.log('All episodes marked as watched successfully.');
+                // Re-fetch and re-render TV progress to update UI
+                await renderTVProgress(tmdbId, seriesDetails.seasons);
+            }
+        }
+    } catch (error) {
+        console.error('Error in markAllEpisodesWatched:', error);
+    }
 }
 
 function toggleEpisodesEditMode() {
@@ -1500,9 +1570,12 @@ function setupWatchedButtons() {
             );
 
             if (choice === 'cancel') return;
-            // If choice is 'series-only' (or potentially 'all-episodes' in future), proceed.
-            // For now, both paths lead to marking the media as watched.
-            // TODO: Implement 'all-episodes' logic if backend supports batch updates.
+
+            if (choice === 'all-episodes') {
+                await markAllEpisodesWatched(tmdb_id);
+                // We also want to mark the series itself as watched, so we continue...
+            }
+            // 'series-only' just continues to mark the media item as watched
         }
 
         const newWatchedStatus = isReject ? false : !currentMediaItem.watched;
@@ -2100,17 +2173,87 @@ function updateModalReactionDisplay() {
     }
 }
 
+async function markAllEpisodesWatched(tmdbId) {
+    console.log('Marking all episodes as watched for:', tmdbId);
+    // 1. Get internal media ID
+    const { data: mediaData, error: mediaError } = await supabase
+        .from('media')
+        .select('id')
+        .eq('tmdb_id', tmdbId)
+        .single();
+
+    if (mediaError || !mediaData) {
+        console.error('Error finding media for batch update:', mediaError);
+        return;
+    }
+    const mediaId = mediaData.id;
+
+    // 2. Fetch all seasons/episodes from TMDB to know what to mark
+    // This is heavy, but necessary if we don't have them in DB. 
+    // Optimization: We could just trust the season count and assume standard episode counts, but fetching is safer.
+    // For now, let's fetch the series details to get season numbers.
+    try {
+        const response = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
+        const data = await response.json();
+        const seasons = data.seasons.filter(s => s.season_number > 0);
+
+        const upserts = [];
+
+        // We need to fetch episodes for EACH season to get accurate episode numbers
+        // To avoid hitting rate limits or taking too long, we'll do it in parallel batches
+        const seasonPromises = seasons.map(async (season) => {
+            const sResp = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`);
+            const sData = await sResp.json();
+            if (sData.episodes) {
+                sData.episodes.forEach(ep => {
+                    ['user1', 'user2'].forEach(viewer => {
+                        upserts.push({
+                            media_id: mediaId,
+                            viewer: viewer,
+                            season_number: season.season_number,
+                            episode_number: ep.episode_number,
+                            watched: true
+                        });
+                    });
+                });
+            }
+        });
+
+        await Promise.all(seasonPromises);
+
+        if (upserts.length > 0) {
+            // Batch upsert
+            // Supabase might have a limit on batch size, so let's chunk it if it's huge
+            const BATCH_SIZE = 1000;
+            for (let i = 0; i < upserts.length; i += BATCH_SIZE) {
+                const batch = upserts.slice(i, i + BATCH_SIZE);
+                const { error } = await supabase.from('episode_progress').upsert(batch, {
+                    onConflict: 'media_id,viewer,season_number,episode_number'
+                });
+                if (error) console.error('Error batch updating episodes:', error);
+            }
+            console.log(`Marked ${upserts.length / 2} episodes as watched for both users.`);
+        }
+
+    } catch (err) {
+        console.error('Error in markAllEpisodesWatched:', err);
+    }
+}
+
 function showConfirmationModal(title, message) {
     return new Promise((resolve) => {
         const modal = document.getElementById('confirmation-modal');
         const titleEl = document.getElementById('confirmation-title');
         const messageEl = document.getElementById('confirmation-message');
         const seriesOnlyBtn = document.getElementById('confirm-series-only-btn');
-        // const allEpisodesBtn = document.getElementById('confirm-all-episodes-btn');
+        const allEpisodesBtn = document.getElementById('confirm-all-episodes-btn');
         const cancelBtn = document.getElementById('cancel-confirmation-btn');
 
         titleEl.textContent = title;
         messageEl.textContent = message;
+
+        // Reset visibility in case it was hidden
+        if (allEpisodesBtn) allEpisodesBtn.classList.remove('hidden');
 
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -2119,7 +2262,7 @@ function showConfirmationModal(title, message) {
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             seriesOnlyBtn.onclick = null;
-            // allEpisodesBtn.onclick = null;
+            if (allEpisodesBtn) allEpisodesBtn.onclick = null;
             cancelBtn.onclick = null;
         };
 
@@ -2128,12 +2271,12 @@ function showConfirmationModal(title, message) {
             resolve('series-only');
         };
 
-        /*
-        allEpisodesBtn.onclick = () => {
-            cleanup();
-            resolve('all-episodes');
-        };
-        */
+        if (allEpisodesBtn) {
+            allEpisodesBtn.onclick = () => {
+                cleanup();
+                resolve('all-episodes');
+            };
+        }
 
         cancelBtn.onclick = () => {
             cleanup();
