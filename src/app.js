@@ -446,6 +446,14 @@ async function openMovieModal(tmdbId, type) {
             if (updateError) console.error('Error updating backdrop path:', updateError);
         }
 
+        // --- TV Series Progress ---
+        if (type === 'tv' || type === 'series') {
+            document.getElementById('tv-progress-section').classList.remove('hidden');
+            renderTVProgress(tmdbId, data.seasons);
+        } else {
+            document.getElementById('tv-progress-section').classList.add('hidden');
+        }
+
         // --- Show Modal ---
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
@@ -826,13 +834,17 @@ function sortMedia() {
             break;
         case 'release_date':
             filteredMedia.sort((a, b) => {
-                const dateA = new Date(a.release_date || a.first_air_date);
-                const dateB = new Date(b.release_date || b.first_air_date);
-                return dateB - dateA;
+                const getYear = (item) => {
+                    if (item.release_year) return item.release_year;
+                    const dateStr = item.release_date || item.first_air_date;
+                    return dateStr ? parseInt(dateStr.substring(0, 4)) : 0;
+                };
+                return getYear(b) - getYear(a);
             });
             break;
         case 'length':
-            filteredMedia.sort((a, b) => (b.runtime || b.episode_run_time?.[0] || 0) - (a.runtime || a.episode_run_time?.[0] || 0));
+            // Ensure runtime exists and is a number, default to 0 otherwise
+            filteredMedia.sort((a, b) => (b.runtime || 0) - (a.runtime || 0));
             break;
         case 'default':
         default:

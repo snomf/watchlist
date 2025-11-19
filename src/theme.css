@@ -255,11 +255,16 @@
         grid-template-columns: 1fr;
     }
 
-    .rating-stars-container .stars {
-        width: 180px; /* Smaller width for mobile */
+    .rating-stars-container {
+        flex-wrap: wrap; /* Allow wrapping on small screens */
     }
-    .rating-star {
-        font-size: 1.125rem; /* Smaller stars on mobile */
+    .rating-stars-container .stars {
+        flex-shrink: 0; /* Prevent stars from shrinking */
+    }
+    .rating-input-manual {
+        width: 100%; /* Full width on small screens */
+        margin-top: 0.5rem;
+        margin-left: 0;
     }
 }
 
@@ -287,11 +292,15 @@
 }
 
 /* --- STAR RATING --- */
+.rating-stars-container {
+    display: flex;
+    align-items: center;
+}
+
 .rating-stars-container .stars {
     display: inline-flex;
     color: var(--color-text-muted);
     cursor: pointer;
-    width: 240px; /* 10 stars * 24px per star */
 }
 
 .rating-star {
