@@ -510,9 +510,21 @@ async function openMovieModal(tmdbId, type) {
         }
 
         const releaseDate = data.release_date || data.first_air_date || '';
-        document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
+        const releaseYear = preloadedData?.release_year || releaseDate.substring(0, 4);
+        document.getElementById('modal-release-year').textContent = releaseYear;
 
-        const runtime = data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
+        // Prefer DB runtime, fallback to TMDB
+        let runtime = preloadedData?.runtime || data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
+
+        // Fallback for TV runtime if still 0
+        if (type === 'tv' && !runtime) {
+            if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
+                runtime = data.last_episode_to_air.runtime;
+            } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
+                runtime = data.next_episode_to_air.runtime;
+            }
+        }
+
         document.getElementById('modal-runtime').textContent = formatRuntime(runtime);
 
         // --- End Time Calculator ---
@@ -520,34 +532,26 @@ async function openMovieModal(tmdbId, type) {
 
 
         // --- Content Rating ---
-        let contentRating = 'N/A';
-        if (type === 'movie' && data.release_dates) {
-            const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
-            if (usRelease) {
-                const rating = usRelease.release_dates.find(rd => rd.certification !== '');
-                if (rating) contentRating = rating.certification;
-            }
-        } else if (type === 'tv') {
-            // Check content_ratings from append_to_response
-            if (data.content_ratings && data.content_ratings.results) {
-                const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
-                if (usRating) {
-                    contentRating = usRating.rating;
-                } else if (data.content_ratings.results.length > 0) {
-                    contentRating = data.content_ratings.results[0].rating;
-                }
-            }
-        }
+        // Prefer DB content_rating, fallback to TMDB
+        let contentRating = preloadedData?.content_rating || 'N/A';
 
-        // Fallback for runtime if 0
-        if (type === 'tv' && (!data.episode_run_time || data.episode_run_time.length === 0)) {
-            // Try to find runtime in last_episode_to_air or next_episode_to_air
-            if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
-                document.getElementById('modal-runtime').textContent = formatRuntime(data.last_episode_to_air.runtime);
-                updateEndTime(data.last_episode_to_air.runtime);
-            } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
-                document.getElementById('modal-runtime').textContent = formatRuntime(data.next_episode_to_air.runtime);
-                updateEndTime(data.next_episode_to_air.runtime);
+        if (contentRating === 'N/A') {
+            if (type === 'movie' && data.release_dates) {
+                const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
+                if (usRelease) {
+                    const rating = usRelease.release_dates.find(rd => rd.certification !== '');
+                    if (rating) contentRating = rating.certification;
+                }
+            } else if (type === 'tv') {
+                // Check content_ratings from append_to_response
+                if (data.content_ratings && data.content_ratings.results) {
+                    const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                    if (usRating) {
+                        contentRating = usRating.rating;
+                    } else if (data.content_ratings.results.length > 0) {
+                        contentRating = data.content_ratings.results[0].rating;
+                    }
+                }
             }
         }
 
@@ -2114,8 +2118,9 @@ async function saveReaction(tmdbId, user, mood) {
     console.log(`Saving reaction for ${user}: ${mood} on movie ${tmdbId} `);
 
     const updates = {};
-    if (user === 'user1') updates.juainny_reaction = mood;
-    if (user === 'user2') updates.erick_reaction = mood;
+    // Handle both 'juainny'/'erick' and 'user1'/'user2' formats
+    if (user === 'user1' || user === 'juainny') updates.juainny_reaction = mood;
+    if (user === 'user2' || user === 'erick') updates.erick_reaction = mood;
 
     // Ensure item exists in DB before updating
     // We need to get the current title/poster/type if possible, but if we're in the modal, we have currentMediaItem
