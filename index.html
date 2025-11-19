@@ -242,7 +242,12 @@
 
                 <div class="border-t border-border-primary pt-4 space-y-4">
                     <div id="tv-progress-section" class="hidden">
-                        <h3 class="text-lg font-semibold mb-2">Series Progress</h3>
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-lg font-semibold">Series Progress</h3>
+                            <button id="edit-tv-progress-btn" class="text-text-primary hover:text-accent-primary transition">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                        </div>
                         <div id="tv-progress-container" class="space-y-2 max-h-64 overflow-y-auto p-2 bg-bg-primary rounded-lg">
                             <!-- TV progress will be rendered here -->
                         </div>

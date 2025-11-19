@@ -254,6 +254,13 @@
     .grid-cols-1.md\\:grid-cols-2 {
         grid-template-columns: 1fr;
     }
+
+    .rating-stars-container .stars {
+        width: 180px; /* Smaller width for mobile */
+    }
+    .rating-star {
+        font-size: 1.125rem; /* Smaller stars on mobile */
+    }
 }
 
 @media (max-width: 480px) {
@@ -284,6 +291,7 @@
     display: inline-flex;
     color: var(--color-text-muted);
     cursor: pointer;
+    width: 240px; /* 10 stars * 24px per star */
 }
 
 .rating-star {

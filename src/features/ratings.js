@@ -16,7 +16,7 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
                 <i class="rating-star fas fa-star" data-value="9"></i>
                 <i class="rating-star fas fa-star" data-value="10"></i>
             </div>
-            <input type="number" step="0.5" min="0" max="10" class="rating-input-manual w-16 bg-bg-primary border-border-primary rounded-md text-center ml-2">
+            <input type="number" step="0.1" min="0" max="10" class="rating-input-manual w-16 bg-bg-primary border-border-primary rounded-md text-center ml-2">
             <input type="hidden" class="rating-input-hidden" name="rating-${containerId}" value="0">
         </div>
     `;
@@ -31,12 +31,15 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
 
     function updateStars(rating) {
         const numericRating = parseFloat(rating);
+        // Round to nearest 0.5 for display
+        const displayRating = Math.round(numericRating * 2) / 2;
+
         stars.forEach(star => {
             const starValue = parseFloat(star.dataset.value);
             star.classList.remove('filled', 'half-filled');
-            if (starValue <= numericRating) {
+            if (starValue <= displayRating) {
                 star.classList.add('filled');
-            } else if (starValue - 0.5 === numericRating) {
+            } else if (starValue - 0.5 === displayRating) {
                 star.classList.add('half-filled');
             }
         });
@@ -48,21 +51,19 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
         const { left, width } = e.currentTarget.getBoundingClientRect();
         const clickX = e.clientX - left;
         const percentage = (clickX / width);
-        const isHalf = percentage < 0.5;
+        const isHalf = percentage <= 0.5;
 
         const hoverValue = parseFloat(e.currentTarget.dataset.value);
+        const displayHoverValue = hoverValue - (isHalf ? 0.5 : 0);
+
 
         stars.forEach(s => {
             const sValue = parseFloat(s.dataset.value);
             s.classList.remove('filled', 'half-filled');
-            if (sValue < hoverValue) {
+             if (sValue <= displayHoverValue) {
                 s.classList.add('filled');
-            } else if (sValue === hoverValue) {
-                if (isHalf) {
-                    s.classList.add('half-filled');
-                } else {
-                    s.classList.add('filled');
-                }
+            } else if (sValue - 0.5 === displayHoverValue) {
+                s.classList.add('half-filled');
             }
         });
     }
@@ -71,7 +72,7 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
         const { left, width } = e.currentTarget.getBoundingClientRect();
         const clickX = e.clientX - left;
         const percentage = (clickX / width);
-        const isHalf = percentage < 0.5;
+        const isHalf = percentage <= 0.5;
 
         const newValue = parseFloat(e.currentTarget.dataset.value) - (isHalf ? 0.5 : 0);
         currentRating = newValue;
@@ -87,14 +88,11 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
         star.addEventListener('click', handleClick);
     });
 
-    manualInput.addEventListener('change', (e) => {
+    manualInput.addEventListener('input', (e) => {
         let value = parseFloat(e.target.value);
         if (isNaN(value)) value = 0;
         if (value < 0) value = 0;
         if (value > 10) value = 10;
-
-        // Round to nearest 0.5
-        value = Math.round(value * 2) / 2;
 
         currentRating = value;
         updateStars(currentRating);

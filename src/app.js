@@ -437,36 +437,13 @@ async function openMovieModal(tmdbId, type) {
         // Show the notes section
         document.getElementById('notes-section').classList.remove('hidden');
 
-        // --- Update Supabase with missing info ---
-        if (mediaItem) {
-            const updates = {};
-            if (data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
-                updates.backdrop_path = data.backdrop_path;
-            }
-            const releaseYear = releaseDate ? parseInt(releaseDate.substring(0, 4)) : null;
-            if (releaseYear && mediaItem.release_year !== releaseYear) {
-                updates.release_year = releaseYear;
-            }
-            const runtimeValue = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : null);
-            if (runtimeValue && mediaItem.runtime !== runtimeValue) {
-                updates.runtime = runtimeValue;
-            }
-
-            if (Object.keys(updates).length > 0) {
-                const { error: updateError } = await supabase
-                    .from('media')
-                    .update(updates)
-                    .eq('tmdb_id', tmdbId);
-                if (updateError) console.error('Error updating media details:', updateError);
-            }
-        }
-
-        // --- TV Series Progress ---
-        if (type === 'tv' || type === 'series') {
-            document.getElementById('tv-progress-section').classList.remove('hidden');
-            renderTVProgress(tmdbId, data.seasons);
-        } else {
-            document.getElementById('tv-progress-section').classList.add('hidden');
+        // --- Update Supabase with backdrop path ---
+        if (mediaItem && data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
+            const { error: updateError } = await supabase
+                .from('media')
+                .update({ backdrop_path: data.backdrop_path })
+                .eq('tmdb_id', tmdbId);
+            if (updateError) console.error('Error updating backdrop path:', updateError);
         }
 
         // --- Show Modal ---
@@ -497,12 +474,15 @@ function setupModalCloseButton() {
 async function renderTVProgress(tmdbId, seasons) {
     const container = document.getElementById('tv-progress-container');
     container.innerHTML = '<div class="text-text-muted">Loading progress...</div>';
+    const editButton = document.getElementById('edit-tv-progress-btn');
+    let isEditMode = false;
 
-    // Fetch existing progress from Supabase for both users
+    // Fetch existing progress from Supabase
     const { data: progressData, error: progressError } = await supabase
         .from('episode_progress')
-        .select('season_number, episode_number, viewer')
-        .eq('media_id', currentMediaItem.id);
+        .select('season_number, episode_number')
+        .eq('media_id', currentMediaItem.id)
+        .eq('viewer', 'user1'); // Check one user since they are synced
 
     if (progressError) {
         console.error('Error fetching episode progress:', progressError);
@@ -510,73 +490,98 @@ async function renderTVProgress(tmdbId, seasons) {
         return;
     }
 
-    // Create a Set for quick lookup of watched episodes
     const watchedEpisodes = new Set(
-        progressData
-            .filter(p => p.viewer === 'user1') // Since they are synced, just check one user
-            .map(p => `${p.season_number}-${p.episode_number}`)
+        progressData.map(p => `${p.season_number}-${p.episode_number}`)
     );
 
     container.innerHTML = ''; // Clear loading message
 
     for (const season of seasons) {
-        if (season.season_number === 0) continue; // Skip "Specials" season
+        if (season.season_number === 0) continue; // Skip "Specials"
 
         const seasonElement = document.createElement('div');
-        seasonElement.className = 'bg-bg-tertiary p-2 rounded-md';
+        seasonElement.className = 'season-container mb-4';
+        seasonElement.innerHTML = `<h4 class="text-md font-semibold mb-2">${season.name}</h4>`;
 
-        const seasonHeader = document.createElement('div');
-        seasonHeader.className = 'flex justify-between items-center cursor-pointer';
-        seasonHeader.innerHTML = `
-            <span class="font-semibold">${season.name}</span>
-            <i class="fas fa-chevron-down transition-transform"></i>
-        `;
+        const carousel = document.createElement('div');
+        carousel.className = 'flex overflow-x-auto space-x-4 pb-2';
 
-        const episodesContainer = document.createElement('div');
-        episodesContainer.className = 'mt-2 space-y-1 hidden pl-4 border-l-2 border-border-primary';
-
-        seasonHeader.addEventListener('click', () => {
-            episodesContainer.classList.toggle('hidden');
-            seasonHeader.querySelector('i').classList.toggle('rotate-180');
-        });
-
-        seasonElement.appendChild(seasonHeader);
-        seasonElement.appendChild(episodesContainer);
+        seasonElement.appendChild(carousel);
         container.appendChild(seasonElement);
 
-        // Fetch episodes for the season
         const episodesUrl = `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`;
         try {
             const response = await fetch(episodesUrl);
             const seasonDetails = await response.json();
 
-            episodesContainer.innerHTML = ''; // Clear loading state for episodes
+            carousel.innerHTML = '';
             for (const episode of seasonDetails.episodes) {
                 const isWatched = watchedEpisodes.has(`${season.season_number}-${episode.episode_number}`);
+                const stillUrl = episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : 'https://placehold.co/300x169?text=No+Image';
 
-                const episodeElement = document.createElement('label');
-                episodeElement.className = 'flex items-center space-x-2 cursor-pointer';
-                episodeElement.innerHTML = `
-                    <input type="checkbox" class="form-checkbox bg-bg-primary border-border-primary text-accent-primary focus:ring-accent-primary" ${isWatched ? 'checked' : ''}>
-                    <span>${episode.episode_number}. ${episode.name}</span>
+                const card = document.createElement('div');
+                card.className = 'episode-card flex-shrink-0 w-48 bg-bg-tertiary rounded-lg overflow-hidden cursor-pointer relative';
+                card.dataset.season = season.season_number;
+                card.dataset.episode = episode.episode_number;
+
+                card.innerHTML = `
+                    <img src="${stillUrl}" alt="${episode.name}" class="w-full h-24 object-cover">
+                    <div class="p-2">
+                        <p class="text-sm font-semibold truncate">${episode.episode_number}. ${episode.name}</p>
+                    </div>
+                    ${isWatched ? '<div class="watched-overlay absolute inset-0 bg-black/60 flex items-center justify-center"><i class="fas fa-check-circle text-success text-4xl"></i></div>' : ''}
                 `;
 
-                const checkbox = episodeElement.querySelector('input');
-                checkbox.addEventListener('change', async (e) => {
-                    await handleEpisodeCheck(
-                        currentMediaItem.id,
-                        season.season_number,
-                        episode.episode_number,
-                        e.target.checked
-                    );
-                });
-                episodesContainer.appendChild(episodeElement);
+                const markAsWatched = async () => {
+                    if (isEditMode) return;
+                    await handleEpisodeCheck(currentMediaItem.id, season.season_number, episode.episode_number, true);
+                    card.insertAdjacentHTML('beforeend', '<div class="watched-overlay absolute inset-0 bg-black/60 flex items-center justify-center"><i class="fas fa-check-circle text-success text-4xl"></i></div>');
+                    card.removeEventListener('click', markAsWatched);
+                };
+
+                if (!isWatched) {
+                    card.addEventListener('click', markAsWatched);
+                }
+
+                carousel.appendChild(card);
             }
         } catch (error) {
             console.error(`Error fetching episodes for season ${season.season_number}:`, error);
-            episodesContainer.innerHTML = `<div class="text-danger">Could not load episodes.</div>`;
+            carousel.innerHTML = `<div class="text-danger">Could not load episodes.</div>`;
         }
     }
+
+    function toggleEditMode() {
+        isEditMode = !isEditMode;
+        editButton.classList.toggle('text-accent-primary', isEditMode);
+        container.querySelectorAll('.episode-card').forEach(card => {
+            const overlay = card.querySelector('.watched-overlay');
+            if (!overlay) return;
+
+            if (isEditMode) {
+                card.classList.add('shake');
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'unwatch-btn absolute top-1 right-1 bg-danger text-white rounded-full w-6 h-6 flex items-center justify-center text-xs';
+                removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+
+                removeBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    const seasonNum = parseInt(card.dataset.season);
+                    const episodeNum = parseInt(card.dataset.episode);
+                    await handleEpisodeCheck(currentMediaItem.id, seasonNum, episodeNum, false);
+                    overlay.remove();
+                    removeBtn.remove();
+                    card.classList.remove('shake');
+                };
+                card.appendChild(removeBtn);
+            } else {
+                card.classList.remove('shake');
+                card.querySelector('.unwatch-btn')?.remove();
+            }
+        });
+    }
+
+    editButton.addEventListener('click', toggleEditMode);
 }
 
 async function handleEpisodeCheck(mediaId, seasonNumber, episodeNumber, isWatched) {
@@ -821,17 +826,13 @@ function sortMedia() {
             break;
         case 'release_date':
             filteredMedia.sort((a, b) => {
-                const getYear = (item) => {
-                    if (item.release_year) return item.release_year;
-                    const dateStr = item.release_date || item.first_air_date;
-                    return dateStr ? parseInt(dateStr.substring(0, 4)) : 0;
-                };
-                return getYear(b) - getYear(a);
+                const dateA = new Date(a.release_date || a.first_air_date);
+                const dateB = new Date(b.release_date || b.first_air_date);
+                return dateB - dateA;
             });
             break;
         case 'length':
-            // Ensure runtime exists and is a number, default to 0 otherwise
-            filteredMedia.sort((a, b) => (b.runtime || 0) - (a.runtime || 0));
+            filteredMedia.sort((a, b) => (b.runtime || b.episode_run_time?.[0] || 0) - (a.runtime || a.episode_run_time?.[0] || 0));
             break;
         case 'default':
         default:
@@ -1005,56 +1006,18 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
         return mediaItem; // return existing item if no update needed
     }
 
-    // If item does not exist, fetch full details from TMDB and create it
-    const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}`;
-    try {
-        const response = await fetch(tmdbUrl);
-        if (!response.ok) throw new Error('Failed to fetch details for new media item.');
-        const tmdbData = await response.json();
+    // If item does not exist, create it
+    const { data: newItem, error: insertError } = await supabase
+        .from('media')
+        .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath, source: 'added' })
+        .select()
+        .single();
 
-        const releaseDate = tmdbData.release_date || tmdbData.first_air_date;
-        const releaseYear = releaseDate ? parseInt(releaseDate.substring(0, 4)) : null;
-        const runtime = tmdbData.runtime || (tmdbData.episode_run_time ? tmdbData.episode_run_time[0] : null);
-
-        const newItemData = {
-            tmdb_id: tmdbId,
-            type: itemType,
-            title: tmdbData.title || tmdbData.name,
-            poster_path: tmdbData.poster_path,
-            backdrop_path: tmdbData.backdrop_path,
-            release_year: releaseYear,
-            runtime: runtime,
-            source: 'added'
-        };
-
-        const { data: newItem, error: insertError } = await supabase
-            .from('media')
-            .insert(newItemData)
-            .select()
-            .single();
-
-        if (insertError) {
-            console.error('Error creating new media item:', insertError);
-            return null;
-        }
-        return newItem;
-
-    } catch (fetchError) {
-        console.error('Error fetching TMDB details for new item:', fetchError);
-        // Fallback to creating with minimal info if TMDB fetch fails
-        const { data: newItem, error: insertError } = await supabase
-            .from('media')
-            .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath, source: 'added' })
-            .select()
-            .single();
-
-        if (insertError) {
-            console.error('Error creating new media item (fallback):', insertError);
-            return null;
-        }
-        return newItem;
+    if (insertError) {
+        console.error('Error creating new media item:', insertError);
+        return null;
     }
+    return newItem;
 }
 
 
