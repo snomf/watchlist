@@ -210,6 +210,23 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
     movieCard.innerHTML = `
         <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+        
+        <!-- Reactions Overlay -->
+        <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
+            ${allMedia.find(item => item.tmdb_id == tmdbId)?.juainny_reaction ? `
+                <div class="relative w-8 h-8 group/reaction">
+                    <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                    <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-purple-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">J</div>
+                </div>
+            ` : ''}
+            ${allMedia.find(item => item.tmdb_id == tmdbId)?.erick_reaction ? `
+                <div class="relative w-8 h-8 group/reaction">
+                    <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                    <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">E</div>
+                </div>
+            ` : ''}
+        </div>
+
         <div class="absolute bottom-0 left-0 right-0 p-4">
             <h3 class="text-white font-bold text-lg truncate">${title}</h3>
         </div>
@@ -281,16 +298,93 @@ async function getWantToWatchMedia() {
  * @param {string} containerId - The ID of the carousel container element.
  * @param {Array} mediaItems - The array of media items to render.
  */
+/**
+ * Renders a carousel with the given media items.
+ * @param {string} containerId - The ID of the carousel container element.
+ * @param {Array} mediaItems - The array of media items to render.
+ */
 function renderCarousel(containerId, mediaItems) {
     const carouselContainer = document.getElementById(containerId);
     if (!carouselContainer) return;
 
+    // Reset container classes to prevent shrinking issues from HTML
+    carouselContainer.className = 'relative group/carousel w-full overflow-hidden';
     carouselContainer.innerHTML = ''; // Clear existing content
 
     if (mediaItems.length === 0) {
         carouselContainer.innerHTML = '<p class="text-text-muted text-center w-full">Nothing here yet!</p>';
         return;
     }
+
+    // Wrapper for the carousel to handle arrows
+    // We don't strictly need a wrapper if we use the container itself, but let's keep it for structure if needed.
+    // Actually, let's simplify. The container IS the wrapper now.
+
+    // Scroll Container
+    const scrollContainer = document.createElement('div');
+    scrollContainer.className = 'flex gap-4 scroll-smooth pb-4 px-1 scrollbar-hide snap-x snap-mandatory';
+    scrollContainer.style.cssText = 'overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none; max-width: 100%; width: 100%;';
+
+    const style = document.createElement('style');
+    style.textContent = `
+        #${containerId} .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    `;
+    carouselContainer.appendChild(style);
+
+
+    // Left Arrow
+    const leftArrow = document.createElement('div');
+    leftArrow.className = 'absolute left-0 top-0 bottom-0 z-20 flex items-center px-2 opacity-0 group-hover/carousel:opacity-100 transition-opacity';
+
+    const leftBtn = document.createElement('button');
+    leftBtn.type = 'button';
+    leftBtn.className = 'bg-black/50 hover:bg-black/80 text-white p-2 rounded-full cursor-pointer transition-colors';
+    leftBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    leftBtn.addEventListener('click', (e) => {
+        console.log('Left arrow clicked - scrollLeft:', scrollContainer.scrollLeft, 'scrollWidth:', scrollContainer.scrollWidth, 'clientWidth:', scrollContainer.clientWidth);
+        console.log('Computed overflow-x:', window.getComputedStyle(scrollContainer).overflowX);
+        e.preventDefault();
+        e.stopPropagation();
+        const scrollAmount = scrollContainer.clientWidth * 0.8;
+        scrollContainer.scrollTo({
+            left: scrollContainer.scrollLeft - scrollAmount,
+            behavior: 'smooth'
+        });
+        setTimeout(() => {
+            console.log('After scroll - scrollLeft:', scrollContainer.scrollLeft);
+        }, 100);
+    });
+    leftArrow.appendChild(leftBtn);
+
+    // Right Arrow
+    const rightArrow = document.createElement('div');
+    rightArrow.className = 'absolute right-0 top-0 bottom-0 z-20 flex items-center px-2 opacity-0 group-hover/carousel:opacity-100 transition-opacity';
+
+    const rightBtn = document.createElement('button');
+    rightBtn.type = 'button';
+    rightBtn.className = 'bg-black/50 hover:bg-black/80 text-white p-2 rounded-full cursor-pointer transition-colors';
+    rightBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    rightBtn.addEventListener('click', (e) => {
+        console.log('Right arrow clicked - scrollLeft:', scrollContainer.scrollLeft, 'scrollWidth:', scrollContainer.scrollWidth, 'clientWidth:', scrollContainer.clientWidth);
+        console.log('Computed overflow-x:', window.getComputedStyle(scrollContainer).overflowX);
+        e.preventDefault();
+        e.stopPropagation();
+        const scrollAmount = scrollContainer.clientWidth * 0.8;
+        scrollContainer.scrollTo({
+            left: scrollContainer.scrollLeft + scrollAmount,
+            behavior: 'smooth'
+        });
+        setTimeout(() => {
+            console.log('After scroll - scrollLeft:', scrollContainer.scrollLeft);
+        }, 100);
+    });
+    rightArrow.appendChild(rightBtn);
+
+    carouselContainer.appendChild(leftArrow);
+    carouselContainer.appendChild(scrollContainer);
+    carouselContainer.appendChild(rightArrow);
 
     mediaItems.forEach(item => {
         const posterUrl = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://placehold.co/500x750?text=No+Image';
@@ -299,7 +393,9 @@ function renderCarousel(containerId, mediaItems) {
         const tmdbId = item.tmdb_id || item.id;
 
         const card = document.createElement('div');
-        card.className = 'flex-shrink-0 w-32 md:w-40 movie-card relative rounded-lg shadow-lg overflow-hidden cursor-pointer group';
+        // Fixed width to prevent shrinking - using inline styles to be absolutely sure
+        card.className = 'flex-shrink-0 w-32 md:w-40 movie-card relative rounded-lg shadow-lg overflow-hidden cursor-pointer group snap-start';
+        card.style.cssText = 'min-width: 8rem; width: 8rem; flex-shrink: 0; aspect-ratio: 2/3;';
         card.dataset.tmdbId = tmdbId;
         card.dataset.type = type;
 
@@ -311,7 +407,7 @@ function renderCarousel(containerId, mediaItems) {
             </div>
         `;
         card.addEventListener('click', () => openMovieModal(tmdbId, type));
-        carouselContainer.appendChild(card);
+        scrollContainer.appendChild(card);
     });
 }
 
@@ -326,6 +422,9 @@ let currentMediaItem = null; // To store the full media item for the open modal
 async function openMovieModal(tmdbId, type) {
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
+
+    // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
 
     // --- TV Progress ---
     const tvProgressSection = document.getElementById('tv-progress-section');
@@ -364,7 +463,8 @@ async function openMovieModal(tmdbId, type) {
 
         if (bestLogo) {
             const logoUrl = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
-            titleElement.innerHTML = `<img src="${logoUrl}" alt="${data.title || data.name} Logo" class="max-h-24">`;
+            // Using inline style for max-width to ensure it applies
+            titleElement.innerHTML = `<img src="${logoUrl}" alt="${data.title || data.name} Logo" class="max-h-16 object-contain" style="max-width: 12rem;">`;
         } else {
             titleElement.textContent = data.title || data.name;
         }
@@ -406,7 +506,7 @@ async function openMovieModal(tmdbId, type) {
         }
 
         // --- Backdrop Image ---
-        const backdropUrl = data.backdrop_path ? `https://image.tmdb.org/t/p/original${data.backdrop_path}` : 'https://placehold.co/800x400?text=No+Image';
+        const backdropUrl = data.backdrop_path ? `https://image.tmdb.org/t/p/w780${data.backdrop_path}` : 'https://placehold.co/800x400?text=No+Image';
         document.getElementById('modal-backdrop-image').src = backdropUrl;
 
         // --- Fetch and Display User Ratings & Notes ---
@@ -459,6 +559,18 @@ async function openMovieModal(tmdbId, type) {
             if (updateError) console.error('Error updating backdrop path:', updateError);
         }
 
+        // --- Reactions Setup ---
+        updateModalReactionDisplay();
+
+        const addMoodBtn = document.getElementById('add-mood-btn');
+        if (addMoodBtn) {
+            addMoodBtn.onclick = (e) => {
+                e.preventDefault();
+                console.log('Add Reaction button clicked for TMDB ID:', tmdbId);
+                openReactionSelector(tmdbId);
+            };
+        }
+
         // --- Show Modal ---
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
@@ -473,14 +585,35 @@ async function openMovieModal(tmdbId, type) {
  * Sets up the event listener for the modal's close button.
  */
 function setupModalCloseButton() {
-    const closeModalBtn = document.getElementById('close-modal-btn');
+    const closeBtn = document.getElementById('close-modal-btn');
     const modal = document.getElementById('movie-modal');
-    if (closeModalBtn && modal) {
-        closeModalBtn.addEventListener('click', () => {
-            modal.classList.add('hidden');
-            modal.classList.add('modal-hidden');
-            modal.classList.remove('flex');
-        });
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.add('modal-hidden');
+        modal.classList.remove('flex');
+        // Restore background scrolling
+        document.body.style.overflow = '';
+
+        // Stop the Iron Man walker if it's walking
+        const walker = document.getElementById('iron-man-walker');
+        if (walker) {
+            walker.classList.remove('walk');
+            walker.classList.add('hidden');
+        }
+    };
+
+    if (closeBtn) {
+        closeBtn.onclick = closeModal;
+    }
+
+    // Close on click outside
+    if (modal) {
+        modal.onclick = (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
     }
 }
 
@@ -508,7 +641,7 @@ function updateEndTime(runtime) {
         endTimeCalculatorEl.classList.add('hidden');
         return;
     }
-     endTimeCalculatorEl.classList.remove('hidden');
+    endTimeCalculatorEl.classList.remove('hidden');
 
 
     let now = new Date();
@@ -530,7 +663,7 @@ function updateEndTime(runtime) {
         startHour = (startHour + 1) % 24;
         calculateAndDisplayEndTime();
     };
-     startTimeMinuteEl.onclick = () => {
+    startTimeMinuteEl.onclick = () => {
         startMinute = (startMinute + 1) % 60;
         calculateAndDisplayEndTime();
     };
@@ -538,74 +671,101 @@ function updateEndTime(runtime) {
     calculateAndDisplayEndTime();
 }
 
+let currentEpisodeProgress = [];
+let currentSeasons = [];
+let currentSeasonNumber = 1;
+let isEditMode = false;
+let currentTmdbId = null; // For TMDB API calls
+let currentInternalMediaId = null; // For database calls
+
 async function renderTVProgress(tmdbId, seasons) {
     const container = document.getElementById('tv-progress-container');
     container.innerHTML = '<div class="text-center">Loading progress...</div>';
+    currentSeasons = seasons.filter(s => s.season_number > 0 && s.episode_count > 0);
+    currentTmdbId = tmdbId; // Store for later use
 
     try {
-        // Fetch existing progress from Supabase
-        const { data: episodeProgress, error: episodeError } = await supabase
-            .from('episode_progress')
-            .select('*')
-            .eq('media_id', tmdbId);
-        if (episodeError) throw episodeError;
+        // First, get the internal media.id from the media table
+        const { data: mediaData, error: mediaError } = await supabase
+            .from('media')
+            .select('id')
+            .eq('tmdb_id', tmdbId)
+            .single();
 
-        let progressHtml = '';
-        for (const season of seasons) {
-            // Skip seasons with no episodes or season number 0
-            if (season.episode_count === 0 || season.season_number === 0) continue;
+        if (mediaError) {
+            console.error('Error fetching media:', mediaError);
+            throw new Error('Could not find media in database');
+        }
 
-            const { data: seasonDetails, error: seasonDetailsError } = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`).then(res => res.json());
-            if(seasonDetailsError) {
-                console.error(`Error fetching details for season ${season.season_number}:`, seasonDetailsError);
-                continue;
-            }
+        currentInternalMediaId = mediaData.id; // Store for later use
 
-            const watchedEpisodesForSeason = episodeProgress.filter(ep => ep.season_number === season.season_number && ep.watched).length;
-            const isSeasonWatched = watchedEpisodesForSeason === season.episode_count;
+        // Query for each viewer separately and merge results
+        const [juainnyResponse, erickResponse] = await Promise.all([
+            supabase
+                .from('episode_progress')
+                .select('*')
+                .eq('media_id', currentInternalMediaId)
+                .eq('viewer', 'user1'),
+            supabase
+                .from('episode_progress')
+                .select('*')
+                .eq('media_id', currentInternalMediaId)
+                .eq('viewer', 'user2')
+        ]);
 
-            progressHtml += `
-                <div class="season-container mb-4 p-3 bg-bg-primary rounded-lg" data-season-number="${season.season_number}">
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="text-md font-semibold">${season.name}</h4>
-                         <button class="mark-season-watched-btn text-xs py-1 px-2 rounded-full ${isSeasonWatched ? 'bg-success' : 'bg-accent-secondary'}">
-                            ${isSeasonWatched ? 'Season Watched' : 'Mark Season Watched'}
-                        </button>
-                    </div>
-                    <div class="relative">
-                        <div class="episodes-carousel flex overflow-x-auto space-x-2 pb-2">
-            `;
+        if (juainnyResponse.error) throw juainnyResponse.error;
+        if (erickResponse.error) throw erickResponse.error;
 
-            for (const episode of seasonDetails.episodes) {
-                const isWatched = episodeProgress.some(ep => ep.season_number === season.season_number && ep.episode_number === episode.episode_number && ep.watched);
-                const stillUrl = episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : 'https://placehold.co/300x169?text=No+Image';
+        currentEpisodeProgress = [
+            ...(juainnyResponse.data || []),
+            ...(erickResponse.data || [])
+        ];
 
-                progressHtml += `
-                    <div class="episode-card flex-shrink-0 w-48 bg-bg-secondary rounded-md text-sm overflow-hidden">
-                        <img src="${stillUrl}" alt="${episode.name}" class="w-full h-24 object-cover">
-                        <div class="p-2">
-                            <label class="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox"
-                                       class="episode-checkbox"
-                                   data-season-number="${season.season_number}"
-                                   data-episode-number="${episode.episode_number}"
-                                   ${isWatched ? 'checked' : ''}>
-                                <span class="truncate">${episode.episode_number}. ${episode.name}</span>
-                            </label>
-                        </div>
-                    </div>
-                `;
-            }
-             progressHtml += `
-                        </div>
-                        <button class="carousel-nav-tv left-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 transform -translate-x-4"><i class="fas fa-chevron-left"></i></button>
-                        <button class="carousel-nav-tv right-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 transform translate-x-4"><i class="fas fa-chevron-right"></i></button>
+        // Initial Render of Structure
+        container.innerHTML = `
+            <div class="flex justify-between items-center sticky top-0 z-40 bg-bg-tertiary/95 backdrop-blur-md py-3 px-4 border-b border-white/5 mb-4 rounded-t-lg">
+                <div class="relative group">
+                    <select id="season-select" class="appearance-none bg-black/20 hover:bg-black/40 text-text-primary py-2 pl-4 pr-10 rounded-full font-semibold focus:outline-none focus:ring-2 focus:ring-accent-primary cursor-pointer transition-all border border-white/10">
+                        ${currentSeasons.map(s => `<option value="${s.season_number}">Season ${s.season_number}</option>`).join('')}
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-text-muted group-hover:text-text-primary transition-colors">
+                        <i class="fas fa-chevron-down text-xs"></i>
                     </div>
                 </div>
-            `;
+                <div class="flex items-center gap-3">
+                     <button id="mark-season-watched-btn" class="text-xs py-2 px-4 rounded-full bg-accent-secondary/20 text-accent-secondary hover:bg-accent-secondary hover:text-white border border-accent-secondary/50 transition font-semibold flex items-center gap-2">
+                        <i class="fas fa-check"></i> Season Watched
+                    </button>
+                    <button id="edit-episodes-btn" class="text-text-muted hover:text-text-primary transition p-2 rounded-full hover:bg-white/10" title="Edit Watched Status">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="episodes-carousel-wrapper" class="relative pb-4" style="overflow: hidden;">
+                <!-- Episodes carousel will be loaded here -->
+                <div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary mx-auto"></div></div>
+            </div>
+        `;
+
+        // Setup Season Select Listener
+        document.getElementById('season-select').addEventListener('change', (e) => {
+            currentSeasonNumber = parseInt(e.target.value);
+            renderSeasonEpisodes(currentSeasonNumber);
+        });
+
+        // Setup Mark Season Watched Listener
+        document.getElementById('mark-season-watched-btn').addEventListener('click', () => handleMarkSeasonWatched());
+
+        // Setup Edit Mode Listener
+        document.getElementById('edit-episodes-btn').addEventListener('click', toggleEpisodesEditMode);
+
+        // Initial Load
+        if (currentSeasons.length > 0) {
+            currentSeasonNumber = currentSeasons[0].season_number;
+            await renderSeasonEpisodes(currentSeasonNumber);
+        } else {
+            container.innerHTML = '<div class="text-center">No seasons found.</div>';
         }
-        container.innerHTML = progressHtml;
-        setupTVProgressListeners(tmdbId);
 
     } catch (error) {
         console.error('Error rendering TV progress:', error);
@@ -613,81 +773,360 @@ async function renderTVProgress(tmdbId, seasons) {
     }
 }
 
-function setupTVProgressListeners(tmdbId) {
-    const container = document.getElementById('tv-progress-container');
+async function renderSeasonEpisodes(seasonNumber) {
+    const wrapper = document.getElementById('episodes-carousel-wrapper');
+    if (!wrapper) return;
 
-    // Episode checkbox listeners
-    container.querySelectorAll('.episode-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', async (e) => {
-            const seasonNumber = parseInt(e.target.dataset.seasonNumber);
-            const episodeNumber = parseInt(e.target.dataset.episodeNumber);
-            const isWatched = e.target.checked;
+    // Show loading spinner
+    wrapper.innerHTML = '<div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary mx-auto"></div></div>';
 
-            const { error } = await supabase.from('episode_progress').upsert({
-                media_id: tmdbId,
-                viewer: 'shared', // Using a shared viewer for simplicity
-                season_number: seasonNumber,
-                episode_number: episodeNumber,
-                watched: isWatched,
-            }, { onConflict: 'media_id,viewer,season_number,episode_number' });
+    try {
+        const response = await fetch(`https://api.themoviedb.org/3/tv/${currentTmdbId}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`);
+        if (!response.ok) throw new Error('Failed to fetch season details');
+        const seasonDetails = await response.json();
 
-            if (error) {
-                console.error('Error updating episode progress:', error);
-            }
-        });
-    });
+        if (!seasonDetails || !seasonDetails.episodes) {
+            wrapper.innerHTML = '<div class="text-center">No episodes found.</div>';
+            return;
+        }
 
-    // Mark Season Watched listeners
-    container.querySelectorAll('.mark-season-watched-btn').forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const seasonContainer = e.target.closest('.season-container');
-            const seasonNumber = parseInt(seasonContainer.dataset.seasonNumber);
-            const checkboxes = seasonContainer.querySelectorAll('.episode-checkbox');
-            const allWatched = Array.from(checkboxes).every(cb => cb.checked);
-            const shouldWatchAll = !allWatched;
+        // Create carousel structure - properly constrained to prevent page-wide scrolling
+        wrapper.innerHTML = `
+            <div class="episodes-carousel-container relative px-12" style="position: relative;">
+                <button class="episodes-nav-btn episodes-nav-left absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-all shadow-lg" style="position: absolute;">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div id="episodes-carousel" class="flex overflow-x-auto gap-4 pb-4 px-2 scroll-smooth snap-x snap-mandatory" style="touch-action: pan-x; overscroll-behavior-x: contain; overscroll-behavior-y: none;">
+                    <!-- Episodes will be inserted here -->
+                </div>
+                <button class="episodes-nav-btn episodes-nav-right absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-all shadow-lg" style="position: absolute;">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        `;
 
-            const upserts = Array.from(checkboxes).map(cb => ({
-                media_id: tmdbId,
-                viewer: 'shared',
-                season_number: seasonNumber,
-                episode_number: parseInt(cb.dataset.episodeNumber),
-                watched: shouldWatchAll
-            }));
+        const carousel = document.getElementById('episodes-carousel');
 
-            const { error } = await supabase.from('episode_progress').upsert(upserts, { onConflict: 'media_id,viewer,season_number,episode_number' });
+        // Prevent scrolling from affecting parent modal
+        carousel.addEventListener('wheel', (e) => {
+            const isScrollingVertically = Math.abs(e.deltaY) > Math.abs(e.deltaX);
 
-            if (error) {
-                console.error('Error updating season progress:', error);
+            if (isScrollingVertically) {
+                // Convert vertical scroll to horizontal scroll
+                const scrollAmount = e.deltaY;
+                carousel.scrollLeft += scrollAmount;
+                e.preventDefault();
+                e.stopPropagation();
             } else {
-                checkboxes.forEach(cb => cb.checked = shouldWatchAll);
-                 e.target.textContent = shouldWatchAll ? 'Season Watched' : 'Mark Season Watched';
-                e.target.classList.toggle('bg-success', shouldWatchAll);
-                e.target.classList.toggle('bg-accent-secondary', !shouldWatchAll);
+                // Allow horizontal scroll but prevent it from bubbling to parent
+                e.stopPropagation();
             }
-        });
-    });
+        }, { passive: false });
 
-    // Carousel navigation listeners
-    container.querySelectorAll('.season-container').forEach(seasonContainer => {
-        const carousel = seasonContainer.querySelector('.episodes-carousel');
-        const leftBtn = seasonContainer.querySelector('.carousel-nav-tv.left-0');
-        const rightBtn = seasonContainer.querySelector('.carousel-nav-tv.right-0');
-        const scrollAmount = 300; // Or calculate based on card width
+        seasonDetails.episodes.forEach(episode => {
+            // Check if BOTH users have watched this episode
+            const juainnyWatched = currentEpisodeProgress.some(ep =>
+                ep.season_number === seasonNumber &&
+                ep.episode_number === episode.episode_number &&
+                ep.viewer === 'user1' &&
+                ep.watched
+            );
+            const erickWatched = currentEpisodeProgress.some(ep =>
+                ep.season_number === seasonNumber &&
+                ep.episode_number === episode.episode_number &&
+                ep.viewer === 'user2' &&
+                ep.watched
+            );
+            const isWatched = juainnyWatched && erickWatched;
+            const stillUrl = episode.still_path ? `https://image.tmdb.org/t/p/w500${episode.still_path}` : 'https://placehold.co/500x281?text=No+Image';
+
+            const card = document.createElement('div');
+            card.className = `episode-card flex-shrink-0 w-80 relative rounded-lg overflow-hidden shadow-md bg-bg-primary cursor-pointer snap-start ${isWatched && isEditMode ? 'shake' : ''}`;
+            card.style.minWidth = '20rem'; // 320px - ensure minimum width
+            card.dataset.episodeNumber = episode.episode_number;
+            card.dataset.seasonNumber = seasonNumber;
+
+            card.innerHTML = `
+                <div class="relative aspect-video">
+                    <img src="${stillUrl}" alt="${episode.name}" class="w-full h-full object-cover transition-opacity duration-300 ${isWatched ? 'opacity-50' : 'opacity-100'}">
+                    <div class="absolute top-0 left-0 bg-black/80 text-white text-xs font-bold px-2 py-1 rounded-br-lg z-20">
+                        E${episode.episode_number}
+                    </div>
+                    ${isWatched ? `
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                            <i class="fas fa-check text-success text-4xl drop-shadow-lg"></i>
+                        </div>
+                    ` : ''}
+                    <button class="unwatch-btn absolute top-2 right-2 bg-danger text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition z-30 ${isWatched && isEditMode ? '' : 'hidden'}">
+                        <i class="fas fa-times text-xs"></i>
+                    </button>
+                </div>
+                <div class="p-3">
+                    <h4 class="font-semibold text-sm truncate" title="${episode.name}">${episode.name}</h4>
+                    <p class="text-xs text-text-muted line-clamp-2 mt-1">${episode.overview || 'No description available.'}</p>
+                </div>
+            `;
+
+            // Click listener for the card to toggle watch (only if NOT in edit mode)
+            card.addEventListener('click', (e) => {
+                if (e.target.closest('.unwatch-btn')) return;
+                if (isEditMode) return;
+                if (!isWatched) {
+                    toggleEpisodeWatched(seasonNumber, episode.episode_number, true);
+                }
+            });
+
+            // Click listener for unwatch button
+            const unwatchBtn = card.querySelector('.unwatch-btn');
+            unwatchBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleEpisodeWatched(seasonNumber, episode.episode_number, false);
+            });
+
+            carousel.appendChild(card);
+        });
+
+        // Setup carousel navigation
+        const leftBtn = wrapper.querySelector('.episodes-nav-left');
+        const rightBtn = wrapper.querySelector('.episodes-nav-right');
 
         leftBtn.addEventListener('click', () => {
-            carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+            carousel.scrollBy({ left: -carousel.clientWidth, behavior: 'smooth' });
         });
 
         rightBtn.addEventListener('click', () => {
-            carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+            carousel.scrollBy({ left: carousel.clientWidth, behavior: 'smooth' });
+        });
+
+        updateSeasonWatchedButtonState(seasonDetails.episodes.length);
+
+    } catch (error) {
+        console.error('Error rendering season episodes:', error);
+        wrapper.innerHTML = '<div class="text-center text-danger">Failed to load episodes.</div>';
+    }
+}
+
+async function toggleEpisodeWatched(seasonNumber, episodeNumber, watched) {
+    // Update local state for BOTH users
+    ['user1', 'user2'].forEach(viewer => {
+        const existingIndex = currentEpisodeProgress.findIndex(ep =>
+            ep.season_number === seasonNumber &&
+            ep.episode_number === episodeNumber &&
+            ep.viewer === viewer
+        );
+        if (existingIndex >= 0) {
+            currentEpisodeProgress[existingIndex].watched = watched;
+        } else {
+            currentEpisodeProgress.push({
+                media_id: currentInternalMediaId,
+                season_number: seasonNumber,
+                episode_number: episodeNumber,
+                watched: watched,
+                viewer: viewer
+            });
+        }
+    });
+
+    // Smoothly update UI without full re-render
+    updateEpisodeCardVisuals(seasonNumber, episodeNumber, watched);
+    updateSeasonWatchedButtonState(document.querySelectorAll('.episode-card').length);
+
+    // Save to database for BOTH users
+    const upserts = ['user1', 'user2'].map(viewer => ({
+        media_id: currentInternalMediaId,
+        viewer: viewer,
+        season_number: seasonNumber,
+        episode_number: episodeNumber,
+        watched: watched,
+    }));
+
+    const { error } = await supabase.from('episode_progress').upsert(upserts, {
+        onConflict: 'media_id,viewer,season_number,episode_number'
+    });
+
+    if (error) {
+        console.error('Error updating episode progress:', error);
+        // Revert on error
+        renderSeasonEpisodes(tmdbId, seasonNumber);
+    }
+}
+
+async function handleMarkSeasonWatched() {
+    const cards = document.querySelectorAll('.episode-card');
+    if (cards.length === 0) return;
+
+    // Check if ALL episodes are watched by BOTH users
+    const allWatched = Array.from(cards).every(card => {
+        const epNum = parseInt(card.dataset.episodeNumber);
+        const juainnyWatched = currentEpisodeProgress.some(ep =>
+            ep.season_number === currentSeasonNumber &&
+            ep.episode_number === epNum &&
+            ep.viewer === 'user1' &&
+            ep.watched
+        );
+        const erickWatched = currentEpisodeProgress.some(ep =>
+            ep.season_number === currentSeasonNumber &&
+            ep.episode_number === epNum &&
+            ep.viewer === 'user2' &&
+            ep.watched
+        );
+        return juainnyWatched && erickWatched;
+    });
+
+    const shouldWatchAll = !allWatched;
+
+    // Update local state
+    const upserts = [];
+    cards.forEach(card => {
+        const epNum = parseInt(card.dataset.episodeNumber);
+        ['user1', 'user2'].forEach(viewer => {
+            const existingIndex = currentEpisodeProgress.findIndex(ep =>
+                ep.season_number === currentSeasonNumber &&
+                ep.episode_number === epNum &&
+                ep.viewer === viewer
+            );
+
+            if (existingIndex >= 0) {
+                currentEpisodeProgress[existingIndex].watched = shouldWatchAll;
+            } else {
+                currentEpisodeProgress.push({
+                    media_id: currentInternalMediaId,
+                    season_number: currentSeasonNumber,
+                    episode_number: epNum,
+                    watched: shouldWatchAll,
+                    viewer: viewer
+                });
+            }
+
+            upserts.push({
+                media_id: currentInternalMediaId,
+                viewer: viewer,
+                season_number: currentSeasonNumber,
+                episode_number: epNum,
+                watched: shouldWatchAll
+            });
         });
     });
+
+    renderSeasonEpisodes(currentSeasonNumber);
+
+    const { error } = await supabase.from('episode_progress').upsert(upserts, {
+        onConflict: 'media_id,viewer,season_number,episode_number'
+    });
+    if (error) console.error('Error updating season progress:', error);
+}
+
+function toggleEpisodesEditMode() {
+    isEditMode = !isEditMode;
+    const btn = document.getElementById('edit-episodes-btn');
+    if (isEditMode) {
+        btn.classList.add('text-accent-primary', 'animate-pulse');
+    } else {
+        btn.classList.remove('text-accent-primary', 'animate-pulse');
+    }
+
+    // Update existing cards without full re-render to avoid glitch
+    const cards = document.querySelectorAll('.episode-card');
+    cards.forEach(card => {
+        const epNum = parseInt(card.dataset.episodeNumber);
+        const seasonNum = parseInt(card.dataset.seasonNumber);
+        const juainnyWatched = currentEpisodeProgress.some(ep =>
+            ep.season_number === seasonNum &&
+            ep.episode_number === epNum &&
+            ep.viewer === 'user1' &&
+            ep.watched
+        );
+        const erickWatched = currentEpisodeProgress.some(ep =>
+            ep.season_number === seasonNum &&
+            ep.episode_number === epNum &&
+            ep.viewer === 'user2' &&
+            ep.watched
+        );
+        const isWatched = juainnyWatched && erickWatched;
+
+        const unwatchBtn = card.querySelector('.unwatch-btn');
+        if (isWatched && isEditMode) {
+            card.classList.add('shake');
+            unwatchBtn.classList.remove('hidden');
+        } else {
+            card.classList.remove('shake');
+            unwatchBtn.classList.add('hidden');
+        }
+    });
+}
+
+function updateEpisodeCardVisuals(seasonNumber, episodeNumber, watched) {
+    const card = document.querySelector(`.episode-card[data-season-number="${seasonNumber}"][data-episode-number="${episodeNumber}"]`);
+    if (!card) return;
+
+    const img = card.querySelector('img');
+    const checkIcon = card.querySelector('.fa-check')?.parentElement;
+    const unwatchBtn = card.querySelector('.unwatch-btn');
+
+    if (watched) {
+        img.classList.remove('opacity-100');
+        img.classList.add('opacity-50');
+        if (!checkIcon) {
+            const iconDiv = document.createElement('div');
+            iconDiv.className = 'absolute inset-0 flex items-center justify-center pointer-events-none';
+            iconDiv.innerHTML = '<i class="fas fa-check text-success text-4xl drop-shadow-lg"></i>';
+            card.querySelector('.aspect-video').appendChild(iconDiv);
+        }
+        if (isEditMode) {
+            card.classList.add('shake');
+            unwatchBtn.classList.remove('hidden');
+        }
+    } else {
+        img.classList.remove('opacity-50');
+        img.classList.add('opacity-100');
+        if (checkIcon) checkIcon.remove();
+        card.classList.remove('shake');
+        unwatchBtn.classList.add('hidden');
+    }
+}
+
+function updateSeasonWatchedButtonState(totalEpisodes) {
+    const btn = document.getElementById('mark-season-watched-btn');
+    if (!btn) return;
+
+    // Count episodes watched by BOTH users
+    const watchedCount = [...new Set(
+        currentEpisodeProgress
+            .filter(ep => ep.season_number === currentSeasonNumber && ep.watched)
+            .map(ep => ep.episode_number)
+    )].filter(epNum => {
+        const juainnyWatched = currentEpisodeProgress.some(ep =>
+            ep.season_number === currentSeasonNumber &&
+            ep.episode_number === epNum &&
+            ep.viewer === 'user1' &&
+            ep.watched
+        );
+        const erickWatched = currentEpisodeProgress.some(ep =>
+            ep.season_number === currentSeasonNumber &&
+            ep.episode_number === epNum &&
+            ep.viewer === 'user2' &&
+            ep.watched
+        );
+        return juainnyWatched && erickWatched;
+    }).length;
+
+    const isSeasonWatched = watchedCount === totalEpisodes && totalEpisodes > 0;
+
+    if (isSeasonWatched) {
+        btn.textContent = 'Season Watched';
+        btn.classList.remove('bg-accent-secondary');
+        btn.classList.add('bg-success');
+    } else {
+        btn.textContent = 'Mark Season Watched';
+        btn.classList.remove('bg-success');
+        btn.classList.add('bg-accent-secondary');
+    }
 }
 
 // --- DEBOUNCE UTILITY ---
 function debounce(func, delay) {
     let timeout;
-    return function(...args) {
+    return function (...args) {
         const context = this;
         clearTimeout(timeout);
         timeout = setTimeout(() => func.apply(context, args), delay);
@@ -861,8 +1300,8 @@ function updateFavoriteGlow(mediaItem) {
     const movieCard = document.querySelector(`.movie-card[data-tmdb-id="${mediaItem.tmdb_id}"]`);
 
     const favoritedBy = mediaItem.favorited_by || [];
-    const favoritedByJuainny = favoritedBy.includes('juainny');
-    const favoritedByErick = favoritedBy.includes('erick');
+    const favoritedByJuainny = favoritedBy.includes('user1');
+    const favoritedByErick = favoritedBy.includes('user2');
 
     [modalContent, movieCard].forEach(el => {
         if (!el) return;
@@ -892,16 +1331,16 @@ function setupFavoriteButton() {
             if (userId === 'remove-all') {
                 currentFavorites = [];
             } else if (userId === 'user1') {
-                const isFavorited = currentFavorites.includes('juainny');
-                currentFavorites = currentFavorites.filter(u => u !== 'juainny');
+                const isFavorited = currentFavorites.includes('user1');
+                currentFavorites = currentFavorites.filter(u => u !== 'user1');
                 if (!isFavorited) {
-                    currentFavorites.push('juainny');
+                    currentFavorites.push('user1');
                 }
             } else if (userId === 'user2') {
-                const isFavorited = currentFavorites.includes('erick');
-                currentFavorites = currentFavorites.filter(u => u !== 'erick');
+                const isFavorited = currentFavorites.includes('user2');
+                currentFavorites = currentFavorites.filter(u => u !== 'user2');
                 if (!isFavorited) {
-                    currentFavorites.push('erick');
+                    currentFavorites.push('user2');
                 }
             }
 
@@ -1184,129 +1623,129 @@ function setupViewControls() {
 
 async function initializeApp() {
     try {
-    // Render carousels
-    const currentlyWatchingMedia = await getCurrentlyWatchingMedia();
-    renderCarousel('currently-watching-carousel', currentlyWatchingMedia);
+        // Render carousels
+        const currentlyWatchingMedia = await getCurrentlyWatchingMedia();
+        renderCarousel('currently-watching-carousel', currentlyWatchingMedia);
 
-    const wantToWatchMedia = await getWantToWatchMedia();
-    renderCarousel('want-to-watch-carousel', wantToWatchMedia);
+        const wantToWatchMedia = await getWantToWatchMedia();
+        renderCarousel('want-to-watch-carousel', wantToWatchMedia);
 
-    // Set up real-time subscriptions for carousels
-    supabase
-        .channel('media-carousels')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
-            console.log('Real-time change received for carousels:', payload);
-            const [currentlyWatching, wantToWatch] = await Promise.all([
-                getCurrentlyWatchingMedia(),
-                getWantToWatchMedia()
-            ]);
-            renderCarousel('currently-watching-carousel', currentlyWatching);
-            renderCarousel('want-to-watch-carousel', wantToWatch);
-        })
-        .subscribe();
+        // Set up real-time subscriptions for carousels
+        supabase
+            .channel('media-carousels')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
+                console.log('Real-time change received for carousels:', payload);
+                const [currentlyWatching, wantToWatch] = await Promise.all([
+                    getCurrentlyWatchingMedia(),
+                    getWantToWatchMedia()
+                ]);
+                renderCarousel('currently-watching-carousel', currentlyWatching);
+                renderCarousel('want-to-watch-carousel', wantToWatch);
+            })
+            .subscribe();
 
-    // Set up real-time subscriptions
-    supabase
-        .channel('media')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
-            console.log('Real-time change received:', payload);
-            // Re-render both carousels on any change
-            const [currentlyWatching, wantToWatch] = await Promise.all([
-                getCurrentlyWatchingMedia(),
-                getWantToWatchMedia()
-            ]);
-            renderCarousel('currently-watching-carousel', currentlyWatching);
-            renderCarousel('want-to-watch-carousel', wantToWatch);
-        })
-        .subscribe();
-    console.log('Initializing app...');
-    const urlParams = new URLSearchParams(window.location.search);
-    const shouldHardReset = urlParams.get('hardrefresh') === 'true';
+        // Set up real-time subscriptions
+        supabase
+            .channel('media')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
+                console.log('Real-time change received:', payload);
+                // Re-render both carousels on any change
+                const [currentlyWatching, wantToWatch] = await Promise.all([
+                    getCurrentlyWatchingMedia(),
+                    getWantToWatchMedia()
+                ]);
+                renderCarousel('currently-watching-carousel', currentlyWatching);
+                renderCarousel('want-to-watch-carousel', wantToWatch);
+            })
+            .subscribe();
+        console.log('Initializing app...');
+        const urlParams = new URLSearchParams(window.location.search);
+        const shouldHardReset = urlParams.get('hardrefresh') === 'true';
 
-    if (shouldHardReset) {
-        await seedDatabaseFromLocal();
-        // Clean the URL to prevent re-seeding on refresh
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    // Show a loading indicator while we fetch and sync
-    const loadingSpinner = document.getElementById('loading-spinner');
-    if (loadingSpinner) loadingSpinner.style.display = 'flex';
-
-    // Fetch all media initially
-    const { data: allMediaItems, error } = await supabase.from('media').select('*');
-    if (error) {
-        console.error('Error fetching all media:', error);
-        return;
-    }
-
-    // Sync data with TMDB
-    allMedia = await syncWithTMDB(allMediaItems);
-    console.log('Synced Media:', allMedia);
-
-    // Main grid should only show watched media
-    currentMedia = allMedia.filter(item => item.watched);
-
-    // Initial render
-    renderContent();
-
-    // Hide the loading spinner
-    if (loadingSpinner) loadingSpinner.style.display = 'none';
-
-    // Setup search bar
-    const searchBar = document.getElementById('search-bar');
-    const sortSelect = document.getElementById('sort-select');
-
-    const homeBtn = document.getElementById('home-btn');
-    const logoContainer = document.getElementById('logo-container');
-    const currentlyWatchingSection = document.getElementById('currently-watching-section');
-    const wantToWatchSection = document.getElementById('want-to-watch-section');
-
-    const exitSearchMode = () => {
-        searchBar.value = '';
-        currentMedia = allMedia;
-        sortSelect.value = 'default';
-        currentSort = 'default';
-        sortSelect.disabled = false;
-        homeBtn.classList.add('hidden');
-        currentlyWatchingSection.classList.remove('hidden');
-        wantToWatchSection.classList.remove('hidden');
-        renderContent();
-    };
-
-    searchBar.addEventListener('input', async (e) => {
-        const searchTerm = e.target.value.trim();
-        if (searchTerm === '') {
-            exitSearchMode();
-        } else {
-            homeBtn.classList.remove('hidden');
-            currentlyWatchingSection.classList.add('hidden');
-            wantToWatchSection.classList.add('hidden');
-            const searchResults = await searchTMDB(searchTerm);
-            currentMedia = searchResults;
-            currentSort = 'popularity';
-            sortSelect.disabled = true;
-            renderContent();
+        if (shouldHardReset) {
+            await seedDatabaseFromLocal();
+            // Clean the URL to prevent re-seeding on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
         }
-    });
 
-    homeBtn.addEventListener('click', exitSearchMode);
-    logoContainer.addEventListener('click', exitSearchMode);
+        // Show a loading indicator while we fetch and sync
+        const loadingSpinner = document.getElementById('loading-spinner');
+        if (loadingSpinner) loadingSpinner.style.display = 'flex';
 
-    // Setup other UI elements
-    setupModalCloseButton();
-    setupRatingAndNotesListeners();
-    setupFilterControls();
-    setupViewControls();
-    setupFeelingLuckyButton();
-    setupTooltips();
-    setupFavoriteButton();
-    setupWatchedButtons();
-    setupSortControls();
-    initializeSettings();
-    loadAndApplySettings();
-    setupUserMenu();
-    setupCarouselEditMode();
+        // Fetch all media initially
+        const { data: allMediaItems, error } = await supabase.from('media').select('*');
+        if (error) {
+            console.error('Error fetching all media:', error);
+            return;
+        }
+
+        // Sync data with TMDB
+        allMedia = await syncWithTMDB(allMediaItems);
+        console.log('Synced Media:', allMedia);
+
+        // Main grid should only show watched media
+        currentMedia = allMedia.filter(item => item.watched);
+
+        // Initial render
+        renderContent();
+
+        // Hide the loading spinner
+        if (loadingSpinner) loadingSpinner.style.display = 'none';
+
+        // Setup search bar
+        const searchBar = document.getElementById('search-bar');
+        const sortSelect = document.getElementById('sort-select');
+
+        const homeBtn = document.getElementById('home-btn');
+        const logoContainer = document.getElementById('logo-container');
+        const currentlyWatchingSection = document.getElementById('currently-watching-section');
+        const wantToWatchSection = document.getElementById('want-to-watch-section');
+
+        const exitSearchMode = () => {
+            searchBar.value = '';
+            currentMedia = allMedia;
+            sortSelect.value = 'default';
+            currentSort = 'default';
+            sortSelect.disabled = false;
+            homeBtn.classList.add('hidden');
+            currentlyWatchingSection.classList.remove('hidden');
+            wantToWatchSection.classList.remove('hidden');
+            renderContent();
+        };
+
+        searchBar.addEventListener('input', async (e) => {
+            const searchTerm = e.target.value.trim();
+            if (searchTerm === '') {
+                exitSearchMode();
+            } else {
+                homeBtn.classList.remove('hidden');
+                currentlyWatchingSection.classList.add('hidden');
+                wantToWatchSection.classList.add('hidden');
+                const searchResults = await searchTMDB(searchTerm);
+                currentMedia = searchResults;
+                currentSort = 'popularity';
+                sortSelect.disabled = true;
+                renderContent();
+            }
+        });
+
+        homeBtn.addEventListener('click', exitSearchMode);
+        logoContainer.addEventListener('click', exitSearchMode);
+
+        // Setup other UI elements
+        setupModalCloseButton();
+        setupRatingAndNotesListeners();
+        setupFilterControls();
+        setupViewControls();
+        setupFeelingLuckyButton();
+        setupTooltips();
+        setupFavoriteButton();
+        setupWatchedButtons();
+        setupSortControls();
+        initializeSettings();
+        loadAndApplySettings();
+        setupUserMenu();
+        setupCarouselEditMode();
     } catch (error) {
         console.error('Error during app initialization:', error);
     }
@@ -1387,4 +1826,227 @@ if (import.meta.hot) {
     import.meta.hot.on('vite:error', (err) => {
         console.error(err);
     });
+}
+
+// --- REACTIONS FEATURE ---
+const MOODS = [
+    '24klabubu.png', 'afraid.png', 'amazed.png', 'angry.png', 'bored.png',
+    'celebratory.png', 'crazy.png', 'crying.png', 'disgusted.png', 'happy.png',
+    'melted.png', 'neutral.png', 'not-a-fan.png', 'sad.png', 'satisfied.png',
+    'sexy.png', 'surprised.png', 'thinking.png'
+];
+
+function openReactionSelector(tmdbId) {
+    console.log('openReactionSelector called with ID:', tmdbId);
+    const container = document.getElementById('mood-modal-container');
+    if (!container) {
+        console.error('mood-modal-container not found!');
+        return;
+    }
+    // Force container visibility just in case
+    // Apply overlay styles directly to the container
+    container.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999;
+    `;
+
+
+    // Reset state
+    selectedReactionUser = null;
+    selectedReactionMood = null;
+
+    container.innerHTML = `
+        <div class="mood-modal" style="background-color: #1a1a1a; color: white; border-radius: 1rem; width: 90%; max-width: 28rem; max-height: 80vh; overflow-y: auto; position: relative; border: 1px solid #404040; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+            <button id="close-mood-modal-btn" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.1); border-radius: 50%; padding: 0.5rem; cursor: pointer; color: white;">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <div style="padding: 1.5rem;">
+                <h2 class="text-2xl font-bold mb-6 text-center">How did this movie make you react?</h2>
+                
+                <div class="flex justify-center mb-8 gap-4">
+                    <button class="user-select-btn" data-user="juainny">
+                        <div class="user-avatar-preview user1-avatar-preview">J</div>
+                        <span class="font-semibold">Juainny</span>
+                    </button>
+                    <button class="user-select-btn" data-user="erick">
+                        <div class="user-avatar-preview user2-avatar-preview">E</div>
+                        <span class="font-semibold">Erick</span>
+                    </button>
+                </div>
+
+                <div id="mood-grid-container" class="mood-grid grayscale transition-all duration-300" style="opacity: 0.5; pointer-events: none;">
+                    ${MOODS.map(mood => `
+                        <div class="mood-option" data-mood="${mood}" role="button" aria-label="${mood}">
+                            <img src="moods/${mood}" alt="${mood}">
+                            <span class="mood-label">${mood.replace('.png', '').replace(/-/g, ' ')}</span>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button id="mood-done-btn" class="bg-accent-primary hover:bg-accent-secondary text-text-on-accent font-bold py-2 px-8 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>Done</button>
+                </div>
+            </div>
+        </div >
+        `;
+    console.log('mood-modal-container styles and innerHTML set.');
+
+    // Event Listeners
+    document.getElementById('close-mood-modal-btn').addEventListener('click', closeReactionSelector);
+
+    // Close on overlay click (container is the overlay now)
+    container.addEventListener('click', (e) => {
+        if (e.target === container) closeReactionSelector();
+    });
+
+    // User Selection
+    const userBtns = container.querySelectorAll('.user-select-btn');
+    userBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Toggle selection
+            userBtns.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+
+            selectedReactionUser = btn.dataset.user;
+
+            // Enable mood grid
+            const grid = document.getElementById('mood-grid-container');
+            console.log('Removing grayscale class');
+            grid.classList.remove('grayscale');
+            grid.style.opacity = '1';
+            grid.style.pointerEvents = 'auto';
+            console.log('Grayscale removed, classes:', grid.className);
+
+            checkDoneButton();
+        });
+    });
+
+    // Mood Selection
+    const moodOptions = container.querySelectorAll('.mood-option');
+    moodOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            if (!selectedReactionUser) return; // Strict check
+            moodOptions.forEach(o => o.classList.remove('selected'));
+            option.classList.add('selected');
+
+            selectedReactionMood = option.dataset.mood;
+            checkDoneButton();
+        });
+    });
+
+    // Done Button
+    document.getElementById('mood-done-btn').addEventListener('click', () => {
+        if (selectedReactionUser && selectedReactionMood) {
+            saveReaction(tmdbId, selectedReactionUser, selectedReactionMood);
+            closeReactionSelector();
+        }
+    });
+}
+
+let selectedReactionUser = null;
+let selectedReactionMood = null;
+
+function checkDoneButton() {
+    const doneBtn = document.getElementById('mood-done-btn');
+    if (selectedReactionUser && selectedReactionMood) {
+        doneBtn.disabled = false;
+    } else {
+        doneBtn.disabled = true;
+    }
+}
+
+window.closeReactionSelector = function () {
+    console.log('closeReactionSelector called');
+    const container = document.getElementById('mood-modal-container');
+    if (container) {
+        container.innerHTML = '';
+        container.style.cssText = ''; // Clear all inline styles
+    }
+    selectedReactionUser = null;
+    selectedReactionMood = null;
+};
+
+async function saveReaction(tmdbId, user, mood) {
+    console.log(`Saving reaction for ${user}: ${mood} on movie ${tmdbId} `);
+
+    const updates = {};
+    if (user === 'user1') updates.juainny_reaction = mood;
+    if (user === 'user2') updates.erick_reaction = mood;
+
+    // Optimistic update
+    if (currentMediaItem && currentMediaItem.tmdb_id == tmdbId) {
+        if (user === 'user1') currentMediaItem.juainny_reaction = mood;
+        if (user === 'user2') currentMediaItem.erick_reaction = mood;
+        updateModalReactionDisplay();
+    }
+
+    const itemIndex = allMedia.findIndex(i => i.tmdb_id == tmdbId);
+    if (itemIndex > -1) {
+        allMedia[itemIndex] = { ...allMedia[itemIndex], ...updates };
+        renderContent(); // Re-render grid
+    }
+
+    const { error } = await supabase
+        .from('media')
+        .update(updates)
+        .eq('tmdb_id', tmdbId);
+
+    if (error) {
+        console.error('Error saving reaction:', error);
+        alert('Failed to save reaction. Please try again.');
+        // Revert optimistic update if needed (omitted for brevity)
+    }
+}
+
+
+
+function updateModalReactionDisplay() {
+    const container = document.getElementById('modal-mood-display');
+    const removeBtn = document.getElementById('remove-mood-btn');
+    if (!container) return;
+
+    container.innerHTML = '';
+    let hasReaction = false;
+
+    if (currentMediaItem?.juainny_reaction) {
+        hasReaction = true;
+        container.innerHTML += `
+        <div class="relative group" title="Juainny's Reaction">
+            <img src="moods/${currentMediaItem.juainny_reaction}" class="w-10 h-10 object-contain drop-shadow-md">
+                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-purple-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold border border-white">J</div>
+            </div>
+    `;
+    }
+    if (currentMediaItem?.erick_reaction) {
+        hasReaction = true;
+        container.innerHTML += `
+        <div class="relative group" title="Erick's Reaction">
+            <img src="moods/${currentMediaItem.erick_reaction}" class="w-10 h-10 object-contain drop-shadow-md">
+                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold border border-white">E</div>
+            </div>
+    `;
+    }
+
+    if (hasReaction) {
+        removeBtn.classList.remove('hidden');
+        removeBtn.onclick = async () => {
+            if (confirm('Remove all reactions for this item?')) {
+                const updates = { juainny_reaction: null, erick_reaction: null };
+                currentMediaItem.juainny_reaction = null;
+                currentMediaItem.erick_reaction = null;
+                updateModalReactionDisplay();
+
+                await supabase.from('media').update(updates).eq('tmdb_id', currentMediaItem.tmdb_id);
+                renderContent();
+            }
+        };
+    } else {
+        removeBtn.classList.add('hidden');
+    }
 }
