@@ -15,6 +15,38 @@ export async function openSettingsModal() {
     settingsModal.classList.remove('hidden');
     settingsModal.classList.remove('modal-hidden');
     settingsModal.classList.add('flex');
+
+    // Add listeners to theme buttons for instant wallpaper preview/selection
+    const themeBtns = document.querySelectorAll('.theme-btn');
+    themeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Visual selection update
+            themeBtns.forEach(b => b.classList.remove('border-accent-primary'));
+            btn.classList.add('border-accent-primary');
+
+            // Special logic for Smiling Friends
+            if (btn.dataset.theme === 'smiling-friends') {
+                const bannerSelect = document.getElementById('movie-banner-select');
+                // Set to a specific Smiling Friends wallpaper if available, or a default URL
+                // Since we don't have the URL in the dropdown, we might need to add it or just set the value
+                // Let's assume we want to set a custom URL.
+                // But the select box only allows options that exist.
+                // We can add an option dynamically.
+
+                const sfWallpaperUrl = 'https://images6.alphacoders.com/134/1346437.png'; // Smiling Friends Wallpaper
+
+                // Check if option exists
+                let option = Array.from(bannerSelect.options).find(o => o.value === sfWallpaperUrl);
+                if (!option) {
+                    option = document.createElement('option');
+                    option.value = sfWallpaperUrl;
+                    option.textContent = 'Smiling Friends (Theme Default)';
+                    bannerSelect.appendChild(option);
+                }
+                bannerSelect.value = sfWallpaperUrl;
+            }
+        });
+    });
 }
 
 /**
@@ -63,7 +95,16 @@ async function populateWallpaperSelector() {
  * Saves the selected theme and wallpaper to Supabase.
  */
 async function saveSettings() {
-    const selectedTheme = document.querySelector('.theme-btn.border-accent-primary')?.dataset.theme;
+    // Get selected theme from the button that has the border class
+    // Note: The click listener we added above handles the class toggling visually, 
+    // but we need to ensure we grab the right one.
+    // If no button has the class (initial load), we might need a fallback or check the current attribute.
+    // Actually, the existing code relied on `border-accent-primary` being present. 
+    // We need to make sure `loadAndApplySettings` sets this class on open.
+
+    const selectedThemeBtn = document.querySelector('.theme-btn.border-accent-primary');
+    const selectedTheme = selectedThemeBtn ? selectedThemeBtn.dataset.theme : 'night';
+
     const selectedWallpaper = document.getElementById('movie-banner-select').value;
     const hideImages = document.getElementById('hide-search-images-toggle').checked;
 
@@ -110,15 +151,21 @@ export async function loadAndApplySettings() {
         return;
     }
 
-    // Apply and set active theme
-    const { theme, wallpaper_url, hide_search_results_without_images } = data;
-    document.documentElement.setAttribute('data-theme', theme || 'night');
-    document.querySelectorAll('.theme-btn').forEach(btn => {
-        btn.classList.toggle('border-accent-primary', btn.dataset.theme === theme);
+    // Apply Theme
+    document.documentElement.setAttribute('data-theme', settings.theme || 'night');
+
+    // Update Theme Picker UI
+    const themeBtns = document.querySelectorAll('.theme-btn');
+    themeBtns.forEach(btn => {
+        if (btn.dataset.theme === (settings.theme || 'night')) {
+            btn.classList.add('border-accent-primary');
+        } else {
+            btn.classList.remove('border-accent-primary');
+        }
     });
 
     // Set the toggle
-    document.getElementById('hide-search-images-toggle').checked = hide_search_results_without_images;
+    document.getElementById('hide-search-images-toggle').checked = settings.hide_search_results_without_images;
 
     // Apply wallpaper
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');

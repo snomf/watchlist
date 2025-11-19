@@ -402,7 +402,7 @@ function renderCarousel(containerId, mediaItems) {
 
         card.innerHTML = `
             <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+            <!-- Removed gradient overlay as per request -->
             
             <!-- Reactions Overlay -->
             <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
@@ -560,7 +560,12 @@ async function openMovieModal(tmdbId, type) {
         // --- Title Tooltip ---
         const tooltipIcon = document.getElementById('title-tooltip');
         if (tooltipIcon) {
-            tooltipIcon.setAttribute('title', data.title || data.name);
+            // Use DB title if available, otherwise API title
+            const displayTitle = preloadedData?.title || preloadedData?.name || data.title || data.name;
+            tooltipIcon.setAttribute('title', displayTitle);
+
+            // Also ensure the tooltip works with the browser's native behavior by setting title on the icon itself
+            // But user asked for "classic hover browser box", which is the 'title' attribute.
         }
 
         // --- IMDb Score & Link ---
@@ -614,8 +619,54 @@ async function openMovieModal(tmdbId, type) {
         // --- Watched Status ---
         updateWatchedButtonUI(currentMediaItem);
 
-        document.getElementById('juainny-notes').value = currentMediaItem?.juainny_notes || '';
-        document.getElementById('erick-notes').value = mediaItem?.erick_notes || '';
+        // --- Rich Text Toolbar for Notes ---
+        const setupNotesToolbar = (userId, notesId) => {
+            const notesInput = document.getElementById(notesId);
+            if (!notesInput) return;
+
+            // Remove existing toolbar if any
+            const existingToolbar = notesInput.previousElementSibling;
+            if (existingToolbar && existingToolbar.classList.contains('notes-toolbar')) {
+                existingToolbar.remove();
+            }
+
+            const toolbar = document.createElement('div');
+            toolbar.className = 'flex gap-2 mb-2 notes-toolbar'; // Add a class to identify it
+            toolbar.innerHTML = `
+                <button type="button" data-format="bold" class="p-1 hover:bg-gray-700 rounded text-white font-bold">B</button>
+                <button type="button" data-format="italic" class="p-1 hover:bg-gray-700 rounded text-white italic">I</button>
+                <button type="button" data-format="underline" class="p-1 hover:bg-gray-700 rounded text-white underline">U</button>
+            `;
+
+            notesInput.parentNode.insertBefore(toolbar, notesInput);
+
+            toolbar.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const format = btn.dataset.format;
+                    const start = notesInput.selectionStart;
+                    const end = notesInput.selectionEnd;
+                    const text = notesInput.value;
+                    const selectedText = text.substring(start, end);
+
+                    let formattedText = selectedText;
+                    if (format === 'bold') formattedText = `<b>${selectedText}</b>`;
+                    if (format === 'italic') formattedText = `<i>${selectedText}</i>`;
+                    if (format === 'underline') formattedText = `<u>${selectedText}</u>`;
+
+                    notesInput.value = text.substring(0, start) + formattedText + text.substring(end);
+                    // Restore selection
+                    notesInput.setSelectionRange(start + formattedText.length, start + formattedText.length);
+                    notesInput.focus();
+                });
+            });
+
+            // Load existing notes
+            notesInput.value = currentMediaItem?.[`${userId}_notes`] || '';
+        };
+
+        setupNotesToolbar('juainny', 'juainny-notes');
+        setupNotesToolbar('erick', 'erick-notes');
 
         // Show the notes section
         document.getElementById('notes-section').classList.remove('hidden');

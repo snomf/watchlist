@@ -35,6 +35,34 @@
     --color-star-filled: #f0abfc;
 }
 
+[data-theme="smiling-friends"] {
+    --color-bg-primary: #fef08a;
+    /* Yellow-200 */
+    --color-bg-secondary: #fde047;
+    /* Yellow-300 */
+    --color-bg-tertiary: #facc15;
+    /* Yellow-400 */
+    --color-text-primary: #1e1b4b;
+    /* Indigo-950 */
+    --color-text-secondary: #4338ca;
+    /* Indigo-700 */
+    --color-text-muted: #6d28d9;
+    /* Purple-700 */
+    --color-accent-primary: #ec4899;
+    /* Pink-500 */
+    --color-accent-secondary: #f472b6;
+    /* Pink-400 */
+    --color-border-primary: #eab308;
+    /* Yellow-500 */
+    --color-success: #22c55e;
+    /* Green-500 */
+    --color-danger: #ef4444;
+    /* Red-500 */
+    --color-text-on-accent: #ffffff;
+    --color-star-filled: #f97316;
+    /* Orange-500 */
+}
+
 .nav-pill {
     background-color: rgba(128, 128, 128, 0.2);
     border-radius: 9999px;
