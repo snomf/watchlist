@@ -9,19 +9,6 @@ const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
  * Fetches the user's watchlist from Supabase, only including items with an
  * approved source.
  */
-async function getWatchlistMedia() {
-    const approvedSources = ['fetched', 'added', 'tbw'];
-    const { data: media, error } = await supabase
-        .from('media')
-        .select('*')
-        .in('source', approvedSources);
-
-    if (error) {
-        console.error('Error fetching media:', error);
-        return [];
-    }
-    return media;
-}
 
 /**
  * Synchronizes the local watchlist data with the latest data from TMDB.
@@ -212,6 +199,14 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
     movieCard.dataset.tmdbId = tmdbId;
     movieCard.dataset.type = type;
 
+    // Apply favorite glow
+    const favoritedBy = allMedia.find(item => item.tmdb_id == tmdbId)?.favorited_by || [];
+    if (favoritedBy.length > 1) {
+        movieCard.classList.add('super-favorite-glow');
+    } else if (favoritedBy.length > 0) {
+        movieCard.classList.add('favorite-glow');
+    }
+
     movieCard.innerHTML = `
         <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
         <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
@@ -332,6 +327,20 @@ async function openMovieModal(tmdbId, type) {
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
 
+    // --- TV Progress ---
+    const tvProgressSection = document.getElementById('tv-progress-section');
+    if (type === 'tv' || type === 'series') {
+        tvProgressSection.classList.remove('hidden');
+        const endpoint = type === 'movie' ? 'movie' : 'tv';
+        const appendToResponse = 'credits,images,videos,release_dates,external_ids';
+        const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
+        const response = await fetch(tmdbUrl);
+        const data = await response.json();
+        await renderTVProgress(tmdbId, data.seasons);
+    } else {
+        tvProgressSection.classList.add('hidden');
+    }
+
     // Store the tmdbId in the modal for later use
     modal.dataset.tmdbId = tmdbId;
 
@@ -363,8 +372,12 @@ async function openMovieModal(tmdbId, type) {
         const releaseDate = data.release_date || data.first_air_date || '';
         document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
 
-        const runtime = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 'N/A');
-        document.getElementById('modal-runtime').textContent = runtime ? `${runtime} min` : 'N/A';
+        const runtime = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 0);
+        document.getElementById('modal-runtime').textContent = formatRuntime(runtime);
+
+        // --- End Time Calculator ---
+        updateEndTime(runtime);
+
 
         // --- Content Rating ---
         let contentRating = 'N/A';
@@ -469,6 +482,206 @@ function setupModalCloseButton() {
             modal.classList.remove('flex');
         });
     }
+}
+
+function formatRuntime(minutes) {
+    if (!minutes || minutes === 0) return 'N/A';
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    let result = '';
+    if (hours > 0) {
+        result += `${hours}h `;
+    }
+    if (remainingMinutes > 0) {
+        result += `${remainingMinutes}m`;
+    }
+    return result.trim();
+}
+
+function updateEndTime(runtime) {
+    const startTimeHourEl = document.getElementById('start-time-hour');
+    const startTimeMinuteEl = document.getElementById('start-time-minute');
+    const endTimeEl = document.getElementById('end-time');
+    const endTimeCalculatorEl = document.getElementById('end-time-calculator');
+
+    if (!runtime || runtime === 0) {
+        endTimeCalculatorEl.classList.add('hidden');
+        return;
+    }
+     endTimeCalculatorEl.classList.remove('hidden');
+
+
+    let now = new Date();
+    let startHour = now.getHours();
+    let startMinute = now.getMinutes();
+
+    const calculateAndDisplayEndTime = () => {
+        const endDate = new Date();
+        endDate.setHours(startHour, startMinute, 0, 0);
+        endDate.setMinutes(endDate.getMinutes() + runtime);
+        const endHour = endDate.getHours().toString().padStart(2, '0');
+        const endMinute = endDate.getMinutes().toString().padStart(2, '0');
+        endTimeEl.textContent = `${endHour}:${endMinute}`;
+        startTimeHourEl.textContent = startHour.toString().padStart(2, '0');
+        startTimeMinuteEl.textContent = startMinute.toString().padStart(2, '0');
+    };
+
+    startTimeHourEl.onclick = () => {
+        startHour = (startHour + 1) % 24;
+        calculateAndDisplayEndTime();
+    };
+     startTimeMinuteEl.onclick = () => {
+        startMinute = (startMinute + 1) % 60;
+        calculateAndDisplayEndTime();
+    };
+
+    calculateAndDisplayEndTime();
+}
+
+async function renderTVProgress(tmdbId, seasons) {
+    const container = document.getElementById('tv-progress-container');
+    container.innerHTML = '<div class="text-center">Loading progress...</div>';
+
+    try {
+        // Fetch existing progress from Supabase
+        const { data: episodeProgress, error: episodeError } = await supabase
+            .from('episode_progress')
+            .select('*')
+            .eq('media_id', tmdbId);
+        if (episodeError) throw episodeError;
+
+        let progressHtml = '';
+        for (const season of seasons) {
+            // Skip seasons with no episodes or season number 0
+            if (season.episode_count === 0 || season.season_number === 0) continue;
+
+            const { data: seasonDetails, error: seasonDetailsError } = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`).then(res => res.json());
+            if(seasonDetailsError) {
+                console.error(`Error fetching details for season ${season.season_number}:`, seasonDetailsError);
+                continue;
+            }
+
+            const watchedEpisodesForSeason = episodeProgress.filter(ep => ep.season_number === season.season_number && ep.watched).length;
+            const isSeasonWatched = watchedEpisodesForSeason === season.episode_count;
+
+            progressHtml += `
+                <div class="season-container mb-4 p-3 bg-bg-primary rounded-lg" data-season-number="${season.season_number}">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="text-md font-semibold">${season.name}</h4>
+                         <button class="mark-season-watched-btn text-xs py-1 px-2 rounded-full ${isSeasonWatched ? 'bg-success' : 'bg-accent-secondary'}">
+                            ${isSeasonWatched ? 'Season Watched' : 'Mark Season Watched'}
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <div class="episodes-carousel flex overflow-x-auto space-x-2 pb-2">
+            `;
+
+            for (const episode of seasonDetails.episodes) {
+                const isWatched = episodeProgress.some(ep => ep.season_number === season.season_number && ep.episode_number === episode.episode_number && ep.watched);
+                const stillUrl = episode.still_path ? `https://image.tmdb.org/t/p/w300${episode.still_path}` : 'https://placehold.co/300x169?text=No+Image';
+
+                progressHtml += `
+                    <div class="episode-card flex-shrink-0 w-48 bg-bg-secondary rounded-md text-sm overflow-hidden">
+                        <img src="${stillUrl}" alt="${episode.name}" class="w-full h-24 object-cover">
+                        <div class="p-2">
+                            <label class="flex items-center space-x-2 cursor-pointer">
+                                <input type="checkbox"
+                                       class="episode-checkbox"
+                                   data-season-number="${season.season_number}"
+                                   data-episode-number="${episode.episode_number}"
+                                   ${isWatched ? 'checked' : ''}>
+                                <span class="truncate">${episode.episode_number}. ${episode.name}</span>
+                            </label>
+                        </div>
+                    </div>
+                `;
+            }
+             progressHtml += `
+                        </div>
+                        <button class="carousel-nav-tv left-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 transform -translate-x-4"><i class="fas fa-chevron-left"></i></button>
+                        <button class="carousel-nav-tv right-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 transform translate-x-4"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = progressHtml;
+        setupTVProgressListeners(tmdbId);
+
+    } catch (error) {
+        console.error('Error rendering TV progress:', error);
+        container.innerHTML = '<div class="text-center text-danger">Failed to load progress.</div>';
+    }
+}
+
+function setupTVProgressListeners(tmdbId) {
+    const container = document.getElementById('tv-progress-container');
+
+    // Episode checkbox listeners
+    container.querySelectorAll('.episode-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', async (e) => {
+            const seasonNumber = parseInt(e.target.dataset.seasonNumber);
+            const episodeNumber = parseInt(e.target.dataset.episodeNumber);
+            const isWatched = e.target.checked;
+
+            const { error } = await supabase.from('episode_progress').upsert({
+                media_id: tmdbId,
+                viewer: 'shared', // Using a shared viewer for simplicity
+                season_number: seasonNumber,
+                episode_number: episodeNumber,
+                watched: isWatched,
+            }, { onConflict: 'media_id,viewer,season_number,episode_number' });
+
+            if (error) {
+                console.error('Error updating episode progress:', error);
+            }
+        });
+    });
+
+    // Mark Season Watched listeners
+    container.querySelectorAll('.mark-season-watched-btn').forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const seasonContainer = e.target.closest('.season-container');
+            const seasonNumber = parseInt(seasonContainer.dataset.seasonNumber);
+            const checkboxes = seasonContainer.querySelectorAll('.episode-checkbox');
+            const allWatched = Array.from(checkboxes).every(cb => cb.checked);
+            const shouldWatchAll = !allWatched;
+
+            const upserts = Array.from(checkboxes).map(cb => ({
+                media_id: tmdbId,
+                viewer: 'shared',
+                season_number: seasonNumber,
+                episode_number: parseInt(cb.dataset.episodeNumber),
+                watched: shouldWatchAll
+            }));
+
+            const { error } = await supabase.from('episode_progress').upsert(upserts, { onConflict: 'media_id,viewer,season_number,episode_number' });
+
+            if (error) {
+                console.error('Error updating season progress:', error);
+            } else {
+                checkboxes.forEach(cb => cb.checked = shouldWatchAll);
+                 e.target.textContent = shouldWatchAll ? 'Season Watched' : 'Mark Season Watched';
+                e.target.classList.toggle('bg-success', shouldWatchAll);
+                e.target.classList.toggle('bg-accent-secondary', !shouldWatchAll);
+            }
+        });
+    });
+
+    // Carousel navigation listeners
+    container.querySelectorAll('.season-container').forEach(seasonContainer => {
+        const carousel = seasonContainer.querySelector('.episodes-carousel');
+        const leftBtn = seasonContainer.querySelector('.carousel-nav-tv.left-0');
+        const rightBtn = seasonContainer.querySelector('.carousel-nav-tv.right-0');
+        const scrollAmount = 300; // Or calculate based on card width
+
+        leftBtn.addEventListener('click', () => {
+            carousel.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        });
+
+        rightBtn.addEventListener('click', () => {
+            carousel.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        });
+    });
 }
 
 // --- DEBOUNCE UTILITY ---
@@ -713,22 +926,27 @@ function setupFavoriteButton() {
 function updateWatchedButtonUI(mediaItem) {
     const watchedBtn = document.getElementById('toggle-watched-btn');
     const currentlyWatchingBtn = document.getElementById('currently-watching-btn');
+    const removeCurrentlyWatchingBtn = document.getElementById('remove-currently-watching-btn');
     const bookmarkBtn = document.getElementById('bookmark-btn');
+
+    // Reset all buttons
+    currentlyWatchingBtn.classList.add('hidden');
+    removeCurrentlyWatchingBtn.classList.add('hidden');
+    watchedBtn.classList.remove('hidden');
+
 
     // Button visibility logic
     if (mediaItem.watched) {
         watchedBtn.textContent = 'Mark as Unwatched';
         watchedBtn.classList.replace('bg-success', 'bg-gray-600');
-        currentlyWatchingBtn.classList.add('hidden');
     } else if (mediaItem.currently_watching) {
         watchedBtn.textContent = 'Mark as Watched';
         watchedBtn.classList.replace('bg-gray-600', 'bg-success');
-        currentlyWatchingBtn.classList.add('hidden');
+        removeCurrentlyWatchingBtn.classList.remove('hidden');
     } else {
         watchedBtn.textContent = 'Mark as Watched';
         watchedBtn.classList.replace('bg-gray-600', 'bg-success');
         currentlyWatchingBtn.classList.remove('hidden');
-        currentlyWatchingBtn.textContent = 'Currently Watching';
     }
 
     // Bookmark icon state
@@ -791,12 +1009,21 @@ function setupWatchedButtons() {
     const watchedBtn = document.getElementById('toggle-watched-btn');
     const rejectedBtn = document.getElementById('toggle-rejected-btn');
     const currentlyWatchingBtn = document.getElementById('currently-watching-btn');
+    const removeCurrentlyWatchingBtn = document.getElementById('remove-currently-watching-btn');
     const bookmarkBtn = document.getElementById('bookmark-btn');
 
     const handleWatchedToggle = async (isReject) => {
         const { tmdb_id, type, title, poster_path } = currentMediaItem;
         const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
         if (!mediaItem) return;
+
+        // Confirmation for marking a whole series as watched
+        if ((type === 'tv' || type === 'series') && !currentMediaItem.watched && !isReject) {
+            const confirmed = confirm("Are you sure you want to mark the entire series as watched? This cannot be undone.");
+            if (!confirmed) {
+                return; // Stop if the user cancels
+            }
+        }
 
         const newWatchedStatus = isReject ? false : !currentMediaItem.watched;
 
@@ -833,6 +1060,23 @@ function setupWatchedButtons() {
             renderContent();
         }
     };
+
+    removeCurrentlyWatchingBtn.addEventListener('click', async () => {
+        const { tmdb_id } = currentMediaItem;
+        const { data, error } = await supabase
+            .from('media')
+            .update({ currently_watching: false })
+            .eq('tmdb_id', tmdb_id)
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error removing from currently watching:', error);
+        } else {
+            currentMediaItem = data;
+            updateWatchedButtonUI(currentMediaItem);
+        }
+    });
 
     currentlyWatchingBtn.addEventListener('click', async () => {
         const { tmdb_id, type, title, poster_path } = currentMediaItem;
@@ -947,6 +1191,20 @@ async function initializeApp() {
     const wantToWatchMedia = await getWantToWatchMedia();
     renderCarousel('want-to-watch-carousel', wantToWatchMedia);
 
+    // Set up real-time subscriptions for carousels
+    supabase
+        .channel('media-carousels')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
+            console.log('Real-time change received for carousels:', payload);
+            const [currentlyWatching, wantToWatch] = await Promise.all([
+                getCurrentlyWatchingMedia(),
+                getWantToWatchMedia()
+            ]);
+            renderCarousel('currently-watching-carousel', currentlyWatching);
+            renderCarousel('want-to-watch-carousel', wantToWatch);
+        })
+        .subscribe();
+
     // Set up real-time subscriptions
     supabase
         .channel('media')
@@ -975,16 +1233,19 @@ async function initializeApp() {
     const loadingSpinner = document.getElementById('loading-spinner');
     if (loadingSpinner) loadingSpinner.style.display = 'flex';
 
-    // Fetch the initial watchlist
-    let watchlistMedia = await getWatchlistMedia();
+    // Fetch all media initially
+    const { data: allMediaItems, error } = await supabase.from('media').select('*');
+    if (error) {
+        console.error('Error fetching all media:', error);
+        return;
+    }
 
     // Sync data with TMDB
-    watchlistMedia = await syncWithTMDB(watchlistMedia);
-
-    // Store the synced media
-    allMedia = watchlistMedia;
+    allMedia = await syncWithTMDB(allMediaItems);
     console.log('Synced Media:', allMedia);
-    currentMedia = allMedia; // Set currentMedia to the full list initially
+
+    // Main grid should only show watched media
+    currentMedia = allMedia.filter(item => item.watched);
 
     // Initial render
     renderContent();

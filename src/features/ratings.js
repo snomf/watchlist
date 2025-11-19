@@ -2,111 +2,76 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const html = `
-        <div class="rating-stars-container flex items-center" data-user-id="${containerId}">
-            <div class="stars" aria-label="Rating">
-                <i class="rating-star fas fa-star" data-value="1"></i>
-                <i class="rating-star fas fa-star" data-value="2"></i>
-                <i class="rating-star fas fa-star" data-value="3"></i>
-                <i class="rating-star fas fa-star" data-value="4"></i>
-                <i class="rating-star fas fa-star" data-value="5"></i>
-                <i class="rating-star fas fa-star" data-value="6"></i>
-                <i class="rating-star fas fa-star" data-value="7"></i>
-                <i class="rating-star fas fa-star" data-value="8"></i>
-                <i class="rating-star fas fa-star" data-value="9"></i>
-                <i class="rating-star fas fa-star" data-value="10"></i>
+    container.innerHTML = `
+        <div class="star-rating-widget flex items-center gap-2">
+            <div class="stars-wrapper flex">
+                ${[...Array(10)].map((_, i) => `
+                    <div class="star-container" data-value="${i + 1}">
+                        <div class="star-half left" data-value="${i + 0.5}"></div>
+                        <div class="star-half right" data-value="${i + 1}"></div>
+                        <i class="star-icon fas fa-star text-gray-500"></i>
+                    </div>
+                `).join('')}
             </div>
-            <input type="number" step="0.5" min="0" max="10" class="rating-input-manual w-16 bg-bg-primary border-border-primary rounded-md text-center ml-2">
-            <input type="hidden" class="rating-input-hidden" name="rating-${containerId}" value="0">
+            <input type="number" step="0.5" min="0" max="10" class="rating-input-manual w-16 bg-bg-primary border-border-primary rounded-md text-center">
+            <input type="hidden" class="rating-input-hidden" name="rating-${containerId}">
         </div>
     `;
-    container.innerHTML = html;
 
-    const starsContainer = container.querySelector('.stars');
+    const starsWrapper = container.querySelector('.stars-wrapper');
     const manualInput = container.querySelector('.rating-input-manual');
     const hiddenInput = container.querySelector('.rating-input-hidden');
-    const stars = Array.from(container.querySelectorAll('.rating-star'));
+    const starContainers = Array.from(container.querySelectorAll('.star-container'));
 
-    let currentRating = initialRating;
+    let currentRating = parseFloat(initialRating) || 0;
 
-    function updateStars(rating) {
-        const numericRating = parseFloat(rating);
-        stars.forEach(star => {
+    const updateView = (rating) => {
+        const roundedRating = Math.round(rating * 2) / 2; // Round to nearest 0.5
+
+        starContainers.forEach(star => {
             const starValue = parseFloat(star.dataset.value);
-            star.classList.remove('filled', 'half-filled');
-            if (starValue <= numericRating) {
-                star.classList.add('filled');
-            } else if (starValue - 0.5 === numericRating) {
-                star.classList.add('half-filled');
+            const icon = star.querySelector('.star-icon');
+            icon.classList.remove('fas', 'fa-star', 'fa-star-half-alt', 'far', 'fa-star'); // Reset classes
+
+            if (roundedRating >= starValue) {
+                icon.className = 'star-icon fas fa-star text-yellow-400'; // Full star
+            } else if (roundedRating >= starValue - 0.5) {
+                icon.className = 'star-icon fas fa-star-half-alt text-yellow-400'; // Half star
+            } else {
+                icon.className = 'star-icon far fa-star text-gray-500'; // Empty star
             }
         });
-        manualInput.value = numericRating.toFixed(1);
-        hiddenInput.value = numericRating;
-    }
+        manualInput.value = rating.toFixed(1);
+        hiddenInput.value = rating;
+    };
 
-    function handleMouseMove(e) {
-        const { left, width } = e.currentTarget.getBoundingClientRect();
-        const clickX = e.clientX - left;
-        const percentage = (clickX / width);
-        const isHalf = percentage < 0.5;
-
-        const hoverValue = parseFloat(e.currentTarget.dataset.value);
-
-        stars.forEach(s => {
-            const sValue = parseFloat(s.dataset.value);
-            s.classList.remove('filled', 'half-filled');
-            if (sValue < hoverValue) {
-                s.classList.add('filled');
-            } else if (sValue === hoverValue) {
-                if (isHalf) {
-                    s.classList.add('half-filled');
-                } else {
-                    s.classList.add('filled');
-                }
-            }
-        });
-    }
-
-    function handleClick(e) {
-        const { left, width } = e.currentTarget.getBoundingClientRect();
-        const clickX = e.clientX - left;
-        const percentage = (clickX / width);
-        const isHalf = percentage < 0.5;
-
-        const newValue = parseFloat(e.currentTarget.dataset.value) - (isHalf ? 0.5 : 0);
-        currentRating = newValue;
-
-        updateStars(currentRating);
+    const setRating = (newRating) => {
+        currentRating = newRating;
+        updateView(currentRating);
         if (onRatingChange) {
             onRatingChange(currentRating);
         }
-    }
+    };
 
-    stars.forEach(star => {
-        star.addEventListener('mousemove', handleMouseMove);
-        star.addEventListener('click', handleClick);
+    starContainers.forEach(star => {
+        ['.left', '.right'].forEach(selector => {
+            const half = star.querySelector(selector);
+            const ratingValue = parseFloat(half.dataset.value);
+
+            half.addEventListener('mouseenter', () => updateView(ratingValue));
+            half.addEventListener('click', () => setRating(ratingValue));
+        });
     });
 
-    manualInput.addEventListener('change', (e) => {
-        let value = parseFloat(e.target.value);
+    starsWrapper.addEventListener('mouseleave', () => updateView(currentRating));
+
+    manualInput.addEventListener('change', () => {
+        let value = parseFloat(manualInput.value);
         if (isNaN(value)) value = 0;
-        if (value < 0) value = 0;
-        if (value > 10) value = 10;
-
-        // Round to nearest 0.5
-        value = Math.round(value * 2) / 2;
-
-        currentRating = value;
-        updateStars(currentRating);
-        if (onRatingChange) {
-            onRatingChange(currentRating);
-        }
+        value = Math.max(0, Math.min(10, value)); // Clamp value
+        setRating(value);
     });
 
-    starsContainer.addEventListener('mouseleave', () => {
-        updateStars(currentRating);
-    });
-
-    // Set initial state
-    updateStars(currentRating);
+    // Initial setup
+    setRating(currentRating);
 }

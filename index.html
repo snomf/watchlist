@@ -172,7 +172,7 @@
                     </button>
                 </div>
             </div>
-            <h2 class="text-2xl font-bold mb-4">All Media</h2>
+            <h2 class="text-2xl font-bold mb-4">Watched Media</h2>
             <div id="movie-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 <!-- Media items will be dynamically inserted here -->
             </div>
@@ -229,7 +229,6 @@
                         </div>
                     </div>
                     <a id="modal-imdb-link" href="#" target="_blank" class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
-                        <i class="fas fa-star text-yellow-400 mr-1"></i>
                         <i class="fab fa-imdb fa-2x"></i>
                         <span id="modal-score" class="text-lg font-bold"></span>
                     </a>
@@ -241,6 +240,12 @@
                 </div>
 
                 <div class="border-t border-border-primary pt-4 space-y-4">
+                    <div id="tv-progress-section" class="hidden">
+                        <h3 class="text-lg font-semibold mb-2">Episode Progress</h3>
+                        <div id="tv-progress-container" class="max-h-64 overflow-y-auto bg-bg-tertiary p-4 rounded-lg">
+                            <!-- Seasons and episodes will be dynamically inserted here -->
+                        </div>
+                    </div>
                     <div id="notes-section" class="hidden">
                         <div class="flex justify-between items-center mb-2">
                             <h3 class="text-lg font-semibold">Post-Watch Ratings</h3>
@@ -272,6 +277,9 @@
                     <div class="flex flex-col gap-2">
                         <button id="currently-watching-btn" class="w-full bg-blue-600 hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
                             Currently Watching
+                        </button>
+                        <button id="remove-currently-watching-btn" class="hidden w-full bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                            Remove from Currently Watching
                         </button>
                         <div class="flex gap-2">
                             <button id="toggle-watched-btn" class="w-full bg-success hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
