@@ -631,11 +631,11 @@ async function openMovieModal(tmdbId, type) {
             }
 
             const toolbar = document.createElement('div');
-            toolbar.className = 'flex gap-2 mb-2 notes-toolbar'; // Add a class to identify it
+            toolbar.className = 'flex gap-2 mb-2 notes-toolbar';
             toolbar.innerHTML = `
-                <button type="button" data-format="bold" class="p-1 hover:bg-gray-700 rounded text-white font-bold">B</button>
-                <button type="button" data-format="italic" class="p-1 hover:bg-gray-700 rounded text-white italic">I</button>
-                <button type="button" data-format="underline" class="p-1 hover:bg-gray-700 rounded text-white underline">U</button>
+                <button type="button" data-format="bold" class="p-2 hover:bg-gray-700 rounded text-white" style="font-weight: bold;">B</button>
+                <button type="button" data-format="italic" class="p-2 hover:bg-gray-700 rounded text-white" style="font-style: italic;">I</button>
+                <button type="button" data-format="underline" class="p-2 hover:bg-gray-700 rounded text-white" style="text-decoration: underline;">U</button>
             `;
 
             notesInput.parentNode.insertBefore(toolbar, notesInput);
@@ -644,25 +644,19 @@ async function openMovieModal(tmdbId, type) {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     const format = btn.dataset.format;
-                    const start = notesInput.selectionStart;
-                    const end = notesInput.selectionEnd;
-                    const text = notesInput.value;
-                    const selectedText = text.substring(start, end);
 
-                    let formattedText = selectedText;
-                    if (format === 'bold') formattedText = `<b>${selectedText}</b>`;
-                    if (format === 'italic') formattedText = `<i>${selectedText}</i>`;
-                    if (format === 'underline') formattedText = `<u>${selectedText}</u>`;
+                    // Use document.execCommand for contenteditable
+                    if (format === 'bold') document.execCommand('bold', false, null);
+                    if (format === 'italic') document.execCommand('italic', false, null);
+                    if (format === 'underline') document.execCommand('underline', false, null);
 
-                    notesInput.value = text.substring(0, start) + formattedText + text.substring(end);
-                    // Restore selection
-                    notesInput.setSelectionRange(start + formattedText.length, start + formattedText.length);
                     notesInput.focus();
                 });
             });
 
-            // Load existing notes
-            notesInput.value = currentMediaItem?.[`${userId}_notes`] || '';
+            // Load existing notes as HTML
+            const existingNotes = currentMediaItem?.[`${userId}_notes`] || '';
+            notesInput.innerHTML = existingNotes;
         };
 
         setupNotesToolbar('juainny', 'juainny-notes');
@@ -1330,9 +1324,9 @@ async function saveRatingsAndNotes() {
 
     const updates = {
         juainny_rating: parseFloat(juainnyRating) || null,
-        juainny_notes: document.getElementById('juainny-notes').value || null,
+        juainny_notes: document.getElementById('juainny-notes').innerHTML || null,
         erick_rating: parseFloat(erickRating) || null,
-        erick_notes: document.getElementById('erick-notes').value || null,
+        erick_notes: document.getElementById('erick-notes').innerHTML || null,
     };
 
     console.log('Saving to Supabase:', { tmdbId, updates });
@@ -1939,7 +1933,16 @@ async function initializeApp() {
         loadAndApplySettings();
         setupUserMenu();
         setupCarouselEditMode();
-    } catch (error) {
+
+        // Setup notification button
+        const notificationBtn = document.getElementById('notification-btn');
+        if (notificationBtn) {
+            notificationBtn.addEventListener('click', () => {
+                alert('Notifications Coming Soon!');
+            });
+        }
+
+        // Toggle avatars for user preferences) {
         console.error('Error during app initialization:', error);
     }
 }

@@ -152,12 +152,13 @@ export async function loadAndApplySettings() {
     }
 
     // Apply Theme
-    document.documentElement.setAttribute('data-theme', settings.theme || 'night');
+    const { theme, wallpaper_url, hide_search_results_without_images } = data;
+    document.documentElement.setAttribute('data-theme', theme || 'night');
 
     // Update Theme Picker UI
     const themeBtns = document.querySelectorAll('.theme-btn');
     themeBtns.forEach(btn => {
-        if (btn.dataset.theme === (settings.theme || 'night')) {
+        if (btn.dataset.theme === (theme || 'night')) {
             btn.classList.add('border-accent-primary');
         } else {
             btn.classList.remove('border-accent-primary');
@@ -165,7 +166,7 @@ export async function loadAndApplySettings() {
     });
 
     // Set the toggle
-    document.getElementById('hide-search-images-toggle').checked = settings.hide_search_results_without_images;
+    document.getElementById('hide-search-images-toggle').checked = hide_search_results_without_images;
 
     // Apply wallpaper
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');
