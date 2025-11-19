@@ -437,13 +437,36 @@ async function openMovieModal(tmdbId, type) {
         // Show the notes section
         document.getElementById('notes-section').classList.remove('hidden');
 
-        // --- Update Supabase with backdrop path ---
-        if (mediaItem && data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
-            const { error: updateError } = await supabase
-                .from('media')
-                .update({ backdrop_path: data.backdrop_path })
-                .eq('tmdb_id', tmdbId);
-            if (updateError) console.error('Error updating backdrop path:', updateError);
+        // --- Update Supabase with missing info ---
+        if (mediaItem) {
+            const updates = {};
+            if (data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
+                updates.backdrop_path = data.backdrop_path;
+            }
+            const releaseYear = releaseDate ? parseInt(releaseDate.substring(0, 4)) : null;
+            if (releaseYear && mediaItem.release_year !== releaseYear) {
+                updates.release_year = releaseYear;
+            }
+            const runtimeValue = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : null);
+            if (runtimeValue && mediaItem.runtime !== runtimeValue) {
+                updates.runtime = runtimeValue;
+            }
+
+            if (Object.keys(updates).length > 0) {
+                const { error: updateError } = await supabase
+                    .from('media')
+                    .update(updates)
+                    .eq('tmdb_id', tmdbId);
+                if (updateError) console.error('Error updating media details:', updateError);
+            }
+        }
+
+        // --- TV Series Progress ---
+        if (type === 'tv' || type === 'series') {
+            document.getElementById('tv-progress-section').classList.remove('hidden');
+            renderTVProgress(tmdbId, data.seasons);
+        } else {
+            document.getElementById('tv-progress-section').classList.add('hidden');
         }
 
         // --- Show Modal ---
@@ -468,6 +491,212 @@ function setupModalCloseButton() {
             modal.classList.add('modal-hidden');
             modal.classList.remove('flex');
         });
+    }
+}
+
+async function renderTVProgress(tmdbId, seasons) {
+    const container = document.getElementById('tv-progress-container');
+    container.innerHTML = '<div class="text-text-muted">Loading progress...</div>';
+
+    // Fetch existing progress from Supabase for both users
+    const { data: progressData, error: progressError } = await supabase
+        .from('episode_progress')
+        .select('season_number, episode_number, viewer')
+        .eq('media_id', currentMediaItem.id);
+
+    if (progressError) {
+        console.error('Error fetching episode progress:', progressError);
+        container.innerHTML = '<div class="text-danger">Could not load progress.</div>';
+        return;
+    }
+
+    // Create a Set for quick lookup of watched episodes
+    const watchedEpisodes = new Set(
+        progressData
+            .filter(p => p.viewer === 'user1') // Since they are synced, just check one user
+            .map(p => `${p.season_number}-${p.episode_number}`)
+    );
+
+    container.innerHTML = ''; // Clear loading message
+
+    for (const season of seasons) {
+        if (season.season_number === 0) continue; // Skip "Specials" season
+
+        const seasonElement = document.createElement('div');
+        seasonElement.className = 'bg-bg-tertiary p-2 rounded-md';
+
+        const seasonHeader = document.createElement('div');
+        seasonHeader.className = 'flex justify-between items-center cursor-pointer';
+        seasonHeader.innerHTML = `
+            <span class="font-semibold">${season.name}</span>
+            <i class="fas fa-chevron-down transition-transform"></i>
+        `;
+
+        const episodesContainer = document.createElement('div');
+        episodesContainer.className = 'mt-2 space-y-1 hidden pl-4 border-l-2 border-border-primary';
+
+        seasonHeader.addEventListener('click', () => {
+            episodesContainer.classList.toggle('hidden');
+            seasonHeader.querySelector('i').classList.toggle('rotate-180');
+        });
+
+        seasonElement.appendChild(seasonHeader);
+        seasonElement.appendChild(episodesContainer);
+        container.appendChild(seasonElement);
+
+        // Fetch episodes for the season
+        const episodesUrl = `https://api.themoviedb.org/3/tv/${tmdbId}/season/${season.season_number}?api_key=${TMDB_API_KEY}`;
+        try {
+            const response = await fetch(episodesUrl);
+            const seasonDetails = await response.json();
+
+            episodesContainer.innerHTML = ''; // Clear loading state for episodes
+            for (const episode of seasonDetails.episodes) {
+                const isWatched = watchedEpisodes.has(`${season.season_number}-${episode.episode_number}`);
+
+                const episodeElement = document.createElement('label');
+                episodeElement.className = 'flex items-center space-x-2 cursor-pointer';
+                episodeElement.innerHTML = `
+                    <input type="checkbox" class="form-checkbox bg-bg-primary border-border-primary text-accent-primary focus:ring-accent-primary" ${isWatched ? 'checked' : ''}>
+                    <span>${episode.episode_number}. ${episode.name}</span>
+                `;
+
+                const checkbox = episodeElement.querySelector('input');
+                checkbox.addEventListener('change', async (e) => {
+                    await handleEpisodeCheck(
+                        currentMediaItem.id,
+                        season.season_number,
+                        episode.episode_number,
+                        e.target.checked
+                    );
+                });
+                episodesContainer.appendChild(episodeElement);
+            }
+        } catch (error) {
+            console.error(`Error fetching episodes for season ${season.season_number}:`, error);
+            episodesContainer.innerHTML = `<div class="text-danger">Could not load episodes.</div>`;
+        }
+    }
+}
+
+async function handleEpisodeCheck(mediaId, seasonNumber, episodeNumber, isWatched) {
+    const viewers = ['user1', 'user2'];
+    const promises = viewers.map(viewer => {
+        return supabase.from('episode_progress').upsert({
+            media_id: mediaId,
+            viewer: viewer,
+            season_number: seasonNumber,
+            episode_number: episodeNumber,
+            watched: isWatched
+        }, {
+            onConflict: 'media_id, viewer, season_number, episode_number'
+        });
+    });
+
+    try {
+        const results = await Promise.all(promises);
+        results.forEach(({ error }) => {
+            if (error) throw error;
+        });
+
+        console.log(`Successfully updated episode ${seasonNumber}-${episodeNumber} for both users.`);
+
+        // After updating, check season and series completion status
+        await checkAndUpdateSeasonStatus(mediaId, seasonNumber);
+        await checkAndUpdateSeriesStatus(mediaId);
+
+    } catch (error) {
+        console.error('Error updating episode progress:', error);
+    }
+}
+
+async function checkAndUpdateSeasonStatus(mediaId, seasonNumber) {
+    // Get total number of episodes in the season from TMDB
+    const { data: mediaItem } = await supabase.from('media').select('tmdb_id').eq('id', mediaId).single();
+    if (!mediaItem) return;
+
+    const seasonUrl = `https://api.themoviedb.org/3/tv/${mediaItem.tmdb_id}/season/${seasonNumber}?api_key=${TMDB_API_KEY}`;
+    const response = await fetch(seasonUrl);
+    const seasonDetails = await response.json();
+    const totalEpisodes = seasonDetails.episodes.length;
+
+    // Get number of watched episodes for this season from our DB (for one user, since they are synced)
+    const { count, error } = await supabase
+        .from('episode_progress')
+        .select('*', { count: 'exact', head: true })
+        .eq('media_id', mediaId)
+        .eq('season_number', seasonNumber)
+        .eq('viewer', 'user1')
+        .eq('watched', true);
+
+    if (error) {
+        console.error('Error counting watched episodes:', error);
+        return;
+    }
+
+    const isSeasonComplete = count === totalEpisodes;
+
+    // Update season_progress table for both users
+    const viewers = ['user1', 'user2'];
+    const promises = viewers.map(viewer => {
+        return supabase.from('season_progress').upsert({
+            media_id: mediaId,
+            viewer: viewer,
+            season_number: seasonNumber,
+            fully_watched: isSeasonComplete
+        }, {
+            onConflict: 'media_id, viewer, season_number'
+        });
+    });
+
+    await Promise.all(promises);
+    console.log(`Season ${seasonNumber} status updated. Complete: ${isSeasonComplete}`);
+}
+
+async function checkAndUpdateSeriesStatus(mediaId) {
+     // If any episode is watched, set to currently_watching
+    const { data: anyWatched, error: anyWatchedError } = await supabase
+        .from('episode_progress')
+        .select('*')
+        .eq('media_id', mediaId)
+        .eq('watched', true)
+        .limit(1);
+
+    if (anyWatchedError) {
+        console.error('Error checking for any watched episode:', anyWatchedError);
+        return;
+    }
+
+    if (anyWatched && anyWatched.length > 0) {
+        // This moves it from "Want to Watch" to "Currently Watching" automatically
+        await supabase.from('media').update({ currently_watching: true, want_to_watch: false }).eq('id', mediaId);
+    }
+
+
+    // Check if all seasons are complete
+    const { data: mediaItem } = await supabase.from('media').select('tmdb_id').eq('id', mediaId).single();
+    if (!mediaItem) return;
+
+    const tvUrl = `https://api.themoviedb.org/3/tv/${mediaItem.tmdb_id}?api_key=${TMDB_API_KEY}`;
+    const response = await fetch(tvUrl);
+    const tvDetails = await response.json();
+    const totalSeasons = tvDetails.seasons.filter(s => s.season_number > 0).length;
+
+    const { count, error } = await supabase
+        .from('season_progress')
+        .select('*', { count: 'exact', head: true })
+        .eq('media_id', mediaId)
+        .eq('viewer', 'user1')
+        .eq('fully_watched', true);
+
+    if (error) {
+        console.error('Error counting watched seasons:', error);
+        return;
+    }
+
+    if (count === totalSeasons) {
+        await supabase.from('media').update({ watched: true, currently_watching: false }).eq('id', mediaId);
+        console.log('Series marked as complete!');
     }
 }
 
@@ -592,13 +821,17 @@ function sortMedia() {
             break;
         case 'release_date':
             filteredMedia.sort((a, b) => {
-                const dateA = new Date(a.release_date || a.first_air_date);
-                const dateB = new Date(b.release_date || b.first_air_date);
-                return dateB - dateA;
+                const getYear = (item) => {
+                    if (item.release_year) return item.release_year;
+                    const dateStr = item.release_date || item.first_air_date;
+                    return dateStr ? parseInt(dateStr.substring(0, 4)) : 0;
+                };
+                return getYear(b) - getYear(a);
             });
             break;
         case 'length':
-            filteredMedia.sort((a, b) => (b.runtime || b.episode_run_time?.[0] || 0) - (a.runtime || a.episode_run_time?.[0] || 0));
+            // Ensure runtime exists and is a number, default to 0 otherwise
+            filteredMedia.sort((a, b) => (b.runtime || 0) - (a.runtime || 0));
             break;
         case 'default':
         default:
@@ -772,18 +1005,56 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
         return mediaItem; // return existing item if no update needed
     }
 
-    // If item does not exist, create it
-    const { data: newItem, error: insertError } = await supabase
-        .from('media')
-        .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath, source: 'added' })
-        .select()
-        .single();
+    // If item does not exist, fetch full details from TMDB and create it
+    const endpoint = type === 'movie' ? 'movie' : 'tv';
+    const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}`;
+    try {
+        const response = await fetch(tmdbUrl);
+        if (!response.ok) throw new Error('Failed to fetch details for new media item.');
+        const tmdbData = await response.json();
 
-    if (insertError) {
-        console.error('Error creating new media item:', insertError);
-        return null;
+        const releaseDate = tmdbData.release_date || tmdbData.first_air_date;
+        const releaseYear = releaseDate ? parseInt(releaseDate.substring(0, 4)) : null;
+        const runtime = tmdbData.runtime || (tmdbData.episode_run_time ? tmdbData.episode_run_time[0] : null);
+
+        const newItemData = {
+            tmdb_id: tmdbId,
+            type: itemType,
+            title: tmdbData.title || tmdbData.name,
+            poster_path: tmdbData.poster_path,
+            backdrop_path: tmdbData.backdrop_path,
+            release_year: releaseYear,
+            runtime: runtime,
+            source: 'added'
+        };
+
+        const { data: newItem, error: insertError } = await supabase
+            .from('media')
+            .insert(newItemData)
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error('Error creating new media item:', insertError);
+            return null;
+        }
+        return newItem;
+
+    } catch (fetchError) {
+        console.error('Error fetching TMDB details for new item:', fetchError);
+        // Fallback to creating with minimal info if TMDB fetch fails
+        const { data: newItem, error: insertError } = await supabase
+            .from('media')
+            .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath, source: 'added' })
+            .select()
+            .single();
+
+        if (insertError) {
+            console.error('Error creating new media item (fallback):', insertError);
+            return null;
+        }
+        return newItem;
     }
-    return newItem;
 }
 
 
