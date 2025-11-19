@@ -228,7 +228,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         </div>
 
         <div class="absolute bottom-0 left-0 right-0 p-4">
-            <h3 class="text-white font-bold text-lg truncate">${title}</h3>
+            <!-- Title removed as per user request -->
         </div>
         <button class="bookmark-icon absolute bottom-2 right-2 text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity">
             <i class="fas fa-bookmark"></i>
@@ -393,17 +393,35 @@ function renderCarousel(containerId, mediaItems) {
         const tmdbId = item.tmdb_id || item.id;
 
         const card = document.createElement('div');
-        // Fixed width to prevent shrinking - using inline styles to be absolutely sure
-        card.className = 'flex-shrink-0 w-32 md:w-40 movie-card relative rounded-lg shadow-lg overflow-hidden cursor-pointer group snap-start';
-        card.style.cssText = 'min-width: 8rem; width: 8rem; flex-shrink: 0; aspect-ratio: 2/3;';
+        // Responsive width to match grid
+        card.className = 'flex-shrink-0 w-32 sm:w-36 md:w-44 lg:w-48 movie-card relative rounded-lg shadow-lg overflow-hidden cursor-pointer group snap-start';
+        // Removed fixed width/aspect-ratio inline styles to allow classes to work
+        card.style.cssText = 'flex-shrink: 0;';
         card.dataset.tmdbId = tmdbId;
         card.dataset.type = type;
 
         card.innerHTML = `
             <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+            
+             <!-- Reactions Overlay -->
+            <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                ${allMedia.find(item => item.tmdb_id == tmdbId)?.juainny_reaction ? `
+                    <div class="relative w-8 h-8 group/reaction">
+                        <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-purple-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">J</div>
+                    </div>
+                ` : ''}
+                ${allMedia.find(item => item.tmdb_id == tmdbId)?.erick_reaction ? `
+                    <div class="relative w-8 h-8 group/reaction">
+                        <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">E</div>
+                    </div>
+                ` : ''}
+            </div>
+
             <div class="absolute bottom-0 left-0 right-0 p-2">
-                <h3 class="text-white font-bold text-sm truncate">${title}</h3>
+                 <!-- Title removed -->
             </div>
         `;
         card.addEventListener('click', () => openMovieModal(tmdbId, type));
@@ -472,7 +490,7 @@ async function openMovieModal(tmdbId, type) {
         const releaseDate = data.release_date || data.first_air_date || '';
         document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
 
-        const runtime = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 0);
+        const runtime = data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
         document.getElementById('modal-runtime').textContent = formatRuntime(runtime);
 
         // --- End Time Calculator ---
@@ -489,9 +507,20 @@ async function openMovieModal(tmdbId, type) {
             }
         } else if (type === 'tv' && data.content_ratings) {
             const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
-            if (usRating) contentRating = usRating.rating;
+            if (usRating) {
+                contentRating = usRating.rating;
+            } else if (data.content_ratings.results.length > 0) {
+                // Fallback to first available rating if US is missing
+                contentRating = data.content_ratings.results[0].rating;
+            }
         }
         document.getElementById('modal-content-rating').textContent = contentRating;
+
+        // --- Title Tooltip ---
+        const tooltipIcon = document.getElementById('title-tooltip');
+        if (tooltipIcon) {
+            tooltipIcon.setAttribute('title', data.title || data.name);
+        }
 
         // --- IMDb Score & Link ---
         const imdbId = data.external_ids.imdb_id;
@@ -1119,7 +1148,8 @@ function updateSeasonWatchedButtonState(totalEpisodes) {
     } else {
         btn.textContent = 'Mark Season Watched';
         btn.classList.remove('bg-success');
-        btn.classList.add('bg-accent-secondary');
+        btn.classList.add('bg-accent-secondary', 'text-white'); // Added text-white to fix contrast
+        btn.classList.remove('text-accent-secondary'); // Remove the orange text class
     }
 }
 
@@ -1157,6 +1187,11 @@ async function saveRatingsAndNotes() {
     };
 
     console.log('Saving to Supabase:', { tmdbId, updates });
+
+    if (!tmdbId) {
+        console.error('saveRatingsAndNotes: tmdbId is missing!');
+        return;
+    }
 
     // Check if the item exists in the database
     const { data: existingItem, error: fetchError } = await supabase
@@ -1458,10 +1493,16 @@ function setupWatchedButtons() {
 
         // Confirmation for marking a whole series as watched
         if ((type === 'tv' || type === 'series') && !currentMediaItem.watched && !isReject) {
-            const confirmed = confirm("Are you sure you want to mark the entire series as watched? This cannot be undone.");
-            if (!confirmed) {
-                return; // Stop if the user cancels
-            }
+            // Use custom modal
+            const choice = await showConfirmationModal(
+                "Mark Series Watched?",
+                "How would you like to mark this series?"
+            );
+
+            if (choice === 'cancel') return;
+            // If choice is 'series-only' (or potentially 'all-episodes' in future), proceed.
+            // For now, both paths lead to marking the media as watched.
+            // TODO: Implement 'all-episodes' logic if backend supports batch updates.
         }
 
         const newWatchedStatus = isReject ? false : !currentMediaItem.watched;
@@ -1862,7 +1903,7 @@ function openReactionSelector(tmdbId) {
     selectedReactionMood = null;
 
     container.innerHTML = `
-        <div class="mood-modal" style="background-color: #1a1a1a; color: white; border-radius: 1rem; width: 90%; max-width: 28rem; max-height: 80vh; overflow-y: auto; position: relative; border: 1px solid #404040; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+        <div class="mood-modal" style="background-color: #1a1a1a; color: white; border-radius: 1rem; width: 95%; max-width: 40rem; max-height: 80vh; overflow-y: auto; position: relative; border: 1px solid #404040; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
             <button id="close-mood-modal-btn" style="position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.1); border-radius: 50%; padding: 0.5rem; cursor: pointer; color: white;">
                 <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -1990,6 +2031,12 @@ async function saveReaction(tmdbId, user, mood) {
     if (itemIndex > -1) {
         allMedia[itemIndex] = { ...allMedia[itemIndex], ...updates };
         renderContent(); // Re-render grid
+
+        // Re-render carousels to show new reaction
+        const currentlyWatching = await getCurrentlyWatchingMedia();
+        renderCarousel('currently-watching-carousel', currentlyWatching);
+        const wantToWatch = await getWantToWatchMedia();
+        renderCarousel('want-to-watch-carousel', wantToWatch);
     }
 
     const { error } = await supabase
@@ -2001,6 +2048,8 @@ async function saveReaction(tmdbId, user, mood) {
         console.error('Error saving reaction:', error);
         alert('Failed to save reaction. Please try again.');
         // Revert optimistic update if needed (omitted for brevity)
+    } else {
+        console.log('Reaction saved successfully to DB for TMDB ID:', tmdbId);
     }
 }
 
@@ -2049,4 +2098,46 @@ function updateModalReactionDisplay() {
     } else {
         removeBtn.classList.add('hidden');
     }
+}
+
+function showConfirmationModal(title, message) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('confirmation-modal');
+        const titleEl = document.getElementById('confirmation-title');
+        const messageEl = document.getElementById('confirmation-message');
+        const seriesOnlyBtn = document.getElementById('confirm-series-only-btn');
+        // const allEpisodesBtn = document.getElementById('confirm-all-episodes-btn');
+        const cancelBtn = document.getElementById('cancel-confirmation-btn');
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const cleanup = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            seriesOnlyBtn.onclick = null;
+            // allEpisodesBtn.onclick = null;
+            cancelBtn.onclick = null;
+        };
+
+        seriesOnlyBtn.onclick = () => {
+            cleanup();
+            resolve('series-only');
+        };
+
+        /*
+        allEpisodesBtn.onclick = () => {
+            cleanup();
+            resolve('all-episodes');
+        };
+        */
+
+        cancelBtn.onclick = () => {
+            cleanup();
+            resolve('cancel');
+        };
+    });
 }

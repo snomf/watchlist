@@ -41,7 +41,7 @@
                     <div id="logo-container" class="nav-pill flex items-center cursor-pointer">
                         <img src="icon.png" alt="Logo" class="h-8 w-8 mr-2">
                         <span class="font-bold text-white text-lg">Watchlist</span>
-                        <i id="info-tooltip-icon" class="fas fa-question-circle ml-2 text-gray-400 cursor-pointer"></i>
+                        <!-- Icon removed -->
                     </div>
                     <div class="nav-pill notification-pill hidden">
                         <button id="notification-btn"
@@ -377,6 +377,27 @@
     <div id="tooltip" class="hidden absolute bg-gray-900 text-white text-sm rounded-lg px-2 py-1 z-50"></div>
     <div id="info-tooltip" class="hidden absolute bg-gray-900 text-white text-sm rounded-lg px-2 py-1 z-50">
         this little site sysncs across both of our devices (so hard to make) and has posters (so hard to get).
+    </div>
+
+    <div id="confirmation-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
+        <div class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6 border border-border-primary">
+            <h3 id="confirmation-title" class="text-xl font-bold mb-4 text-white">Confirm Action</h3>
+            <p id="confirmation-message" class="text-text-secondary mb-6">Are you sure?</p>
+            <div class="flex flex-col gap-3">
+                <button id="confirm-series-only-btn"
+                    class="bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 px-4 rounded-lg transition">
+                    Mark Series as Watched (Only)
+                </button>
+                <!-- <button id="confirm-all-episodes-btn" class="bg-accent-secondary hover:bg-accent-primary text-white font-bold py-2 px-4 rounded-lg transition">
+                    Mark All Episodes & Seasons Watched
+                </button> -->
+                <button id="cancel-confirmation-btn"
+                    class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                    Cancel
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="settings-modal" class="fixed inset-0 z-[55] hidden items-center justify-center modal-hidden p-4">

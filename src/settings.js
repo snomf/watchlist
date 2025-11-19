@@ -73,6 +73,7 @@ async function saveSettings() {
             theme: selectedTheme,
             wallpaper_url: selectedWallpaper,
             hide_search_results_without_images: hideImages,
+            device_name: document.getElementById('device-name-input').value,
         })
         .eq('id', 1);
 
@@ -91,7 +92,7 @@ async function saveSettings() {
 export async function loadAndApplySettings() {
     const { data, error } = await supabase
         .from('settings')
-        .select('theme, wallpaper_url, hide_search_results_without_images')
+        .select('theme, wallpaper_url, hide_search_results_without_images, device_name')
         .eq('id', 1)
         .single();
 
@@ -103,7 +104,7 @@ export async function loadAndApplySettings() {
     }
 
     // Apply and set active theme
-    const { theme, wallpaper_url, hide_search_results_without_images } = data;
+    const { theme, wallpaper_url, hide_search_results_without_images, device_name } = data;
     document.documentElement.setAttribute('data-theme', theme || 'night');
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.toggle('border-accent-primary', btn.dataset.theme === theme);
@@ -125,6 +126,12 @@ export async function loadAndApplySettings() {
     // Set the selected option in the dropdown
     const bannerSelect = document.getElementById('movie-banner-select');
     if (bannerSelect) bannerSelect.value = wallpaper_url || '';
+
+    // Set device name
+    const deviceNameInput = document.getElementById('device-name-input');
+    const deviceNameDisplay = document.getElementById('device-name');
+    if (deviceNameInput) deviceNameInput.value = device_name || '';
+    if (deviceNameDisplay) deviceNameDisplay.textContent = device_name || 'User';
 }
 
 /**
@@ -139,6 +146,26 @@ export function initializeSettings() {
     if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
     if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettingsModal);
     if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
+
+    // Refresh Buttons
+    const softRefreshBtn = document.getElementById('soft-refresh-btn');
+    const emergencyRefreshBtn = document.getElementById('emergency-refresh-btn');
+
+    if (softRefreshBtn) {
+        softRefreshBtn.addEventListener('click', () => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('refresh', 'true');
+            window.location.href = url.toString();
+        });
+    }
+
+    if (emergencyRefreshBtn) {
+        emergencyRefreshBtn.addEventListener('click', () => {
+            const url = new URL(window.location.href);
+            url.searchParams.set('hardrefresh', 'true');
+            window.location.href = url.toString();
+        });
+    }
 
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.addEventListener('click', () => {
