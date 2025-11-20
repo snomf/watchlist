@@ -254,6 +254,10 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         reactionEl.addEventListener('mouseleave', () => {
             hideReactionTooltip();
         });
+        // Add click for mobile (also prevents modal from opening)
+        reactionEl.addEventListener('click', (e) => {
+            toggleReactionTooltip(e.currentTarget, e);
+        });
     });
 
     // Stop propagation on the bookmark icon to prevent the modal from opening
@@ -458,6 +462,10 @@ function renderCarousel(containerId, mediaItems) {
             });
             reactionEl.addEventListener('mouseleave', () => {
                 hideReactionTooltip();
+            });
+            // Add click for mobile (also prevents modal from opening)
+            reactionEl.addEventListener('click', (e) => {
+                toggleReactionTooltip(e.currentTarget, e);
             });
         });
 
@@ -2060,6 +2068,17 @@ async function initializeApp() {
 
         setupAllenEasterEgg();
 
+        // Hide tooltip when clicking anywhere else on the page
+        document.addEventListener('click', (e) => {
+            const tooltip = document.getElementById('reaction-tooltip');
+            if (tooltip && !tooltip.classList.contains('hidden')) {
+                // Check if click is not on a reaction item
+                if (!e.target.closest('.reaction-item')) {
+                    hideReactionTooltip();
+                }
+            }
+        });
+
     } catch (error) {
         console.error('Error during app initialization:', error);
     }
@@ -2491,6 +2510,10 @@ export function refreshAllReactionAvatars() {
                     reactionEl.addEventListener('mouseleave', () => {
                         hideReactionTooltip();
                     });
+                    // Add click for mobile (also prevents modal from opening)
+                    reactionEl.addEventListener('click', (e) => {
+                        toggleReactionTooltip(e.currentTarget, e);
+                    });
                 });
             }
         }
@@ -2505,6 +2528,8 @@ export function refreshAllReactionAvatars() {
 /**
  * Shows a tooltip when hovering over a reaction
  */
+let activeTooltipElement = null;
+
 function showReactionTooltip(reactionElement) {
     const tooltip = document.getElementById('reaction-tooltip');
     const tooltipAvatar = document.getElementById('tooltip-avatar');
@@ -2527,14 +2552,19 @@ function showReactionTooltip(reactionElement) {
     // Set text
     tooltipText.textContent = `${user} reacted with ${reactionName}`;
 
-    // Position tooltip
+    // Position tooltip - use absolute positioning that scrolls with page
     const rect = reactionElement.getBoundingClientRect();
-    tooltip.style.left = `${rect.left + rect.width / 2}px`;
-    tooltip.style.top = `${rect.bottom + 8}px`; // 8px below the reaction
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+
+    tooltip.style.position = 'absolute';
+    tooltip.style.left = `${rect.left + scrollLeft + rect.width / 2}px`;
+    tooltip.style.top = `${rect.bottom + scrollTop + 8}px`; // 8px below the reaction
     tooltip.style.transform = 'translateX(-50%)'; // Center horizontally
 
     // Show tooltip
     tooltip.classList.remove('hidden');
+    activeTooltipElement = reactionElement;
 }
 
 /**
@@ -2544,6 +2574,20 @@ function hideReactionTooltip() {
     const tooltip = document.getElementById('reaction-tooltip');
     if (tooltip) {
         tooltip.classList.add('hidden');
+        activeTooltipElement = null;
+    }
+}
+
+/**
+ * Toggles tooltip on click (for mobile)
+ */
+function toggleReactionTooltip(reactionElement, event) {
+    event.stopPropagation(); // Prevent modal from opening
+
+    if (activeTooltipElement === reactionElement) {
+        hideReactionTooltip();
+    } else {
+        showReactionTooltip(reactionElement);
     }
 }
 
