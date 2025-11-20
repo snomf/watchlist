@@ -135,10 +135,11 @@
             </button>
         </div>
 
-        <div class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-            <div class="flex items-center gap-2">
+        <div class="flex flex-col gap-4 mb-6">
+            <!-- First row: Filters and Sort -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
                 <div id="filter-controls"
-                    class="flex items-center bg-bg-secondary rounded-full p-1 overflow-x-auto max-w-[100vw] sm:max-w-none scrollbar-hide">
+                    class="flex items-center bg-bg-secondary rounded-full p-1 overflow-x-auto scrollbar-hide flex-shrink-0">
                     <button data-filter="all"
                         class="filter-btn btn-active px-4 py-2 text-sm font-semibold rounded-full transition whitespace-nowrap">All</button>
                     <button data-filter="movie"
@@ -147,21 +148,23 @@
                         class="filter-btn px-4 py-2 text-sm font-semibold rounded-full transition whitespace-nowrap">TV
                         Shows</button>
                 </div>
-                <div class="relative">
+                <div class="relative flex-shrink-0">
                     <select id="sort-select"
-                        class="bg-bg-secondary text-text-primary rounded-full px-4 py-2 appearance-none">
+                        class="bg-bg-secondary text-text-primary rounded-full px-4 py-2 appearance-none w-full sm:w-auto">
                         <option value="default">Default</option>
                         <option value="alphabetical">Alphabetical (A-Z)</option>
                         <option value="release_date">Release Date (Newest)</option>
                         <option value="length">Length (Longest)</option>
                     </select>
-                    <i class="fas fa-sort absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted"></i>
+                    <i
+                        class="fas fa-sort absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"></i>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
+            <!-- Second row: Random and View Controls -->
+            <div class="flex items-center gap-2 justify-between sm:justify-end">
                 <button id="random-movie-btn"
                     class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
-                    <i class="fas fa-dice mr-2"></i> Feeling Lucky?
+                    <i class="fas fa-dice"></i> <span class="hidden sm:inline">Feeling Lucky?</span>
                 </button>
                 <div id="view-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
                     <button data-view="grid" class="view-btn btn-active px-4 py-2 rounded-full transition"><i

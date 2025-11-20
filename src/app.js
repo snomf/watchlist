@@ -1024,8 +1024,8 @@ async function renderSeasonEpisodes(seasonNumber) {
             const stillUrl = episode.still_path ? `https://image.tmdb.org/t/p/w500${episode.still_path}` : 'https://placehold.co/500x281?text=No+Image';
 
             const card = document.createElement('div');
-            card.className = `episode-card flex-shrink-0 w-80 relative rounded-lg overflow-hidden shadow-md bg-bg-primary cursor-pointer snap-start ${isWatched && isEditMode ? 'shake' : ''}`;
-            card.style.minWidth = '20rem'; // 320px - ensure minimum width
+            card.className = `episode-card flex-shrink-0 w-full sm:w-72 md:w-80 relative rounded-lg overflow-hidden shadow-md bg-bg-primary cursor-pointer snap-start ${isWatched && isEditMode ? 'shake' : ''}`;
+            card.style.minWidth = '280px'; // Minimum width for readability (280px instead of 320px)
             card.dataset.episodeNumber = episode.episode_number;
             card.dataset.seasonNumber = seasonNumber;
 
