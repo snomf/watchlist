@@ -2,6 +2,7 @@ import { supabase } from './supabase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
 import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './settings.js';
 import { initializeStarRating } from './features/ratings.js';
+import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, removeFlairFromMedia, renderFlairBadge } from './features/flairs.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -80,6 +81,8 @@ let filteredMedia = []; // To hold the currently visible media
 let currentFilter = 'all';
 let currentView = 'grid';
 let currentSort = 'default';
+let allFlairs = []; // Store all available flairs
+let mediaFlairsMap = new Map(); // Store flairs for each media item (mediaId -> flairs[])
 
 // --- RENDERING ---
 
@@ -238,6 +241,10 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             ` : ''}
         </div>
 
+        <div class="absolute bottom-0 left-0 right-0 p-4 flex flex-wrap gap-1 justify-end items-end pointer-events-none">
+            <!-- Flairs Container -->
+             ${(mediaFlairsMap.get(allMedia.find(i => i.tmdb_id == tmdbId)?.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5')).join('')}
+        </div>
         <div class="absolute bottom-0 left-0 right-0 p-4">
             <!-- Title removed as per user request -->
         </div>
@@ -267,6 +274,11 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         const posterPath = posterUrl.includes('image.tmdb.org') ? posterUrl.replace('https://image.tmdb.org/t/p/w500', '') : null;
         const mediaItem = await ensureMediaItemExists(tmdbId, type, title, posterPath);
         if (!mediaItem) return;
+
+        // Update local map if needed (though ensureMediaItemExists returns the item, we might need to re-fetch flairs if it was just created)
+        if (!mediaFlairsMap.has(mediaItem.id)) {
+            mediaFlairsMap.set(mediaItem.id, []);
+        }
 
         const newWantToWatch = !mediaItem.want_to_watch;
         const updates = { want_to_watch: newWantToWatch };
@@ -747,6 +759,19 @@ async function openMovieModal(tmdbId, type) {
             };
         }
 
+        // --- Flair Management ---
+        const manageFlairsBtn = document.getElementById('manage-flairs-btn');
+        if (manageFlairsBtn) {
+            manageFlairsBtn.onclick = async (e) => {
+                e.preventDefault();
+                // Ensure media exists first
+                const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+                if (mediaItem) {
+                    openFlairModal(mediaItem.id);
+                }
+            };
+        }
+
         // --- Show Modal ---
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
@@ -755,6 +780,124 @@ async function openMovieModal(tmdbId, type) {
     } catch (error) {
         console.error('Error opening movie modal:', error);
     }
+}
+
+// --- FLAIR MANAGEMENT ---
+
+async function openFlairModal(mediaId) {
+    const modal = document.getElementById('flair-modal');
+    const closeBtn = document.getElementById('close-flair-modal-btn');
+    const currentList = document.getElementById('current-flairs-list');
+    const availableList = document.getElementById('available-flairs-list');
+    const toggleCreateBtn = document.getElementById('toggle-create-flair-btn');
+    const createForm = document.getElementById('create-flair-form');
+    const saveNewBtn = document.getElementById('save-new-flair-btn');
+
+    if (!modal) return;
+
+    // Reset UI
+    createForm.classList.add('hidden');
+
+    const renderLists = () => {
+        const assignedFlairs = mediaFlairsMap.get(mediaId) || [];
+
+        // Render Assigned
+        currentList.innerHTML = assignedFlairs.length === 0 ? '<span class="text-text-muted text-sm italic">No flairs assigned</span>' : '';
+        assignedFlairs.forEach(flair => {
+            const badge = document.createElement('div');
+            badge.className = 'relative group cursor-pointer';
+            badge.innerHTML = renderFlairBadge(flair);
+
+            // Remove overlay
+            const removeOverlay = document.createElement('div');
+            removeOverlay.className = 'absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs';
+            removeOverlay.innerHTML = '<i class="fas fa-times"></i>';
+            removeOverlay.onclick = async () => {
+                await removeFlairFromMedia(mediaId, flair.id);
+                // Update local state
+                const updated = mediaFlairsMap.get(mediaId).filter(f => f.id !== flair.id);
+                mediaFlairsMap.set(mediaId, updated);
+                renderLists();
+                renderContent(); // Update grid
+            };
+            badge.appendChild(removeOverlay);
+            currentList.appendChild(badge);
+        });
+
+        // Render Available
+        availableList.innerHTML = '';
+        allFlairs.forEach(flair => {
+            const isAssigned = assignedFlairs.some(f => f.id === flair.id);
+            if (isAssigned) return;
+
+            const badge = document.createElement('div');
+            badge.className = 'cursor-pointer opacity-80 hover:opacity-100 transition-opacity';
+            badge.innerHTML = renderFlairBadge(flair);
+            badge.onclick = async () => {
+                if (assignedFlairs.length >= 2) {
+                    alert('Max 2 flairs per item!');
+                    return;
+                }
+                const result = await assignFlairToMedia(mediaId, flair.id);
+                if (result.success) {
+                    if (!mediaFlairsMap.has(mediaId)) mediaFlairsMap.set(mediaId, []);
+                    mediaFlairsMap.get(mediaId).push(flair);
+                    renderLists();
+                    renderContent(); // Update grid
+                } else {
+                    alert(result.message);
+                }
+            };
+            availableList.appendChild(badge);
+        });
+    };
+
+    renderLists();
+
+    // Event Listeners
+    closeBtn.onclick = () => {
+        modal.classList.add('hidden');
+        modal.classList.add('modal-hidden');
+    };
+
+    // Close on click outside
+    modal.onclick = (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+            modal.classList.add('modal-hidden');
+        }
+    };
+
+    toggleCreateBtn.onclick = () => {
+        createForm.classList.toggle('hidden');
+    };
+
+    saveNewBtn.onclick = async () => {
+        const name = document.getElementById('new-flair-name').value.trim();
+        const color = document.getElementById('new-flair-color').value;
+        const icon = document.getElementById('new-flair-icon').value.trim();
+
+        if (!name) {
+            alert('Name is required');
+            return;
+        }
+
+        const newFlair = await createFlair({ name, color, icon });
+        if (newFlair) {
+            allFlairs.push(newFlair);
+            // Clear form
+            document.getElementById('new-flair-name').value = '';
+            document.getElementById('new-flair-icon').value = '';
+            createForm.classList.add('hidden');
+            renderLists();
+        } else {
+            alert('Failed to create flair');
+        }
+    };
+
+    modal.classList.remove('hidden');
+    modal.classList.remove('modal-hidden');
+    modal.classList.add('flex');
 }
 
 /**
@@ -1945,6 +2088,24 @@ async function initializeApp() {
         // Show a loading indicator while we fetch and sync
         const loadingSpinner = document.getElementById('loading-spinner');
         if (loadingSpinner) loadingSpinner.style.display = 'flex';
+
+        // Load flairs
+        allFlairs = await fetchAllFlairs();
+        console.log('Loaded flairs:', allFlairs);
+
+        // Load flairs for all media
+        const { data: mediaFlairsData, error: mfError } = await supabase
+            .from('media_flairs')
+            .select('media_id, flairs(*)');
+
+        if (!mfError && mediaFlairsData) {
+            mediaFlairsData.forEach(item => {
+                if (!mediaFlairsMap.has(item.media_id)) {
+                    mediaFlairsMap.set(item.media_id, []);
+                }
+                mediaFlairsMap.get(item.media_id).push(item.flairs);
+            });
+        }
 
         // Fetch all media initially
         const { data: allMediaItems, error } = await supabase.from('media').select('*');

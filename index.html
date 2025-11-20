@@ -641,6 +641,73 @@
 
     </div>
 
+    <!-- Flair Management Modal -->
+    <div id="flair-modal" class="fixed inset-0 z-[60] hidden items-center justify-center modal-hidden p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
+        <div class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6 border border-border-primary relative">
+            <button id="close-flair-modal-btn"
+                class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+            <h3 class="text-xl font-bold mb-4 text-white">Manage Flairs</h3>
+
+            <!-- Current Flairs -->
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-text-muted mb-2">Assigned Flairs (Max 2)</h4>
+                <div id="current-flairs-list" class="flex flex-wrap gap-2 min-h-[2rem]">
+                    <!-- Assigned flairs will be injected here -->
+                </div>
+            </div>
+
+            <!-- Available Flairs -->
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-text-muted mb-2">Available Flairs</h4>
+                <div id="available-flairs-list"
+                    class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-border-primary rounded-lg bg-bg-tertiary">
+                    <!-- Available flairs will be injected here -->
+                </div>
+            </div>
+
+            <!-- Create New Flair -->
+            <div class="border-t border-border-primary pt-4">
+                <button id="toggle-create-flair-btn"
+                    class="text-accent-primary hover:underline text-sm font-semibold flex items-center gap-1">
+                    <i class="fas fa-plus"></i> Create New Flair
+                </button>
+
+                <div id="create-flair-form" class="hidden mt-4 space-y-3">
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Name</label>
+                        <input type="text" id="new-flair-name"
+                            class="w-full bg-bg-primary border border-border-primary rounded px-2 py-1 text-sm"
+                            placeholder="e.g., MCU, Horror">
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-xs text-text-muted mb-1">Color</label>
+                            <input type="color" id="new-flair-color"
+                                class="w-full h-8 bg-bg-primary border border-border-primary rounded cursor-pointer"
+                                value="#ef4444">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-text-muted mb-1">Icon (FontAwesome)</label>
+                            <input type="text" id="new-flair-icon"
+                                class="w-full bg-bg-primary border border-border-primary rounded px-2 py-1 text-sm"
+                                placeholder="fas fa-bolt">
+                        </div>
+                    </div>
+                    <button id="save-new-flair-btn"
+                        class="w-full bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 rounded text-sm transition">
+                        Create Flair
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Reaction Tooltip -->
     <div id="reaction-tooltip" class="fixed hidden z-[9999] pointer-events-none">
         <div class="bg-black/80 backdrop-blur-md text-white px-4 py-2 rounded-lg shadow-xl flex items-center gap-3">
