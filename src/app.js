@@ -561,7 +561,7 @@ async function openMovieModal(tmdbId, type) {
         if (bestLogo) {
             const logoUrl = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
             // Using inline style for max-width to ensure it applies
-            titleElement.innerHTML = `<img src="${logoUrl}" alt="${data.title || data.name} Logo" class="max-h-16 object-contain" style="max-width: 12rem;">`;
+            titleElement.innerHTML = `<img src="${logoUrl}" alt="${data.title || data.name} Logo" class="max-h-20 object-contain" style="max-width: 14.4rem;">`;
         } else {
             titleElement.textContent = data.title || data.name;
         }
@@ -779,6 +779,27 @@ async function openMovieModal(tmdbId, type) {
             };
         }
 
+        // --- Marvel Marathon Logic ---
+        const marvelFlairId = '45991eb5-21e1-40ee-8bde-5beee11a7dff';
+        const assignedFlairs = mediaFlairsMap.get(mediaItem.id) || [];
+        const isMarvelMovie = assignedFlairs.some(f => f.id === marvelFlairId || f.name === 'MCU');
+
+        const marvelDisplay = document.getElementById('marvel-marathon-display');
+        const normalContent = document.getElementById('normal-modal-content');
+        const moodControls = document.getElementById('mood-controls');
+
+        if (isMarvelMovie) {
+            if (marvelDisplay) marvelDisplay.classList.remove('hidden');
+            if (marvelDisplay) marvelDisplay.classList.add('flex');
+            if (normalContent) normalContent.classList.add('hidden');
+            if (moodControls) moodControls.classList.add('hidden');
+        } else {
+            if (marvelDisplay) marvelDisplay.classList.add('hidden');
+            if (marvelDisplay) marvelDisplay.classList.remove('flex');
+            if (normalContent) normalContent.classList.remove('hidden');
+            if (moodControls) moodControls.classList.remove('hidden');
+        }
+
         // --- Show Modal ---
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
@@ -805,21 +826,43 @@ async function openFlairModal(mediaId) {
     // Reset UI
     createForm.classList.add('hidden');
 
+    const deleteBtn = document.getElementById('delete-flair-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-flair-btn');
+    const formTitle = document.getElementById('flair-form-title');
+    const editIdInput = document.getElementById('edit-flair-id');
+    const nameInput = document.getElementById('new-flair-name');
+    const colorInput = document.getElementById('new-flair-color');
+    const iconInput = document.getElementById('new-flair-icon');
+
+    // Reset form state
+    const resetForm = () => {
+        createForm.classList.add('hidden');
+        editIdInput.value = '';
+        nameInput.value = '';
+        colorInput.value = '#ef4444';
+        iconInput.value = '';
+        formTitle.textContent = 'NEW FLAIR';
+        saveNewBtn.textContent = 'Create Flair';
+        deleteBtn.classList.add('hidden');
+        cancelEditBtn.classList.add('hidden');
+    };
+
     const renderLists = () => {
+        // Current Flairs
+        currentList.innerHTML = '';
         const assignedFlairs = mediaFlairsMap.get(mediaId) || [];
 
-        // Render Assigned
-        currentList.innerHTML = assignedFlairs.length === 0 ? '<span class="text-text-muted text-sm italic">No flairs assigned</span>' : '';
         assignedFlairs.forEach(flair => {
             const badge = document.createElement('div');
             badge.className = 'relative group cursor-pointer';
-            badge.innerHTML = renderFlairBadge(flair);
+            badge.innerHTML = renderFlairBadge(flair, 'text-sm px-3 py-1');
 
             // Remove overlay
             const removeOverlay = document.createElement('div');
             removeOverlay.className = 'absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs';
             removeOverlay.innerHTML = '<i class="fas fa-times"></i>';
-            removeOverlay.onclick = async () => {
+            removeOverlay.onclick = async (e) => {
+                e.stopPropagation();
                 await removeFlairFromMedia(mediaId, flair.id);
                 // Update local state
                 const updated = mediaFlairsMap.get(mediaId).filter(f => f.id !== flair.id);
@@ -837,15 +880,19 @@ async function openFlairModal(mediaId) {
             currentList.appendChild(badge);
         });
 
-        // Render Available
+        // Available Flairs
         availableList.innerHTML = '';
         allFlairs.forEach(flair => {
-            const isAssigned = assignedFlairs.some(f => f.id === flair.id);
-            if (isAssigned) return;
+            // Skip if already assigned
+            if (assignedFlairs.find(f => f.id === flair.id)) return;
+
+            const container = document.createElement('div');
+            container.className = 'flex items-center gap-2 group';
 
             const badge = document.createElement('div');
-            badge.className = 'cursor-pointer opacity-80 hover:opacity-100 transition-opacity';
-            badge.innerHTML = renderFlairBadge(flair);
+            badge.className = 'cursor-pointer hover:opacity-80';
+            badge.innerHTML = renderFlairBadge(flair, 'text-sm px-3 py-1');
+
             badge.onclick = async () => {
                 if (assignedFlairs.length >= 2) {
                     alert('Max 2 flairs per item!');
@@ -868,7 +915,29 @@ async function openFlairModal(mediaId) {
                     alert(result.message);
                 }
             };
-            availableList.appendChild(badge);
+
+            // Edit Button
+            const editBtn = document.createElement('button');
+            editBtn.className = 'text-xs text-text-muted hover:text-accent-primary opacity-0 group-hover:opacity-100 transition-opacity';
+            editBtn.innerHTML = '<i class="fas fa-pencil-alt"></i>';
+            editBtn.onclick = (e) => {
+                e.stopPropagation();
+                // Populate form
+                editIdInput.value = flair.id;
+                nameInput.value = flair.name;
+                colorInput.value = flair.color;
+                iconInput.value = flair.icon || '';
+
+                formTitle.textContent = 'EDIT FLAIR';
+                saveNewBtn.textContent = 'Update Flair';
+                deleteBtn.classList.remove('hidden');
+                cancelEditBtn.classList.remove('hidden');
+                createForm.classList.remove('hidden');
+            };
+
+            container.appendChild(badge);
+            container.appendChild(editBtn);
+            availableList.appendChild(container);
         });
     };
 
@@ -878,6 +947,7 @@ async function openFlairModal(mediaId) {
     closeBtn.onclick = () => {
         modal.classList.add('hidden');
         modal.classList.add('modal-hidden');
+        resetForm();
     };
 
     // Close on click outside
@@ -885,33 +955,94 @@ async function openFlairModal(mediaId) {
         if (e.target === modal) {
             modal.classList.add('hidden');
             modal.classList.add('modal-hidden');
+            resetForm();
         }
     };
 
     toggleCreateBtn.onclick = () => {
-        createForm.classList.toggle('hidden');
+        if (!createForm.classList.contains('hidden') && !editIdInput.value) {
+            createForm.classList.add('hidden');
+        } else {
+            resetForm(); // Ensure clean state
+            createForm.classList.remove('hidden');
+        }
+    };
+
+    cancelEditBtn.onclick = () => {
+        resetForm();
+    };
+
+    deleteBtn.onclick = async () => {
+        const id = editIdInput.value;
+        if (!id) return;
+        if (confirm('Are you sure you want to delete this flair? This will remove it from all media items.')) {
+            const success = await deleteFlair(id);
+            if (success) {
+                allFlairs = allFlairs.filter(f => f.id !== id);
+                // Also remove from all media maps
+                for (let [mid, flairs] of mediaFlairsMap) {
+                    mediaFlairsMap.set(mid, flairs.filter(f => f.id !== id));
+                }
+                resetForm();
+                renderLists();
+                renderContent();
+            } else {
+                alert('Failed to delete flair.');
+            }
+        }
     };
 
     saveNewBtn.onclick = async () => {
-        const name = document.getElementById('new-flair-name').value.trim();
-        const color = document.getElementById('new-flair-color').value;
-        const icon = document.getElementById('new-flair-icon').value.trim();
+        const name = nameInput.value.trim();
+        const color = colorInput.value;
+        const icon = iconInput.value.trim();
+        const editId = editIdInput.value;
 
         if (!name) {
             alert('Name is required');
             return;
         }
 
-        const newFlair = await createFlair({ name, color, icon });
-        if (newFlair) {
-            allFlairs.push(newFlair);
-            // Clear form
-            document.getElementById('new-flair-name').value = '';
-            document.getElementById('new-flair-icon').value = '';
-            createForm.classList.add('hidden');
-            renderLists();
+        if (editId) {
+            // Update existing
+            const updated = await updateFlair(editId, { name, color, icon });
+            if (updated) {
+                // Update local state
+                const index = allFlairs.findIndex(f => f.id === editId);
+                if (index !== -1) allFlairs[index] = updated;
+
+                // Update maps
+                for (let [mid, flairs] of mediaFlairsMap) {
+                    const fIndex = flairs.findIndex(f => f.id === editId);
+                    if (fIndex !== -1) {
+                        flairs[fIndex] = updated;
+                        mediaFlairsMap.set(mid, [...flairs]); // Trigger reactivity if needed
+                    }
+                }
+
+                resetForm();
+                renderLists();
+                renderContent();
+
+                // Update modal flairs display if open
+                const modalFlairsContainer = document.getElementById('modal-flairs-container');
+                if (modalFlairsContainer) {
+                    const current = mediaFlairsMap.get(mediaId) || [];
+                    modalFlairsContainer.innerHTML = current.map(f => renderFlairBadge(f, 'text-xs px-2 py-1')).join('');
+                }
+            } else {
+                alert('Failed to update flair.');
+            }
         } else {
-            alert('Failed to create flair');
+            // Create new
+            const newFlair = await createFlair({ name, color, icon });
+            if (newFlair) {
+                allFlairs.push(newFlair);
+                resetForm();
+                renderLists();
+            } else {
+                alert('Failed to create flair.');
+            }
         }
     };
 

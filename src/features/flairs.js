@@ -116,6 +116,45 @@ export async function removeFlairFromMedia(mediaId, flairId) {
 }
 
 /**
+ * Updates an existing flair.
+ * @param {string} flairId - The ID of the flair to update.
+ * @param {Object} updates - Object containing fields to update (name, color, icon).
+ * @returns {Promise<Object|null>} The updated flair or null on error.
+ */
+export async function updateFlair(flairId, updates) {
+    const { data, error } = await supabase
+        .from('flairs')
+        .update(updates)
+        .eq('id', flairId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error updating flair:', error);
+        return null;
+    }
+    return data;
+}
+
+/**
+ * Deletes a flair permanently.
+ * @param {string} flairId - The ID of the flair to delete.
+ * @returns {Promise<boolean>} Success status.
+ */
+export async function deleteFlair(flairId) {
+    const { error } = await supabase
+        .from('flairs')
+        .delete()
+        .eq('id', flairId);
+
+    if (error) {
+        console.error('Error deleting flair:', error);
+        return false;
+    }
+    return true;
+}
+
+/**
  * Helper to render a flair badge HTML.
  * @param {Object} flair - The flair object.
  * @param {string} sizeClass - Tailwind classes for size (e.g., 'text-xs px-2 py-1').
