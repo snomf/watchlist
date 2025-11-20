@@ -1942,7 +1942,7 @@ async function initializeApp() {
             });
         }
 
-        // Toggle avatars for user preferences) {
+    } catch (error) {
         console.error('Error during app initialization:', error);
     }
 }
