@@ -241,7 +241,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             ` : ''}
         </div>
 
-        <div class="absolute top-2 right-2 flex flex-col gap-1 z-10 items-end pointer-events-none">
+        <div class="absolute bottom-2 left-2 flex flex-col gap-1 z-10 items-start pointer-events-none">
             <!-- Flairs Container -->
              ${(mediaFlairsMap.get(allMedia.find(i => i.tmdb_id == tmdbId)?.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5 shadow-md')).join('')}
         </div>
@@ -804,6 +804,7 @@ async function openMovieModal(tmdbId, type) {
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
         modal.classList.add('flex');
+        document.querySelector('footer').classList.add('hidden');
 
     } catch (error) {
         console.error('Error opening movie modal:', error);
@@ -1062,6 +1063,7 @@ function setupModalCloseButton() {
         modal.classList.add('hidden');
         modal.classList.add('modal-hidden');
         modal.classList.remove('flex');
+        document.querySelector('footer').classList.remove('hidden');
         // Restore background scrolling
         document.body.style.overflow = '';
 
