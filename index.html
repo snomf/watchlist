@@ -28,7 +28,7 @@
 
     <!-- Allen Easter Egg -->
     <img id="allen-easter-egg" src="https://static.tvtropes.org/pmwiki/pub/images/alan_28sf29.png"
-        class="fixed hidden transition-transform duration-500 cursor-pointer z-0"
+        class="fixed hidden transition-transform duration-500 cursor-pointer z-10"
         style="width: 150px; bottom: 0; right: 20%; transform-origin: bottom center;">
 
     <div id="loading-spinner" class="fixed inset-0 bg-bg-primary flex flex-col justify-center items-center z-[60]">
@@ -512,12 +512,14 @@
         <script type="module" src="/src/features/ratings.js"></script>
         <script type="module" src="/src/settings.js"></script>
         <script type="module" src="/src/app.js"></script>
-        <footer>
-            <p>
-                <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg"
-                    alt="Gemini Logo" width="20" height="20"> ❤️
-            </p>
-        </footer>
+    </div>
+
+    <footer class="relative z-0 text-center py-4 text-text-muted">
+        <p>
+            <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg"
+                alt="Gemini Logo" width="20" height="20"> ❤️
+        </p>
+    </footer>
 </body>
 
 </html>

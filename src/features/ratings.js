@@ -34,11 +34,14 @@ export function initializeStarRating(containerId, initialRating = 0, onRatingCha
             icon.classList.remove('fas', 'fa-star', 'fa-star-half-alt', 'far', 'fa-star'); // Reset classes
 
             if (roundedRating >= starValue) {
-                icon.className = 'star-icon fas fa-star text-yellow-400'; // Full star
+                icon.className = 'star-icon fas fa-star';
+                icon.style.color = 'var(--star-color, #fbbf24)'; // Full star
             } else if (roundedRating >= starValue - 0.5) {
-                icon.className = 'star-icon fas fa-star-half-alt text-yellow-400'; // Half star
+                icon.className = 'star-icon fas fa-star-half-alt';
+                icon.style.color = 'var(--star-color, #fbbf24)'; // Half star
             } else {
                 icon.className = 'star-icon far fa-star text-gray-500'; // Empty star
+                icon.style.color = ''; // Reset
             }
         });
         manualInput.value = rating.toFixed(1);

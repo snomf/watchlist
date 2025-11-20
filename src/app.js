@@ -121,6 +121,12 @@ function renderContent() {
             if (currentFilter === 'tv') {
                 return itemType === 'tv' || itemType === 'series';
             }
+            if (currentFilter === 'watched') {
+                return item.watched === true; // Explicitly check watched property
+            }
+            if (currentFilter === 'rejected') {
+                return item.rejected === true;
+            }
             return false;
         });
     }
@@ -284,7 +290,8 @@ async function getWantToWatchMedia() {
     const { data, error } = await supabase
         .from('media')
         .select('*')
-        .eq('want_to_watch', true);
+        .eq('want_to_watch', true)
+        .order('created_at', { ascending: false }); // Newest first (left)
     if (error) {
         console.error('Error fetching want to watch media:', error);
         return [];
