@@ -241,9 +241,9 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             ` : ''}
         </div>
 
-        <div class="absolute bottom-0 left-0 right-0 p-4 flex flex-wrap gap-1 justify-start items-end pointer-events-none z-20">
+        <div class="absolute top-2 right-2 flex flex-col gap-1 z-10 items-end pointer-events-none">
             <!-- Flairs Container -->
-             ${(mediaFlairsMap.get(allMedia.find(i => i.tmdb_id == tmdbId)?.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5')).join('')}
+             ${(mediaFlairsMap.get(allMedia.find(i => i.tmdb_id == tmdbId)?.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5 shadow-md')).join('')}
         </div>
         <div class="absolute bottom-0 left-0 right-0 p-4">
             <!-- Title removed as per user request -->
@@ -759,6 +759,13 @@ async function openMovieModal(tmdbId, type) {
             };
         }
 
+        // --- Render Flairs in Modal ---
+        const modalFlairsContainer = document.getElementById('modal-flairs-container');
+        if (modalFlairsContainer) {
+            const assignedFlairs = mediaFlairsMap.get(mediaItem.id) || [];
+            modalFlairsContainer.innerHTML = assignedFlairs.map(flair => renderFlairBadge(flair, 'text-xs px-2 py-1')).join('');
+        }
+
         // --- Flair Management ---
         const manageFlairsBtn = document.getElementById('manage-flairs-btn');
         if (manageFlairsBtn) {
@@ -770,18 +777,6 @@ async function openMovieModal(tmdbId, type) {
                     openFlairModal(mediaItem.id);
                 }
             };
-        }
-
-        // --- Render Flairs in Modal ---
-        const modalFlairsContainer = document.getElementById('modal-flairs-container');
-        if (modalFlairsContainer) {
-            const mediaItem = allMedia.find(item => item.tmdb_id == tmdbId);
-            if (mediaItem) {
-                const flairs = mediaFlairsMap.get(mediaItem.id) || [];
-                modalFlairsContainer.innerHTML = flairs.map(flair => renderFlairBadge(flair)).join('');
-            } else {
-                modalFlairsContainer.innerHTML = '';
-            }
         }
 
         // --- Show Modal ---
@@ -832,10 +827,10 @@ async function openFlairModal(mediaId) {
                 renderLists();
                 renderContent(); // Update grid
 
-                // Update modal display if open
+                // Update modal flairs display if open
                 const modalFlairsContainer = document.getElementById('modal-flairs-container');
                 if (modalFlairsContainer) {
-                    modalFlairsContainer.innerHTML = updated.map(f => renderFlairBadge(f)).join('');
+                    modalFlairsContainer.innerHTML = updated.map(f => renderFlairBadge(f, 'text-xs px-2 py-1')).join('');
                 }
             };
             badge.appendChild(removeOverlay);
@@ -863,11 +858,11 @@ async function openFlairModal(mediaId) {
                     renderLists();
                     renderContent(); // Update grid
 
-                    // Update modal display if open
+                    // Update modal flairs display if open
                     const modalFlairsContainer = document.getElementById('modal-flairs-container');
                     if (modalFlairsContainer) {
-                        const current = mediaFlairsMap.get(mediaId) || [];
-                        modalFlairsContainer.innerHTML = current.map(f => renderFlairBadge(f)).join('');
+                        const current = mediaFlairsMap.get(mediaId);
+                        modalFlairsContainer.innerHTML = current.map(f => renderFlairBadge(f, 'text-xs px-2 py-1')).join('');
                     }
                 } else {
                     alert(result.message);
@@ -1092,6 +1087,7 @@ async function renderTVProgress(tmdbId, seasons) {
                     </button>
                 </div>
             </div>
+
             <div id="episodes-carousel-wrapper" class="relative pb-4" style="overflow: hidden;">
                 <!-- Episodes carousel will be loaded here -->
                 <div class="text-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent-primary mx-auto"></div></div>

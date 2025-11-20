@@ -269,14 +269,19 @@
                     <button id="manage-flairs-btn"
                         class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10"
                         title="Manage Flairs">
-                        <i class="fas fa-tag w-6 h-6 flex items-center justify-center"></i>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                            </path>
+                        </svg>
                     </button>
                 </div>
             </div>
             <div class="p-6">
                 <div class="flex justify-between items-start mb-2">
                     <h2 id="modal-title" class="text-3xl font-bold"></h2>
-                    <div id="modal-flairs-container" class="flex flex-wrap gap-2 justify-end"></div>
+                    <div id="modal-flairs-container" class="flex flex-wrap gap-1 justify-end mt-1"></div>
                 </div>
                 <div class="mb-4 flex justify-start">
                     <div
@@ -652,10 +657,11 @@
     </div>
 
     <!-- Flair Management Modal -->
-    <div id="flair-modal" class="fixed inset-0 z-[60] hidden items-center justify-center modal-hidden p-4">
-        <div class="modal-backdrop fixed inset-0"></div>
+    <div id="flair-modal" class="fixed inset-0 z-[60] hidden items-center justify-center modal-hidden p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
+        <div class="modal-backdrop fixed inset-0" id="close-flair-modal-backdrop"></div>
         <div
-            class="bg-bg-secondary rounded-lg shadow-xl z-50 w-full max-w-md mx-auto modal-content relative max-h-full overflow-y-auto">
+            class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6 border border-border-primary relative z-10">
             <button id="close-flair-modal-btn"
                 class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -663,59 +669,58 @@
                     </path>
                 </svg>
             </button>
-            <div class="p-6">
-                <h2 class="text-2xl font-bold mb-4">Manage Flairs</h2>
+            <h3 class="text-xl font-bold mb-4 text-text-primary">Manage Flairs</h3>
 
-                <!-- Current Flairs -->
-                <div class="border border-border-primary rounded-lg p-4 mb-4">
-                    <h3 class="text-lg font-semibold mb-2">Assigned Flairs (Max 2)</h3>
-                    <div id="current-flairs-list" class="flex flex-wrap gap-2 min-h-[2rem]">
-                        <!-- Assigned flairs will be injected here -->
-                    </div>
+            <!-- Current Flairs -->
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-text-muted mb-2">Assigned Flairs (Max 2)</h4>
+                <div id="current-flairs-list"
+                    class="flex flex-wrap gap-2 min-h-[2rem] p-2 border border-border-primary rounded-lg bg-bg-tertiary">
+                    <!-- Assigned flairs will be injected here -->
                 </div>
+            </div>
 
-                <!-- Available Flairs -->
-                <div class="border border-border-primary rounded-lg p-4 mb-4">
-                    <h3 class="text-lg font-semibold mb-2">Available Flairs</h3>
-                    <div id="available-flairs-list"
-                        class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 bg-bg-tertiary rounded-md">
-                        <!-- Available flairs will be injected here -->
-                    </div>
+            <!-- Available Flairs -->
+            <div class="mb-6">
+                <h4 class="text-sm font-semibold text-text-muted mb-2">Available Flairs</h4>
+                <div id="available-flairs-list"
+                    class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-border-primary rounded-lg bg-bg-tertiary custom-scrollbar">
+                    <!-- Available flairs will be injected here -->
                 </div>
+            </div>
 
-                <!-- Create New Flair -->
-                <div class="border border-border-primary rounded-lg p-4">
-                    <button id="toggle-create-flair-btn"
-                        class="text-accent-primary hover:underline text-sm font-semibold flex items-center gap-1">
-                        <i class="fas fa-plus"></i> Create New Flair
+            <!-- Create New Flair -->
+            <div class="border-t border-border-primary pt-4">
+                <button id="toggle-create-flair-btn"
+                    class="text-accent-primary hover:underline text-sm font-semibold flex items-center gap-1">
+                    <i class="fas fa-plus"></i> Create New Flair
+                </button>
+
+                <div id="create-flair-form" class="hidden mt-4 space-y-3 bg-bg-tertiary p-3 rounded-lg">
+                    <div>
+                        <label class="block text-xs text-text-muted mb-1">Name</label>
+                        <input type="text" id="new-flair-name"
+                            class="w-full bg-bg-primary border border-border-primary rounded px-2 py-1 text-sm text-text-primary focus:border-accent-primary outline-none"
+                            placeholder="e.g., MCU, Horror">
+                    </div>
+                    <div class="flex gap-2">
+                        <div class="flex-1">
+                            <label class="block text-xs text-text-muted mb-1">Color</label>
+                            <input type="color" id="new-flair-color"
+                                class="w-full h-8 bg-bg-primary border border-border-primary rounded cursor-pointer"
+                                value="#ef4444">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-text-muted mb-1">Emoji</label>
+                            <input type="text" id="new-flair-icon"
+                                class="w-full bg-bg-primary border border-border-primary rounded px-2 py-1 text-sm text-text-primary focus:border-accent-primary outline-none"
+                                placeholder="🛡️">
+                        </div>
+                    </div>
+                    <button id="save-new-flair-btn"
+                        class="w-full bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 rounded text-sm transition shadow-lg">
+                        Create Flair
                     </button>
-
-                    <div id="create-flair-form" class="hidden mt-4 space-y-3">
-                        <div>
-                            <label class="block text-sm font-medium text-text-secondary mb-1">Name</label>
-                            <input type="text" id="new-flair-name"
-                                class="w-full bg-bg-primary border-border-primary rounded-md p-2 text-text-primary focus:border-accent-primary focus:ring-accent-primary"
-                                placeholder="e.g., MCU, Horror">
-                        </div>
-                        <div class="flex gap-3">
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-text-secondary mb-1">Color</label>
-                                <input type="color" id="new-flair-color"
-                                    class="w-full h-10 bg-bg-primary border-border-primary rounded-md cursor-pointer"
-                                    value="#ef4444">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-sm font-medium text-text-secondary mb-1">Emoji</label>
-                                <input type="text" id="new-flair-icon"
-                                    class="w-full bg-bg-primary border-border-primary rounded-md p-2 text-text-primary focus:border-accent-primary focus:ring-accent-primary"
-                                    placeholder="⚡️ 👻">
-                            </div>
-                        </div>
-                        <button id="save-new-flair-btn"
-                            class="w-full bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 px-4 rounded-lg transition">
-                            Create Flair
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
