@@ -1934,23 +1934,26 @@ async function initializeApp() {
         setupCarouselEditMode();
 
         // Setup notification button
-        notificationBtn.addEventListener('click', () => {
-            alert('Notifications Coming Soon!');
-        });
-    }
+        const notificationBtn = document.getElementById('notification-btn');
+        if (notificationBtn) {
+            notificationBtn.addEventListener('click', () => {
+                alert('Notifications Coming Soon!');
+            });
+        }
+
         // Toggle avatars for user preferences
         const avatarToggle = document.getElementById('avatar-toggle');
-    if (avatarToggle) {
-        avatarToggle.addEventListener('change', (e) => {
-            document.body.classList.toggle('show-avatars', e.target.checked);
-        });
+        if (avatarToggle) {
+            avatarToggle.addEventListener('change', (e) => {
+                document.body.classList.toggle('show-avatars', e.target.checked);
+            });
+        }
+
+        setupAllenEasterEgg();
+
+    } catch (error) {
+        console.error('Error during app initialization:', error);
     }
-
-    setupAllenEasterEgg();
-
-} catch (error) {
-    console.error('Error during app initialization:', error);
-}
 }
 
 // --- EASTER EGG ---
