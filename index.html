@@ -217,7 +217,7 @@
                     </button>
                 </div>
             </div>
-            <h2 class="text-2xl font-bold mb-4">Watched Media</h2>
+            <h2 id="watched-items-header" class="text-2xl font-bold mb-4">Watched Items</h2>
             <div id="movie-grid"
                 class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
                 <!-- Media items will be dynamically inserted here -->
@@ -512,6 +512,118 @@
         <script type="module" src="/src/features/ratings.js"></script>
         <script type="module" src="/src/settings.js"></script>
         <script type="module" src="/src/app.js"></script>
+        <div id="avatar-modal" class="fixed inset-0 z-[60] hidden items-center justify-center modal-hidden p-4">
+            <div class="modal-backdrop fixed inset-0" id="close-avatar-modal-backdrop"></div>
+            <div
+                class="bg-bg-secondary rounded-lg shadow-xl z-50 w-full md:w-[480px] mx-auto modal-content relative flex flex-col max-h-[90vh]">
+                <button id="close-avatar-modal-btn"
+                    class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+
+                <div class="p-6 overflow-y-auto custom-scrollbar">
+                    <h2 class="text-2xl font-bold mb-6 text-center">Choose Avatar</h2>
+
+                    <!-- Preview Section -->
+                    <div class="flex justify-center mb-8">
+                        <div id="avatar-preview-display"
+                            class="w-32 h-32 rounded-full shadow-2xl border-4 border-bg-tertiary flex items-center justify-center text-4xl font-bold text-white relative overflow-hidden">
+                            <!-- Content injected by JS -->
+                            <span>J</span>
+                        </div>
+                    </div>
+
+                    <!-- 1. Select User -->
+                    <div class="mb-6">
+                        <h3 class="text-lg font-semibold mb-3">1. Select User</h3>
+                        <div class="flex gap-4">
+                            <button id="avatar-user-juainny"
+                                class="flex-1 py-3 px-4 rounded-lg border-2 border-border-primary hover:border-accent-primary transition font-semibold text-center avatar-user-btn"
+                                data-user="juainny">
+                                Juainny
+                            </button>
+                            <button id="avatar-user-erick"
+                                class="flex-1 py-3 px-4 rounded-lg border-2 border-border-primary hover:border-accent-primary transition font-semibold text-center avatar-user-btn"
+                                data-user="erick">
+                                Erick
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Mode Toggle -->
+                    <div class="flex bg-bg-tertiary rounded-lg p-1 mb-6">
+                        <button id="avatar-mode-gradient"
+                            class="flex-1 py-2 rounded-md text-sm font-semibold transition bg-bg-secondary text-text-primary shadow-sm avatar-mode-btn"
+                            data-mode="gradient">Gradient Generator</button>
+                        <button id="avatar-mode-image"
+                            class="flex-1 py-2 rounded-md text-sm font-semibold transition text-text-muted hover:text-text-primary avatar-mode-btn"
+                            data-mode="image">Custom Image URL</button>
+                    </div>
+
+                    <!-- Gradient Controls -->
+                    <div id="avatar-gradient-controls">
+                        <!-- 2. Select Colors -->
+                        <div class="mb-6">
+                            <h3 class="text-lg font-semibold mb-3">2. Select Colors</h3>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div>
+                                    <label class="text-sm text-text-muted mb-2 block">Color 1</label>
+                                    <div class="grid grid-cols-4 gap-2" id="color-picker-1">
+                                        <!-- Colors injected by JS -->
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-sm text-text-muted mb-2 block">Color 2</label>
+                                    <div class="grid grid-cols-4 gap-2" id="color-picker-2">
+                                        <!-- Colors injected by JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Select Icon -->
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold mb-3">3. Select Icon</h3>
+                            <div class="grid grid-cols-5 gap-3" id="icon-picker">
+                                <!-- Icons injected by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Controls -->
+                    <div id="avatar-image-controls" class="hidden mb-8">
+                        <h3 class="text-lg font-semibold mb-3">Upload Image</h3>
+                        <div class="flex flex-col items-center justify-center w-full">
+                            <label for="avatar-file-input"
+                                class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border-primary rounded-lg cursor-pointer hover:bg-bg-tertiary transition">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <svg class="w-8 h-8 mb-4 text-text-muted" aria-hidden="true"
+                                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
+                                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
+                                    </svg>
+                                    <p class="mb-2 text-sm text-text-muted"><span class="font-semibold">Click to
+                                            upload</span> or drag and drop</p>
+                                    <p class="text-xs text-text-muted">SVG, PNG, JPG or GIF</p>
+                                </div>
+                                <input id="avatar-file-input" type="file" class="hidden" accept="image/*" />
+                            </label>
+                            <p id="avatar-file-name" class="text-sm text-text-primary mt-2 hidden"></p>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <button id="save-avatar-btn"
+                        class="w-full bg-accent-primary hover:bg-accent-secondary text-white font-bold py-4 rounded-lg transition shadow-lg transform active:scale-95">
+                        Save
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <footer class="relative z-0 text-center py-4 text-text-muted">

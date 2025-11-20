@@ -1,6 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
-import { initializeSettings, loadAndApplySettings } from './settings.js';
+import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './settings.js';
 import { initializeStarRating } from './features/ratings.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -221,13 +221,17 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             ${allMedia.find(item => item.tmdb_id == tmdbId)?.juainny_reaction ? `
                 <div class="relative w-8 h-8 group/reaction">
                     <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
-                    <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-purple-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">J</div>
+                    <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                        ${getAvatarHTML('juainny', 'w-full h-full')}
+                    </div>
                 </div>
             ` : ''}
             ${allMedia.find(item => item.tmdb_id == tmdbId)?.erick_reaction ? `
                 <div class="relative w-8 h-8 group/reaction">
                     <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
-                    <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">E</div>
+                    <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                        ${getAvatarHTML('erick', 'w-full h-full')}
+                    </div>
                 </div>
             ` : ''}
         </div>
@@ -415,13 +419,17 @@ function renderCarousel(containerId, mediaItems) {
                 ${item.juainny_reaction ? `
                     <div class="relative w-8 h-8 group/reaction">
                         <img src="moods/${item.juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
-                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-purple-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">J</div>
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                            ${getAvatarHTML('juainny', 'w-full h-full')}
+                        </div>
                     </div>
                 ` : ''}
                 ${item.erick_reaction ? `
                     <div class="relative w-8 h-8 group/reaction">
                         <img src="moods/${item.erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
-                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 rounded-full text-[8px] flex items-center justify-center text-white font-bold border border-white">E</div>
+                        <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                            ${getAvatarHTML('erick', 'w-full h-full')}
+                        </div>
                     </div>
                 ` : ''}
             </div>
@@ -619,6 +627,22 @@ async function openMovieModal(tmdbId, type) {
         await initializeStarRating('juainny-rating-container', currentMediaItem?.juainny_rating || 0, debouncedSave);
         await initializeStarRating('erick-rating-container', currentMediaItem?.erick_rating || 0, debouncedSave);
 
+        // --- Update Avatars in Ratings Section ---
+        const updateRatingAvatar = (user, elementId) => {
+            const el = document.getElementById(elementId);
+            if (el) {
+                const newHTML = getAvatarHTML(user, 'w-10 h-10 mr-3');
+                // We need to preserve the ID
+                const temp = document.createElement('div');
+                temp.innerHTML = newHTML;
+                const newEl = temp.firstElementChild;
+                newEl.id = elementId;
+                el.replaceWith(newEl);
+            }
+        };
+        updateRatingAvatar('juainny', 'juainny-avatar');
+        updateRatingAvatar('erick', 'erick-avatar');
+
         // --- Favorites ---
         updateFavoriteGlow(currentMediaItem);
 
@@ -814,8 +838,15 @@ async function renderTVProgress(tmdbId, seasons) {
             .single();
 
         if (mediaError) {
-            console.error('Error fetching media:', mediaError);
-            throw new Error('Could not find media in database');
+            // Media not in database yet - show helpful message
+            container.innerHTML = `
+                <div class="text-center py-8 px-4">
+                    <i class="fas fa-info-circle text-accent-primary text-3xl mb-3"></i>
+                    <p class="text-text-muted">You must be currently watching this series for episode progress</p>
+                    <p class="text-text-muted text-sm mt-2">Mark this series as "Currently Watching" to track your progress</p>
+                </div>
+            `;
+            return; // Exit gracefully instead of throwing
         }
 
         currentInternalMediaId = mediaData.id; // Store for later use
@@ -1510,7 +1541,19 @@ function setupFavoriteButton() {
         if (e.target.matches('button')) {
             const userId = e.target.id.replace('-btn', ''); // 'user1', 'user2', 'remove-all'
             const tmdbId = currentMediaItem.tmdb_id;
-            let currentFavorites = currentMediaItem.favorited_by || [];
+            const itemType = currentMediaItem.type || currentMediaItem.media_type;
+            const title = currentMediaItem.title || currentMediaItem.name;
+            const posterPath = currentMediaItem.poster_path;
+
+            // Ensure media item exists in database
+            const mediaItem = await ensureMediaItemExists(tmdbId, itemType, title, posterPath);
+            if (!mediaItem) {
+                console.error('Failed to ensure media item exists');
+                userMenu.classList.add('hidden');
+                return;
+            }
+
+            let currentFavorites = mediaItem.favorited_by || [];
 
             if (userId === 'remove-all') {
                 currentFavorites = [];
@@ -1897,12 +1940,18 @@ async function initializeApp() {
         const exitSearchMode = () => {
             searchBar.value = '';
             currentMedia = allMedia;
+            currentFilter = 'all'; // Reset filter to show all items
             sortSelect.value = 'default';
             currentSort = 'default';
             sortSelect.disabled = false;
             homeBtn.classList.add('hidden');
             currentlyWatchingSection.classList.remove('hidden');
             wantToWatchSection.classList.remove('hidden');
+
+            // Show section headers
+            const watchedItemsHeader = document.getElementById('watched-items-header');
+            if (watchedItemsHeader) watchedItemsHeader.classList.remove('hidden');
+
             renderContent();
         };
 
@@ -1914,6 +1963,11 @@ async function initializeApp() {
                 homeBtn.classList.remove('hidden');
                 currentlyWatchingSection.classList.add('hidden');
                 wantToWatchSection.classList.add('hidden');
+
+                // Hide section headers in search mode
+                const watchedItemsHeader = document.getElementById('watched-items-header');
+                if (watchedItemsHeader) watchedItemsHeader.classList.add('hidden');
+
                 const searchResults = await searchTMDB(searchTerm);
                 currentMedia = searchResults;
                 currentSort = 'popularity';
