@@ -975,14 +975,14 @@ async function renderSeasonEpisodes(seasonNumber) {
 
         // Create carousel structure - properly constrained to prevent page-wide scrolling
         wrapper.innerHTML = `
-            <div class="episodes-carousel-container relative px-12" style="position: relative;">
-                <button class="episodes-nav-btn episodes-nav-left absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-all shadow-lg" style="position: absolute;">
+            <div class="episodes-carousel-container relative px-2 sm:px-12" style="position: relative;">
+                <button class="episodes-nav-btn episodes-nav-left absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-10 bg-black/70 hover:bg-black/90 text-white p-2 sm:p-3 rounded-full transition-all shadow-lg hidden sm:block" style="position: absolute;">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <div id="episodes-carousel" class="flex overflow-x-auto gap-4 pb-4 px-2 scroll-smooth snap-x snap-mandatory" style="touch-action: pan-x; overscroll-behavior-x: contain; overscroll-behavior-y: none;">
+                <div id="episodes-carousel" class="flex overflow-x-auto gap-3 sm:gap-4 pb-4 px-1 sm:px-2 scroll-smooth snap-x snap-mandatory" style="touch-action: pan-x; overscroll-behavior-x: contain; overscroll-behavior-y: none;">
                     <!-- Episodes will be inserted here -->
                 </div>
-                <button class="episodes-nav-btn episodes-nav-right absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/70 hover:bg-black/90 text-white p-3 rounded-full transition-all shadow-lg" style="position: absolute;">
+                <button class="episodes-nav-btn episodes-nav-right absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-10 bg-black/70 hover:bg-black/90 text-white p-2 sm:p-3 rounded-full transition-all shadow-lg hidden sm:block" style="position: absolute;">
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
@@ -1024,8 +1024,8 @@ async function renderSeasonEpisodes(seasonNumber) {
             const stillUrl = episode.still_path ? `https://image.tmdb.org/t/p/w500${episode.still_path}` : 'https://placehold.co/500x281?text=No+Image';
 
             const card = document.createElement('div');
-            card.className = `episode-card flex-shrink-0 w-full sm:w-72 md:w-80 relative rounded-lg overflow-hidden shadow-md bg-bg-primary cursor-pointer snap-start ${isWatched && isEditMode ? 'shake' : ''}`;
-            card.style.minWidth = '280px'; // Minimum width for readability (280px instead of 320px)
+            card.className = `episode-card flex-shrink-0 w-[calc(100vw-4rem)] sm:w-72 md:w-80 relative rounded-lg overflow-hidden shadow-md bg-bg-primary cursor-pointer snap-start ${isWatched && isEditMode ? 'shake' : ''}`;
+            card.style.maxWidth = '400px'; // Cap maximum width
             card.dataset.episodeNumber = episode.episode_number;
             card.dataset.seasonNumber = seasonNumber;
 

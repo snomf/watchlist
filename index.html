@@ -135,9 +135,9 @@
             </button>
         </div>
 
-        <div class="flex flex-col gap-4 mb-6">
-            <!-- First row: Filters and Sort -->
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+            <!-- Filters and Sort -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
                 <div id="filter-controls"
                     class="flex items-center bg-bg-secondary rounded-full p-1 overflow-x-auto scrollbar-hide flex-shrink-0">
                     <button data-filter="all"
@@ -160,8 +160,8 @@
                         class="fas fa-sort absolute right-3 top-1/2 transform -translate-y-1/2 text-text-muted pointer-events-none"></i>
                 </div>
             </div>
-            <!-- Second row: Random and View Controls -->
-            <div class="flex items-center gap-2 justify-between sm:justify-end">
+            <!-- Random and View Controls -->
+            <div class="flex items-center gap-2 justify-between sm:justify-end md:justify-start">
                 <button id="random-movie-btn"
                     class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
                     <i class="fas fa-dice"></i> <span class="hidden sm:inline">Feeling Lucky?</span>
