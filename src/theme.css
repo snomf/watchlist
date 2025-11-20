@@ -297,7 +297,9 @@
 
 @media (max-width: 768px) {
     body {
-        background-attachment: scroll;
+        /* background-attachment: scroll; REMOVED to keep it fixed */
+        overflow-x: hidden;
+        /* Prevent horizontal scroll */
     }
 
     .nav-pill {
@@ -429,6 +431,18 @@
     border-radius: 50%;
     width: 2.5rem;
     height: 2.5rem;
+    z-index: 10;
+    /* Ensure it's above other elements */
+}
+
+.carousel-nav.left-0 {
+    left: 0.5rem;
+    /* Give it some space from the edge */
+}
+
+.carousel-nav.right-0 {
+    right: 0.5rem;
+    /* Give it some space from the edge */
 }
 
 @keyframes shake {
