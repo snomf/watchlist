@@ -209,7 +209,6 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
 
     movieCard.innerHTML = `
         <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
-        <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
         
         <!-- Reactions Overlay -->
         <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
@@ -1935,16 +1934,67 @@ async function initializeApp() {
         setupCarouselEditMode();
 
         // Setup notification button
-        const notificationBtn = document.getElementById('notification-btn');
-        if (notificationBtn) {
-            notificationBtn.addEventListener('click', () => {
-                alert('Notifications Coming Soon!');
-            });
-        }
-
-    } catch (error) {
-        console.error('Error during app initialization:', error);
+        notificationBtn.addEventListener('click', () => {
+            alert('Notifications Coming Soon!');
+        });
     }
+        // Toggle avatars for user preferences
+        const avatarToggle = document.getElementById('avatar-toggle');
+    if (avatarToggle) {
+        avatarToggle.addEventListener('change', (e) => {
+            document.body.classList.toggle('show-avatars', e.target.checked);
+        });
+    }
+
+    setupAllenEasterEgg();
+
+} catch (error) {
+    console.error('Error during app initialization:', error);
+}
+}
+
+// --- EASTER EGG ---
+let allenTimeout;
+
+export function setupAllenEasterEgg() {
+    const allen = document.getElementById('allen-easter-egg');
+    if (!allen) return;
+
+    // Clear existing timeout
+    if (allenTimeout) clearTimeout(allenTimeout);
+
+    // Check theme
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+
+    if (currentTheme !== 'smiling-friends') {
+        allen.classList.add('hidden');
+        allen.style.transform = 'scale(1)'; // Reset scale
+        return;
+    }
+
+    // Random time between 37s and 90s
+    const minTime = 37000;
+    const maxTime = 90000;
+    const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
+
+    console.log(`Allen will appear in ${randomTime / 1000} seconds...`);
+
+    allenTimeout = setTimeout(() => {
+        allen.classList.remove('hidden');
+        // Ensure he's visible and full size
+        allen.style.transform = 'scale(1)';
+    }, randomTime);
+
+    // Click interaction
+    allen.onclick = () => {
+        allen.style.transform = 'scale(0)';
+        setTimeout(() => {
+            allen.classList.add('hidden');
+            // Reset for next time? Or just once per session? 
+            // Let's restart the timer for endless fun
+            setupAllenEasterEgg();
+        }, 500); // Wait for transition
+    };
 }
 
 /**

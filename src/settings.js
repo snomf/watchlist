@@ -1,4 +1,5 @@
 import { supabase } from './supabase-client.js';
+import { setupAllenEasterEgg } from './app.js'; // Import the function
 
 let allMediaForWallpapers = [];
 
@@ -172,10 +173,20 @@ export async function loadAndApplySettings() {
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');
     if (wallpaper_url) {
         document.body.style.backgroundImage = `url('${wallpaper_url}')`;
-        wallpaperOverlay.style.display = 'block';
+        // Hide overlay for Smiling Friends theme, show for others
+        if (theme === 'smiling-friends') {
+            wallpaperOverlay.style.display = 'none';
+        } else {
+            wallpaperOverlay.style.display = 'block';
+        }
     } else {
         document.body.style.backgroundImage = 'none';
         wallpaperOverlay.style.display = 'none';
+    }
+
+    // Trigger Easter Egg check
+    if (typeof setupAllenEasterEgg === 'function') {
+        setupAllenEasterEgg();
     }
 
     // Set the selected option in the dropdown

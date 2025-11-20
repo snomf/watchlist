@@ -24,7 +24,13 @@
 <body class="font-sans text-text-primary bg-bg-primary">
 
 
-    <div id="wallpaper-overlay" class="fixed inset-0 bg-black bg-opacity-50 -z-10" style="display: none;"></div>
+    <div id="wallpaper-overlay" class="fixed inset-0 bg-black/50 pointer-events-none z-[-1]"></div>
+
+    <!-- Allen Easter Egg -->
+    <img id="allen-easter-egg" src="https://static.tvtropes.org/pmwiki/pub/images/alan_28sf29.png"
+        class="fixed hidden transition-transform duration-500 cursor-pointer z-0"
+        style="width: 150px; bottom: 0; right: 20%; transform-origin: bottom center;">
+
     <div id="loading-spinner" class="fixed inset-0 bg-bg-primary flex flex-col justify-center items-center z-[60]">
         <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-accent-primary"></div>
         <p id="loading-fact" class="text-text-primary text-lg mt-8 text-center px-4"></p>
@@ -437,81 +443,81 @@
                         <button data-theme="smiling-friends"
                             class="theme-btn p-4 rounded-lg border-2 border-border-primary">Smiling Friends</button>
                     </div>
-                    <p class="text-xs text-text-muted mt-2">*no light theme haha</p>
-                </div>
-                <div class="border border-border-primary rounded-lg p-4 mt-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold">Hide Search Results Without Images</h3>
-                        <label for="hide-search-images-toggle" class="inline-flex relative items-center cursor-pointer">
-                            <input type="checkbox" value="" id="hide-search-images-toggle" class="sr-only peer">
-                            <div
-                                class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary">
-                            </div>
-                        </label>
-                    </div>
-                </div>
-                <div class="border border-border-primary rounded-lg p-4 mt-4">
-                    <h3 class="text-lg font-semibold mb-2">Avatars</h3>
-                    <div class="flex gap-4">
-                        <button id="avatar-picker-user1-btn"
-                            class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
-                            <span>Juainny's Avatar</span>
-                            <div id="user1-avatar-preview" class="w-10 h-10 rounded-full mt-2"></div>
-                        </button>
-                        <button id="avatar-picker-user2-btn"
-                            class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
-                            <span>Erick's Avatar</span>
-                            <div id="user2-avatar-preview" class="w-10 h-10 rounded-full mt-2"></div>
-                        </button>
-                    </div>
-                </div>
-                <div class="mt-6">
-                    <h3 class="text-lg font-semibold mb-2">Select a manual wallpaper</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label for="movie-banner-select" class="block text-sm font-medium text-text-secondary">Movie
-                                Banner</label>
-                            <select id="movie-banner-select"
-                                class="mt-1 block w-full rounded-md bg-bg-tertiary border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary">
-                                <option value="">-- Select a Movie --</option>
-                            </select>
+                    <div class="border border-border-primary rounded-lg p-4 mt-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold">Hide Search Results Without Images</h3>
+                            <label for="hide-search-images-toggle"
+                                class="inline-flex relative items-center cursor-pointer">
+                                <input type="checkbox" value="" id="hide-search-images-toggle" class="sr-only peer">
+                                <div
+                                    class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary">
+                                </div>
+                            </label>
                         </div>
                     </div>
-                </div>
-                <div class="border border-border-primary rounded-lg p-4 mt-4">
-                    <h3 class="text-lg font-semibold mb-2">Data Management</h3>
-                    <div class="flex gap-4">
-                        <button id="soft-refresh-btn"
-                            class="flex-1 bg-accent-primary hover:bg-accent-secondary text-text-primary font-bold py-2 px-4 rounded-lg transition">Soft
-                            Refresh</button>
-                        <button id="emergency-refresh-btn"
-                            class="flex-1 bg-danger hover:opacity-80 text-text-primary font-bold py-2 px-4 rounded-lg transition">Emergency
-                            Refresh</button>
+                    <div class="border border-border-primary rounded-lg p-4 mt-4">
+                        <h3 class="text-lg font-semibold mb-2">Avatars</h3>
+                        <div class="flex gap-4">
+                            <button id="avatar-picker-user1-btn"
+                                class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
+                                <span>Juainny's Avatar</span>
+                                <div id="user1-avatar-preview" class="w-10 h-10 rounded-full mt-2"></div>
+                            </button>
+                            <button id="avatar-picker-user2-btn"
+                                class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
+                                <span>Erick's Avatar</span>
+                                <div id="user2-avatar-preview" class="w-10 h-10 rounded-full mt-2"></div>
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div class="mt-6 flex justify-between">
-                    <button id="remove-wallpaper-btn"
-                        class="bg-danger hover:opacity-80 text-text-primary font-bold py-2 px-4 rounded-lg transition">Remove
-                        Wallpaper</button>
-                    <div>
-                        <button id="save-settings-btn"
-                            class="bg-success hover:opacity-80 text-text-primary font-bold py-2 px-4 rounded-lg transition">Save</button>
+                    <div class="mt-6">
+                        <h3 class="text-lg font-semibold mb-2">Select a manual wallpaper</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="movie-banner-select"
+                                    class="block text-sm font-medium text-text-secondary">Movie
+                                    Banner</label>
+                                <select id="movie-banner-select"
+                                    class="mt-1 block w-full rounded-md bg-bg-tertiary border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary">
+                                    <option value="">-- Select a Movie --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border border-border-primary rounded-lg p-4 mt-4">
+                        <h3 class="text-lg font-semibold mb-2">Data Management</h3>
+                        <div class="flex gap-4">
+                            <button id="soft-refresh-btn"
+                                class="flex-1 bg-accent-primary hover:bg-accent-secondary text-text-primary font-bold py-2 px-4 rounded-lg transition">Soft
+                                Refresh</button>
+                            <button id="emergency-refresh-btn"
+                                class="flex-1 bg-danger hover:opacity-80 text-text-primary font-bold py-2 px-4 rounded-lg transition">Emergency
+                                Refresh</button>
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-between">
+                        <button id="remove-wallpaper-btn"
+                            class="bg-danger hover:opacity-80 text-text-primary font-bold py-2 px-4 rounded-lg transition">Remove
+                            Wallpaper</button>
+                        <div>
+                            <button id="save-settings-btn"
+                                class="bg-success hover:opacity-80 text-text-primary font-bold py-2 px-4 rounded-lg transition">Save</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
-    <script type="module" src="/src/supabase-client.js"></script>
-    <script type="module" src="/src/features/ratings.js"></script>
-    <script type="module" src="/src/settings.js"></script>
-    <script type="module" src="/src/app.js"></script>
-    <footer>
-        <p>
-            <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg"
-                alt="Gemini Logo" width="20" height="20"> ❤️
-        </p>
-    </footer>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+        <script type="module" src="/src/supabase-client.js"></script>
+        <script type="module" src="/src/features/ratings.js"></script>
+        <script type="module" src="/src/settings.js"></script>
+        <script type="module" src="/src/app.js"></script>
+        <footer>
+            <p>
+                <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg"
+                    alt="Gemini Logo" width="20" height="20"> ❤️
+            </p>
+        </footer>
 </body>
 
 </html>
