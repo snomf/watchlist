@@ -241,7 +241,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             ` : ''}
         </div>
 
-        <div class="absolute bottom-2 left-2 flex flex-col gap-1 z-10 items-start pointer-events-none">
+        <div class="absolute top-2 left-2 flex flex-col gap-1 z-10 items-start pointer-events-none" style="margin-top: 2rem;">
             <!-- Flairs Container -->
              ${(mediaFlairsMap.get(allMedia.find(i => i.tmdb_id == tmdbId)?.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5 shadow-md')).join('')}
         </div>
@@ -460,11 +460,6 @@ function renderCarousel(containerId, mediaItems) {
                         </div>
                     </div>
                 ` : ''}
-            </div>
-
-            <!-- Flairs Container -->
-            <div class="absolute bottom-2 left-2 flex flex-col gap-1 z-10 items-start pointer-events-none">
-                ${(mediaFlairsMap.get(item.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5 shadow-md')).join('')}
             </div>
 
             <div class="absolute bottom-0 left-0 right-0 p-2">
