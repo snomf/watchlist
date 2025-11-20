@@ -219,7 +219,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         <!-- Reactions Overlay -->
         <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
             ${allMedia.find(item => item.tmdb_id == tmdbId)?.juainny_reaction ? `
-                <div class="relative w-8 h-8 group/reaction">
+                <div class="relative w-8 h-8 group/reaction cursor-pointer reaction-item" data-user="Juainny" data-reaction="${allMedia.find(item => item.tmdb_id == tmdbId).juainny_reaction}">
                     <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
                     <div class="absolute -bottom-1 -right-1 w-4 h-4">
                         ${getAvatarHTML('juainny', 'w-full h-full')}
@@ -227,7 +227,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
                 </div>
             ` : ''}
             ${allMedia.find(item => item.tmdb_id == tmdbId)?.erick_reaction ? `
-                <div class="relative w-8 h-8 group/reaction">
+                <div class="relative w-8 h-8 group/reaction cursor-pointer reaction-item" data-user="Erick" data-reaction="${allMedia.find(item => item.tmdb_id == tmdbId).erick_reaction}">
                     <img src="moods/${allMedia.find(item => item.tmdb_id == tmdbId).erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
                     <div class="absolute -bottom-1 -right-1 w-4 h-4">
                         ${getAvatarHTML('erick', 'w-full h-full')}
@@ -243,6 +243,16 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             <i class="fas fa-bookmark"></i>
         </button>
     `;
+
+    // Add hover event listeners to reactions
+    movieCard.querySelectorAll('.reaction-item').forEach(reactionEl => {
+        reactionEl.addEventListener('mouseenter', (e) => {
+            showReactionTooltip(e.currentTarget);
+        });
+        reactionEl.addEventListener('mouseleave', () => {
+            hideReactionTooltip();
+        });
+    });
 
     // Stop propagation on the bookmark icon to prevent the modal from opening
     const bookmarkBtn = movieCard.querySelector('.bookmark-icon');
@@ -417,7 +427,7 @@ function renderCarousel(containerId, mediaItems) {
             <!-- Reactions Overlay -->
             <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
                 ${item.juainny_reaction ? `
-                    <div class="relative w-8 h-8 group/reaction">
+                    <div class="relative w-8 h-8 group/reaction cursor-pointer reaction-item" data-user="Juainny" data-reaction="${item.juainny_reaction}">
                         <img src="moods/${item.juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
                         <div class="absolute -bottom-1 -right-1 w-4 h-4">
                             ${getAvatarHTML('juainny', 'w-full h-full')}
@@ -425,7 +435,7 @@ function renderCarousel(containerId, mediaItems) {
                     </div>
                 ` : ''}
                 ${item.erick_reaction ? `
-                    <div class="relative w-8 h-8 group/reaction">
+                    <div class="relative w-8 h-8 group/reaction cursor-pointer reaction-item" data-user="Erick" data-reaction="${item.erick_reaction}">
                         <img src="moods/${item.erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
                         <div class="absolute -bottom-1 -right-1 w-4 h-4">
                             ${getAvatarHTML('erick', 'w-full h-full')}
@@ -438,6 +448,17 @@ function renderCarousel(containerId, mediaItems) {
                  <!-- Title removed -->
             </div>
         `;
+
+        // Add hover event listeners to reactions
+        card.querySelectorAll('.reaction-item').forEach(reactionEl => {
+            reactionEl.addEventListener('mouseenter', (e) => {
+                showReactionTooltip(e.currentTarget);
+            });
+            reactionEl.addEventListener('mouseleave', () => {
+                hideReactionTooltip();
+            });
+        });
+
         card.addEventListener('click', () => openMovieModal(tmdbId, type));
         scrollContainer.appendChild(card);
     });
@@ -2003,9 +2024,12 @@ async function initializeApp() {
         setupWatchedButtons();
         setupSortControls();
         initializeSettings();
-        loadAndApplySettings();
+        await loadAndApplySettings(); // Wait for settings and avatars to load
         setupUserMenu();
         setupCarouselEditMode();
+
+        // Refresh avatars after settings are loaded
+        refreshAllReactionAvatars();
 
         // Setup notification button
         const notificationBtn = document.getElementById('notification-btn');
@@ -2429,7 +2453,7 @@ export function refreshAllReactionAvatars() {
                 let reactionsHTML = '';
                 if (mediaItem.juainny_reaction) {
                     reactionsHTML += `
-                        <div class="relative w-8 h-8 group/reaction">
+                        <div class="relative w-8 h-8 group/reaction cursor-pointer reaction-item" data-user="Juainny" data-reaction="${mediaItem.juainny_reaction}">
                             <img src="moods/${mediaItem.juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4">
                                 ${getAvatarHTML('juainny', 'w-full h-full')}
@@ -2439,7 +2463,7 @@ export function refreshAllReactionAvatars() {
                 }
                 if (mediaItem.erick_reaction) {
                     reactionsHTML += `
-                        <div class="relative w-8 h-8 group/reaction">
+                        <div class="relative w-8 h-8 group/reaction cursor-pointer reaction-item" data-user="Erick" data-reaction="${mediaItem.erick_reaction}">
                             <img src="moods/${mediaItem.erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
                             <div class="absolute -bottom-1 -right-1 w-4 h-4">
                                 ${getAvatarHTML('erick', 'w-full h-full')}
@@ -2448,6 +2472,16 @@ export function refreshAllReactionAvatars() {
                     `;
                 }
                 reactionContainer.innerHTML = reactionsHTML;
+
+                // Re-attach event listeners
+                reactionContainer.querySelectorAll('.reaction-item').forEach(reactionEl => {
+                    reactionEl.addEventListener('mouseenter', (e) => {
+                        showReactionTooltip(e.currentTarget);
+                    });
+                    reactionEl.addEventListener('mouseleave', () => {
+                        hideReactionTooltip();
+                    });
+                });
             }
         }
     });
@@ -2455,6 +2489,51 @@ export function refreshAllReactionAvatars() {
     // Update modal if it's open
     if (currentMediaItem) {
         updateModalReactionDisplay();
+    }
+}
+
+/**
+ * Shows a tooltip when hovering over a reaction
+ */
+function showReactionTooltip(reactionElement) {
+    const tooltip = document.getElementById('reaction-tooltip');
+    const tooltipAvatar = document.getElementById('tooltip-avatar');
+    const tooltipText = document.getElementById('tooltip-text');
+
+    if (!tooltip || !tooltipAvatar || !tooltipText) return;
+
+    const user = reactionElement.dataset.user; // "Juainny" or "Erick"
+    const reactionFile = reactionElement.dataset.reaction; // e.g., "neutral.png"
+
+    // Get reaction name from filename (remove .png and capitalize)
+    const reactionName = reactionFile.replace('.png', '').replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+
+    // Set avatar
+    tooltipAvatar.innerHTML = getAvatarHTML(user.toLowerCase(), 'w-6 h-6');
+
+    // Set text
+    tooltipText.textContent = `${user} reacted with ${reactionName}`;
+
+    // Position tooltip
+    const rect = reactionElement.getBoundingClientRect();
+    tooltip.style.left = `${rect.left + rect.width / 2}px`;
+    tooltip.style.top = `${rect.bottom + 8}px`; // 8px below the reaction
+    tooltip.style.transform = 'translateX(-50%)'; // Center horizontally
+
+    // Show tooltip
+    tooltip.classList.remove('hidden');
+}
+
+/**
+ * Hides the reaction tooltip
+ */
+function hideReactionTooltip() {
+    const tooltip = document.getElementById('reaction-tooltip');
+    if (tooltip) {
+        tooltip.classList.add('hidden');
     }
 }
 
