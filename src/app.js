@@ -1416,14 +1416,9 @@ async function saveRatingsAndNotes() {
             .select()
             .single();
     } else {
-        // Insert new item
-        let itemType = currentMediaItem.type;
-        if (itemType === 'tv') itemType = 'series'; // Normalize to 'series'
-        response = await supabase
-            .from('media')
-            .insert([{ ...updates, tmdb_id: tmdbId, type: itemType, title: currentMediaItem.title, poster_path: currentMediaItem.poster_path }])
-            .select()
-            .single();
+        // Don't auto-insert new items - user must explicitly add to watchlist first
+        console.log('Ratings and notes not saved: item not in database. Add to watchlist first.');
+        return;
     }
 
     const { data, error } = response;
@@ -2347,10 +2342,9 @@ async function saveReaction(tmdbId, user, mood) {
         }
     }
 
-    // If we still don't have title/type, ensureMediaItemExists might fetch or create a barebones entry.
-    // But usually we are reacting to something visible.
+    // Don't auto-create items in database - only save reactions for items that already exist
+    // This prevents database bloat from just viewing/browsing items
 
-    await ensureMediaItemExists(tmdbId, type, title, poster_path);
 
     // Optimistic update
     if (currentMediaItem && currentMediaItem.tmdb_id == tmdbId) {
