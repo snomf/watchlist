@@ -225,12 +225,22 @@ export async function loadAndApplySettings() {
  * Initializes the settings functionality and event listeners.
  */
 export function initializeSettings() {
+    console.log('Initializing Settings module...');
     const settingsBtn = document.getElementById('settings-btn');
     const closeSettingsBtn = document.getElementById('close-settings-modal-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const removeWallpaperBtn = document.getElementById('remove-wallpaper-btn');
 
-    if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
+    if (settingsBtn) {
+        console.log('Settings button found, attaching listener.');
+        settingsBtn.addEventListener('click', (e) => {
+            console.log('Settings button clicked');
+            openSettingsModal(e);
+        });
+    } else {
+        console.error('Settings button NOT found in DOM during initialization.');
+    }
+
     if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettingsModal);
     if (saveSettingsBtn) saveSettingsBtn.addEventListener('click', saveSettings);
 

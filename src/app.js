@@ -814,6 +814,53 @@ async function openMovieModal(tmdbId, type) {
         modal.classList.remove('modal-hidden');
         modal.classList.add('flex');
 
+        // --- Triple Click Stats Update ---
+        const statsPill = document.getElementById('modal-stats-pill');
+        if (statsPill) {
+            let clickCount = 0;
+            let clickTimer = null;
+
+            statsPill.onclick = async () => {
+                clickCount++;
+                if (clickCount === 1) {
+                    clickTimer = setTimeout(() => {
+                        clickCount = 0;
+                    }, 500); // Reset after 500ms
+                } else if (clickCount === 3) {
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+
+                    // Trigger Update
+                    const year = document.getElementById('modal-release-year').textContent;
+                    const runtimeText = document.getElementById('modal-runtime').textContent;
+                    const rating = document.getElementById('modal-content-rating').textContent;
+
+                    // Parse runtime back to minutes (rough estimate or use data)
+                    // Better to use the data object we have
+                    const runtimeMinutes = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 0);
+                    const releaseDate = data.release_date || data.first_air_date;
+
+                    if (confirm(`Update database with:\nYear: ${releaseDate}\nRuntime: ${runtimeMinutes}m\nRating: ${contentRating}`)) {
+                        const { error } = await supabase
+                            .from('media')
+                            .update({
+                                release_date: releaseDate,
+                                runtime: runtimeMinutes,
+                                content_rating: contentRating
+                            })
+                            .eq('tmdb_id', tmdbId);
+
+                        if (error) {
+                            alert('Failed to update stats.');
+                            console.error(error);
+                        } else {
+                            alert('Updated database with runtime, year date, and rating.');
+                        }
+                    }
+                }
+            };
+        }
+
     } catch (error) {
         console.error('Error opening movie modal:', error);
     }
@@ -1176,18 +1223,51 @@ async function renderTVProgress(tmdbId, seasons) {
             .single();
 
         if (mediaError) {
-            // Media not in database yet - show helpful message
-            container.innerHTML = `
-                <div class="text-center py-8 px-4">
-                    <i class="fas fa-info-circle text-accent-primary text-3xl mb-3"></i>
-                    <p class="text-text-muted">You must be currently watching this series for episode progress</p>
-                    <p class="text-text-muted text-sm mt-2">Mark this series as "Currently Watching" to track your progress</p>
-                </div>
-            `;
-            return; // Exit gracefully instead of throwing
-        }
+            // Plan 2: Media not in database yet - Fetch from TMDB and save it!
+            console.log('Media not in DB. Executing Plan 2: Fetch and Save.');
 
-        currentInternalMediaId = mediaData.id; // Store for later use
+            try {
+                // Fetch details from TMDB to get necessary info for DB
+                const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
+                if (!tmdbResponse.ok) throw new Error('Failed to fetch TV details from TMDB');
+                const tmdbData = await tmdbResponse.json();
+
+                // Insert into Supabase
+                const { data: newItem, error: insertError } = await supabase
+                    .from('media')
+                    .insert({
+                        tmdb_id: tmdbId,
+                        type: 'series',
+                        title: tmdbData.name,
+                        poster_path: tmdbData.poster_path,
+                        backdrop_path: tmdbData.backdrop_path,
+                        release_date: tmdbData.first_air_date,
+                        source: 'fetched', // Mark as fetched so it doesn't clutter main view if filtered
+                        runtime: tmdbData.episode_run_time?.[0] || 0,
+                        content_rating: 'N/A' // We could fetch this too if needed
+                    })
+                    .select('id')
+                    .single();
+
+                if (insertError) throw insertError;
+
+                currentInternalMediaId = newItem.id;
+                console.log('Plan 2 Successful: Media saved to DB with ID:', currentInternalMediaId);
+
+            } catch (err) {
+                console.error('Plan 2 Failed:', err);
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4">
+                        <i class="fas fa-exclamation-circle text-danger text-3xl mb-3"></i>
+                        <p class="text-text-muted">Failed to sync TV show data.</p>
+                        <p class="text-text-muted text-sm mt-2">Please try adding it to your watchlist manually first.</p>
+                    </div>
+                `;
+                return;
+            }
+        } else {
+            currentInternalMediaId = mediaData.id; // Store for later use
+        }
 
         // Query for each viewer separately and merge results
         const [juainnyResponse, erickResponse] = await Promise.all([
