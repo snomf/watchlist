@@ -241,7 +241,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             ` : ''}
         </div>
 
-        <div class="absolute top-2 right-2 flex flex-col gap-1 z-10 items-end pointer-events-none">
+        <div class="absolute bottom-2 left-2 flex flex-col gap-1 z-10 items-start pointer-events-none">
             <!-- Flairs Container -->
              ${(mediaFlairsMap.get(allMedia.find(i => i.tmdb_id == tmdbId)?.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5 shadow-md')).join('')}
         </div>
@@ -465,6 +465,11 @@ function renderCarousel(containerId, mediaItems) {
             <div class="absolute bottom-0 left-0 right-0 p-2">
                  <!-- Title removed -->
             </div>
+            
+            <div class="absolute bottom-2 left-2 flex flex-col gap-1 z-10 items-start pointer-events-none">
+                <!-- Flairs Container -->
+                 ${(mediaFlairsMap.get(item.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5 shadow-md')).join('')}
+            </div>
         `;
 
         // Add hover event listeners to reactions
@@ -500,6 +505,10 @@ async function openMovieModal(tmdbId, type) {
 
     // Prevent background scrolling
     document.body.style.overflow = 'hidden';
+
+    // Hide footer
+    const footer = document.querySelector('footer');
+    if (footer) footer.classList.add('hidden');
 
     // --- TV Progress ---
     const tvProgressSection = document.getElementById('tv-progress-section');
@@ -1064,6 +1073,10 @@ function setupModalCloseButton() {
         modal.classList.remove('flex');
         // Restore background scrolling
         document.body.style.overflow = '';
+
+        // Show footer
+        const footer = document.querySelector('footer');
+        if (footer) footer.classList.remove('hidden');
 
         // Stop the Iron Man walker if it's walking
         const walker = document.getElementById('iron-man-walker');

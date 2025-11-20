@@ -298,6 +298,7 @@
 @media (max-width: 768px) {
     body {
         /* background-attachment: scroll; REMOVED to keep it fixed */
+        background-attachment: fixed;
         overflow-x: hidden;
         /* Prevent horizontal scroll */
     }
