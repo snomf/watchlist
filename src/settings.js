@@ -338,6 +338,23 @@ export function initializeSettings() {
             }
         });
     }
+
+    // URL Input Handler
+    const urlInput = document.getElementById('avatar-url-input');
+    if (urlInput) {
+        urlInput.addEventListener('input', (e) => {
+            const url = e.target.value.trim();
+            if (url) {
+                // Clear file input
+                if (fileInput) fileInput.value = '';
+                document.getElementById('avatar-file-name').textContent = '';
+                document.getElementById('avatar-file-name').classList.add('hidden');
+
+                currentAvatarState.imageUrl = url;
+                renderAvatarPreview();
+            }
+        });
+    }
 }
 
 // --- AVATAR LOGIC ---
@@ -582,6 +599,11 @@ async function saveAvatar() {
     } else {
         // Update UI across the app
         await loadAndApplySettings();
+
+        // Refresh all reaction avatars immediately
+        const { refreshAllReactionAvatars } = await import('./app.js');
+        refreshAllReactionAvatars();
+
         closeAvatarModal();
     }
 }

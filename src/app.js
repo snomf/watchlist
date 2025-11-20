@@ -1553,7 +1553,19 @@ function setupFavoriteButton() {
                 return;
             }
 
-            let currentFavorites = mediaItem.favorited_by || [];
+            // Ensure favorited_by is an array (handle various database formats)
+            let currentFavorites = mediaItem.favorited_by;
+            if (!currentFavorites) {
+                currentFavorites = [];
+            } else if (typeof currentFavorites === 'string') {
+                try {
+                    currentFavorites = JSON.parse(currentFavorites);
+                } catch (e) {
+                    currentFavorites = [];
+                }
+            } else if (!Array.isArray(currentFavorites)) {
+                currentFavorites = [];
+            }
 
             if (userId === 'remove-all') {
                 currentFavorites = [];
@@ -1940,7 +1952,7 @@ async function initializeApp() {
         const exitSearchMode = () => {
             searchBar.value = '';
             currentMedia = allMedia;
-            currentFilter = 'all'; // Reset filter to show all items
+            currentFilter = 'watched'; // Reset to watched filter (default for main view)
             sortSelect.value = 'default';
             currentSort = 'default';
             sortSelect.disabled = false;
@@ -1953,6 +1965,7 @@ async function initializeApp() {
             if (watchedItemsHeader) watchedItemsHeader.classList.remove('hidden');
 
             renderContent();
+            refreshAllReactionAvatars(); // Refresh avatars after render
         };
 
         searchBar.addEventListener('input', async (e) => {
@@ -2363,7 +2376,9 @@ function updateModalReactionDisplay() {
         container.innerHTML += `
         <div class="relative group" title="Juainny's Reaction">
             <img src="moods/${currentMediaItem.juainny_reaction}" class="w-10 h-10 object-contain drop-shadow-md">
-                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-purple-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold border border-white">J</div>
+                <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                    ${getAvatarHTML('juainny', 'w-full h-full')}
+                </div>
             </div>
     `;
     }
@@ -2372,7 +2387,9 @@ function updateModalReactionDisplay() {
         container.innerHTML += `
         <div class="relative group" title="Erick's Reaction">
             <img src="moods/${currentMediaItem.erick_reaction}" class="w-10 h-10 object-contain drop-shadow-md">
-                <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold border border-white">E</div>
+                <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                    ${getAvatarHTML('erick', 'w-full h-full')}
+                </div>
             </div>
     `;
     }
@@ -2392,6 +2409,52 @@ function updateModalReactionDisplay() {
         };
     } else {
         removeBtn.classList.add('hidden');
+    }
+}
+
+/**
+ * Refreshes all reaction avatars across the page (movie cards and carousels)
+ */
+export function refreshAllReactionAvatars() {
+    // Update all movie cards in the grid
+    document.querySelectorAll('.movie-card').forEach(card => {
+        const tmdbId = card.dataset.tmdbId;
+        const mediaItem = allMedia.find(item => item.tmdb_id == tmdbId);
+
+        if (mediaItem) {
+            // Find reaction containers
+            const reactionContainer = card.querySelector('.absolute.top-2.left-2');
+            if (reactionContainer) {
+                // Rebuild reaction HTML
+                let reactionsHTML = '';
+                if (mediaItem.juainny_reaction) {
+                    reactionsHTML += `
+                        <div class="relative w-8 h-8 group/reaction">
+                            <img src="moods/${mediaItem.juainny_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                                ${getAvatarHTML('juainny', 'w-full h-full')}
+                            </div>
+                        </div>
+                    `;
+                }
+                if (mediaItem.erick_reaction) {
+                    reactionsHTML += `
+                        <div class="relative w-8 h-8 group/reaction">
+                            <img src="moods/${mediaItem.erick_reaction}" class="w-full h-full object-contain drop-shadow-md">
+                            <div class="absolute -bottom-1 -right-1 w-4 h-4">
+                                ${getAvatarHTML('erick', 'w-full h-full')}
+                            </div>
+                        </div>
+                    `;
+                }
+                reactionContainer.innerHTML = reactionsHTML;
+            }
+        }
+    });
+
+    // Update modal if it's open
+    if (currentMediaItem) {
+        updateModalReactionDisplay();
     }
 }
 
