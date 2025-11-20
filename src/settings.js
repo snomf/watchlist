@@ -187,6 +187,9 @@ export async function loadAndApplySettings() {
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');
     if (wallpaper_url) {
         document.body.style.backgroundImage = `url('${wallpaper_url}')`;
+        document.body.style.backgroundAttachment = 'fixed';
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
         // Hide overlay for Smiling Friends theme, show for others
         if (theme === 'smiling-friends') {
             wallpaperOverlay.style.display = 'none';

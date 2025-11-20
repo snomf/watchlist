@@ -462,6 +462,11 @@ function renderCarousel(containerId, mediaItems) {
                 ` : ''}
             </div>
 
+            <!-- Flairs Container -->
+            <div class="absolute bottom-2 left-2 flex flex-col gap-1 z-10 items-start pointer-events-none">
+                ${(mediaFlairsMap.get(item.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5 shadow-md')).join('')}
+            </div>
+
             <div class="absolute bottom-0 left-0 right-0 p-2">
                  <!-- Title removed -->
             </div>
@@ -804,7 +809,6 @@ async function openMovieModal(tmdbId, type) {
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
         modal.classList.add('flex');
-        document.querySelector('footer').classList.add('hidden');
 
     } catch (error) {
         console.error('Error opening movie modal:', error);
@@ -1063,7 +1067,6 @@ function setupModalCloseButton() {
         modal.classList.add('hidden');
         modal.classList.add('modal-hidden');
         modal.classList.remove('flex');
-        document.querySelector('footer').classList.remove('hidden');
         // Restore background scrolling
         document.body.style.overflow = '';
 
