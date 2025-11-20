@@ -7,15 +7,28 @@ let allMediaForWallpapers = [];
  * Opens the settings modal and populates it with current data.
  */
 export async function openSettingsModal() {
+    console.log('openSettingsModal called');
     const settingsModal = document.getElementById('settings-modal');
-    if (!settingsModal) return;
+    if (!settingsModal) {
+        console.error('Settings modal element not found!');
+        return;
+    }
 
-    await populateWallpaperSelector();
-    await loadAndApplySettings();
+    try {
+        console.log('Populating wallpaper selector...');
+        await populateWallpaperSelector();
+        console.log('Loading current settings...');
+        await loadAndApplySettings();
+    } catch (error) {
+        console.error('Error preparing settings modal:', error);
+        // Continue opening modal even if prep fails
+    }
 
+    console.log('Showing settings modal...');
     settingsModal.classList.remove('hidden');
     settingsModal.classList.remove('modal-hidden');
     settingsModal.classList.add('flex');
+    console.log('Settings modal classes updated:', settingsModal.className);
 
     // Add listeners to theme buttons for instant wallpaper preview/selection
     const themeBtns = document.querySelectorAll('.theme-btn');

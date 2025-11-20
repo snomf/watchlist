@@ -1067,20 +1067,24 @@ async function openFlairModal(mediaId) {
                 const index = allFlairs.findIndex(f => f.id === editId);
                 if (index !== -1) allFlairs[index] = updated;
 
-                // Update maps
+                // Update maps - Update this flair in all media items that have it
                 for (let [mid, flairs] of mediaFlairsMap) {
                     const fIndex = flairs.findIndex(f => f.id === editId);
                     if (fIndex !== -1) {
                         flairs[fIndex] = updated;
-                        mediaFlairsMap.set(mid, [...flairs]); // Trigger reactivity if needed
                     }
                 }
 
                 resetForm();
                 renderLists();
-                renderContent();
 
-                // Update modal flairs display if open
+                // Refresh UI
+                renderContent();
+                const [cw, ww] = await Promise.all([getCurrentlyWatchingMedia(), getWantToWatchMedia()]);
+                renderCarousel('currently-watching-carousel', cw);
+                renderCarousel('want-to-watch-carousel', ww);
+
+                // Update modal if open
                 const modalFlairsContainer = document.getElementById('modal-flairs-container');
                 if (modalFlairsContainer) {
                     const current = mediaFlairsMap.get(mediaId) || [];
@@ -1096,6 +1100,10 @@ async function openFlairModal(mediaId) {
                 allFlairs.push(newFlair);
                 resetForm();
                 renderLists();
+
+                // Refresh UI (though creating a flair doesn't assign it yet, so maybe not strictly needed here, but good for consistency if we add auto-assign later)
+                // Actually, this is just creating a flair definition. Assigning is done via checkboxes in renderLists -> toggleFlair.
+                // So we need to check where assignment happens.
             } else {
                 alert('Failed to create flair.');
             }
@@ -2285,7 +2293,26 @@ function setupViewControls() {
 
 async function initializeApp() {
     try {
-        // Render carousels
+        // --- 1. Load Flairs FIRST ---
+        // Load flairs
+        allFlairs = await fetchAllFlairs();
+        console.log('Loaded flairs:', allFlairs);
+
+        // Load flairs for all media
+        const { data: mediaFlairsData, error: mfError } = await supabase
+            .from('media_flairs')
+            .select('media_id, flairs(*)');
+
+        if (!mfError && mediaFlairsData) {
+            mediaFlairsData.forEach(item => {
+                if (!mediaFlairsMap.has(item.media_id)) {
+                    mediaFlairsMap.set(item.media_id, []);
+                }
+                mediaFlairsMap.get(item.media_id).push(item.flairs);
+            });
+        }
+
+        // --- 2. Render Carousels ---
         const currentlyWatchingMedia = await getCurrentlyWatchingMedia();
         renderCarousel('currently-watching-carousel', currentlyWatchingMedia);
 
@@ -2334,23 +2361,7 @@ async function initializeApp() {
         const loadingSpinner = document.getElementById('loading-spinner');
         if (loadingSpinner) loadingSpinner.style.display = 'flex';
 
-        // Load flairs
-        allFlairs = await fetchAllFlairs();
-        console.log('Loaded flairs:', allFlairs);
-
-        // Load flairs for all media
-        const { data: mediaFlairsData, error: mfError } = await supabase
-            .from('media_flairs')
-            .select('media_id, flairs(*)');
-
-        if (!mfError && mediaFlairsData) {
-            mediaFlairsData.forEach(item => {
-                if (!mediaFlairsMap.has(item.media_id)) {
-                    mediaFlairsMap.set(item.media_id, []);
-                }
-                mediaFlairsMap.get(item.media_id).push(item.flairs);
-            });
-        }
+        // (Flairs loaded at the top now)
 
         // Fetch all media initially
         const { data: allMediaItems, error } = await supabase.from('media').select('*');
