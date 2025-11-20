@@ -85,6 +85,7 @@ let currentSort = 'default';
 
 async function searchTMDB(query) {
     if (!query) return [];
+    console.log('searchTMDB called with query:', query);
     const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
     try {
         const response = await fetch(searchUrl);
@@ -98,6 +99,7 @@ async function searchTMDB(query) {
             results = results.filter(item => item.poster_path);
         }
 
+        console.log('searchTMDB returning', results.length, 'results');
         return results;
     } catch (error) {
         console.error('Error searching TMDB:', error);
@@ -1984,26 +1986,40 @@ async function initializeApp() {
             refreshAllReactionAvatars(); // Refresh avatars after render
         };
 
-        searchBar.addEventListener('input', async (e) => {
-            const searchTerm = e.target.value.trim();
-            if (searchTerm === '') {
-                exitSearchMode();
-            } else {
-                homeBtn.classList.remove('hidden');
-                currentlyWatchingSection.classList.add('hidden');
-                wantToWatchSection.classList.add('hidden');
+        // Use both 'input' and 'keyup' events for better compatibility
+        const handleSearch = async (e) => {
+            try {
+                const searchTerm = e.target.value.trim();
+                if (searchTerm === '') {
+                    exitSearchMode();
+                } else {
+                    homeBtn.classList.remove('hidden');
+                    currentlyWatchingSection.classList.add('hidden');
+                    wantToWatchSection.classList.add('hidden');
 
-                // Hide section headers in search mode
-                const watchedItemsHeader = document.getElementById('watched-items-header');
-                if (watchedItemsHeader) watchedItemsHeader.classList.add('hidden');
+                    // Hide section headers in search mode
+                    const watchedItemsHeader = document.getElementById('watched-items-header');
+                    if (watchedItemsHeader) watchedItemsHeader.classList.add('hidden');
 
-                const searchResults = await searchTMDB(searchTerm);
-                currentMedia = searchResults;
-                currentSort = 'popularity';
-                sortSelect.disabled = true;
-                renderContent();
+                    const searchResults = await searchTMDB(searchTerm);
+                    currentMedia = searchResults;
+                    currentSort = 'popularity';
+                    sortSelect.disabled = true;
+                    renderContent();
+                }
+            } catch (error) {
+                console.error('Error in search handler:', error);
             }
-        });
+        };
+
+        // Attach multiple event listeners for resilience
+        searchBar.addEventListener('input', handleSearch);
+        searchBar.addEventListener('keyup', handleSearch);
+
+        // Prevent browser extensions from interfering
+        searchBar.addEventListener('focus', (e) => {
+            e.stopPropagation();
+        }, true);
 
         homeBtn.addEventListener('click', exitSearchMode);
         logoContainer.addEventListener('click', exitSearchMode);
