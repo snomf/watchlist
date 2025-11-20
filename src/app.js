@@ -241,7 +241,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             ` : ''}
         </div>
 
-        <div class="absolute bottom-0 left-0 right-0 p-4 flex flex-wrap gap-1 justify-end items-end pointer-events-none">
+        <div class="absolute bottom-0 left-0 right-0 p-4 flex flex-wrap gap-1 justify-start items-end pointer-events-none z-20">
             <!-- Flairs Container -->
              ${(mediaFlairsMap.get(allMedia.find(i => i.tmdb_id == tmdbId)?.id) || []).map(flair => renderFlairBadge(flair, 'text-[10px] px-1.5 py-0.5')).join('')}
         </div>
@@ -772,6 +772,18 @@ async function openMovieModal(tmdbId, type) {
             };
         }
 
+        // --- Render Flairs in Modal ---
+        const modalFlairsContainer = document.getElementById('modal-flairs-container');
+        if (modalFlairsContainer) {
+            const mediaItem = allMedia.find(item => item.tmdb_id == tmdbId);
+            if (mediaItem) {
+                const flairs = mediaFlairsMap.get(mediaItem.id) || [];
+                modalFlairsContainer.innerHTML = flairs.map(flair => renderFlairBadge(flair)).join('');
+            } else {
+                modalFlairsContainer.innerHTML = '';
+            }
+        }
+
         // --- Show Modal ---
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
@@ -819,6 +831,12 @@ async function openFlairModal(mediaId) {
                 mediaFlairsMap.set(mediaId, updated);
                 renderLists();
                 renderContent(); // Update grid
+
+                // Update modal display if open
+                const modalFlairsContainer = document.getElementById('modal-flairs-container');
+                if (modalFlairsContainer) {
+                    modalFlairsContainer.innerHTML = updated.map(f => renderFlairBadge(f)).join('');
+                }
             };
             badge.appendChild(removeOverlay);
             currentList.appendChild(badge);
@@ -844,6 +862,13 @@ async function openFlairModal(mediaId) {
                     mediaFlairsMap.get(mediaId).push(flair);
                     renderLists();
                     renderContent(); // Update grid
+
+                    // Update modal display if open
+                    const modalFlairsContainer = document.getElementById('modal-flairs-container');
+                    if (modalFlairsContainer) {
+                        const current = mediaFlairsMap.get(mediaId) || [];
+                        modalFlairsContainer.innerHTML = current.map(f => renderFlairBadge(f)).join('');
+                    }
                 } else {
                     alert(result.message);
                 }

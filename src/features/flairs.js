@@ -126,10 +126,10 @@ export function renderFlairBadge(flair, sizeClass = 'text-xs px-2 py-0.5') {
     // For now, let's assume white text with a text-shadow or just white.
     // Or we can use the color as background and white text.
     return `
-        <span class="inline-flex items-center gap-1 rounded-full font-semibold shadow-sm ${sizeClass} transform transition-transform hover:scale-105 cursor-default border border-white/20" 
-              style="background-color: ${flair.color}; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-            ${flair.icon ? `<i class="${flair.icon}"></i>` : ''}
-            <span>${flair.name}</span>
-        </span>
+    <span class="inline-flex items-center gap-1 rounded-full font-semibold shadow-sm ${sizeClass} transform transition-transform hover:scale-105 cursor-default border border-white/20"
+        style="background-color: ${flair.color}; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+        ${flair.icon ? `<span class="text-sm">${flair.icon}</span>` : ''}
+        <span>${flair.name}</span>
+    </span>
     `;
 }
