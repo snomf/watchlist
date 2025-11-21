@@ -797,8 +797,8 @@ async function openMovieModal(tmdbId, type) {
         }
 
         // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
-        // Only if we have a tracked item in the DB AND it's watched (not just want_to_watch)
-        if (isItemTracked && trackedItem && trackedItem.id && trackedItem.watched) {
+        // Only show summary for watched OR currently_watching (NOT want_to_watch)
+        if (isItemTracked && trackedItem && trackedItem.id && (trackedItem.watched || trackedItem.currently_watching)) {
             const updates = {};
 
             // --- Willow's Thoughts (AI Summary) ---
@@ -812,10 +812,14 @@ async function openMovieModal(tmdbId, type) {
             // CRITICAL: Reset summary text for new modal (fixes persistence bug)
             summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
-            // Check if ratings/notes exist
-            const hasRatings = trackedItem.user1_rating || trackedItem.user2_rating;
-            const hasNotes = (trackedItem.user1_notes && trackedItem.user1_notes.trim()) ||
-                (trackedItem.user2_notes && trackedItem.user2_notes.trim());
+            // Check if ratings/notes exist (check for actual content, not empty HTML)
+            const hasRatings = (trackedItem.user1_rating && trackedItem.user1_rating > 0) ||
+                (trackedItem.user2_rating && trackedItem.user2_rating > 0);
+
+            // Strip HTML tags and check for actual text content
+            const cleanNote1 = trackedItem.user1_notes?.replace(/<[^>]*>/g, '').trim() || '';
+            const cleanNote2 = trackedItem.user2_notes?.replace(/<[^>]*>/g, '').trim() || '';
+            const hasNotes = cleanNote1.length > 0 || cleanNote2.length > 0;
 
             if (!hasRatings && !hasNotes) {
                 // No ratings or notes - use pre-defined message (saves tokens!)
@@ -3597,15 +3601,14 @@ if (willowChatForm) {
         // Show Typing Indicator
         const typingId = addTypingIndicator();
 
-        // Call AI
-        // Pass allMedia as context
+        // Call AI (now returns { route, text })
         const response = await chatWithWillow(query, allMedia);
 
         // Remove Typing Indicator
         removeChatMessage(typingId);
 
-        // Add AI Message
-        addChatMessage(response, 'ai');
+        // Add AI Message with route indicator
+        addChatMessage(response.text, 'ai', response.route);
         willowChatInput.disabled = false;
         willowChatInput.focus();
     });
@@ -3621,7 +3624,7 @@ function renderMarkdown(text) {
         .replace(/\n/g, '<br>'); // Line breaks
 }
 
-function addChatMessage(text, sender) {
+function addChatMessage(text, sender, route = null) {
     const div = document.createElement('div');
     div.className = `flex items-start gap-2 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
 
@@ -3635,9 +3638,21 @@ function addChatMessage(text, sender) {
 
     const content = sender === 'ai' ? renderMarkdown(text) : text;
 
+    // Route badge styling
+    const routeBadges = {
+        'DATABASE': '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-900/50 text-blue-300 border border-blue-500/30 mb-2">🗄️ Database</span>',
+        'WEB': '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-900/50 text-green-300 border border-green-500/30 mb-2">🌐 Web Search</span>',
+        'KNOWLEDGE': '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-900/50 text-purple-300 border border-purple-500/30 mb-2">💡 Knowledge</span>',
+        'CHAT': '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-700/50 text-gray-300 border border-gray-500/30 mb-2">💬 Chat</span>',
+        'ERROR': '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-900/50 text-red-300 border border-red-500/30 mb-2">⚠️ Error</span>'
+    };
+
+    const badge = route && routeBadges[route] ? routeBadges[route] : '';
+
     div.innerHTML = `
         ${avatar}
         <div class="${bubbleClass} p-3 rounded-2xl text-sm shadow-sm max-w-[85%] markdown-content">
+            ${badge}
             ${content}
         </div>
     `;

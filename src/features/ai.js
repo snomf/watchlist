@@ -33,24 +33,40 @@ Rules:
  * Handles a chat query using the full media database as context.
  * @param {string} query - The user's question.
  * @param {Array} allMedia - The entire array of media items.
- * @returns {Promise<string>} - The AI's response.
+ * @returns {Promise<{ route: string, text: string }>} - The AI's response, including the determined route.
  */
 export async function chatWithWillow(query, allMedia) {
-    // Simple keyword detection for smart routing (saves tokens!)
-    const lowerQuery = query.toLowerCase();
+    // Today's date for context
+    const today = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
 
-    // Database keywords
-    const needsDatabase =
-        /\b(watched|rated|favorite|note|list|recommend from|what did|how many|we watched|we rated|our)\b/i.test(query) ||
-        /\b(juainny|erick|both of)\b/i.test(query);
+    // Step 1: AI decides which method to use (~100 tokens)
+    const routingPrompt = `Today: ${today}
+Query: "${query}"
 
-    // Web search keywords
-    const needsWeb =
-        /\b(when (is|will)|release|coming out|new|latest|2024|2025|streaming|where to watch|trailer)\b/i.test(query) ||
-        /\b(who (is|plays|starred)|cast|director|about|plot)\b/i.test(query);
+Choose ONE:
+A) DATABASE - if asking about Juainny/Erick's watchlist, ratings, or what they've watched
+B) WEB - if asking about releases, cast, new content, or current info
+C) CHAT - if general question or recommendation
 
-    if (needsDatabase) {
-        // DATABASE QUERY - Use our watchlist data
+Reply with ONLY: A, B, or C`;
+
+    let route;
+    try {
+        const decision = await model.generateContent(routingPrompt);
+        const response = await decision.response.text().trim();
+        route = response.includes('A') ? 'DATABASE' :
+            response.includes('B') ? 'WEB' : 'CHAT';
+    } catch (error) {
+        console.error("Routing error:", error);
+        route = 'CHAT'; // Fallback
+    }
+
+    // Step 2: Execute based on route
+    if (route === 'DATABASE') {
         const stats = {
             total: allMedia.length,
             watched: allMedia.filter(i => i.watched).length,
@@ -62,77 +78,62 @@ export async function chatWithWillow(query, allMedia) {
         const titles = allMedia.map(i => ({
             t: i.title || i.name,
             w: i.watched ? 1 : 0,
-            id: i.tmdb_id
+            cw: i.currently_watching ? 1 : 0
         }));
 
-        const prompt = `Database query for Juainny & Erick's watchlist.
+        const prompt = `Today: ${today}
+Stats: ${JSON.stringify(stats)}
+Titles: ${JSON.stringify(titles)}
 
-**Stats:** ${JSON.stringify(stats)}
-**Titles:** ${JSON.stringify(titles)}
-**Question:** ${query}
+Q: ${query}
 
-**Rules:**
-- Ratings are /10
-- Use **markdown**
-- Be brief
-- Answer from database only`;
+Rules: Ratings are /10. Use **markdown**. Brief.`;
 
         try {
             const result = await model.generateContent(prompt);
-            const response = await result.response;
-            return `🗄️ ${response.text()}`; // Database icon
+            return { route: 'DATABASE', text: result.response.text() };
         } catch (error) {
-            console.error("Error with database query:", error);
-            return "Database access failed. Try asking differently!";
+            console.error("Database error:", error);
+            return { route: 'ERROR', text: "Database error!" };
         }
 
-    } else if (needsWeb) {
-        // WEB SEARCH - Use Gemini with grounding
-        const prompt = `${query}
+    } else if (route === 'WEB') {
+        const prompt = `Today: ${today}
 
-Use Google Search to find current, accurate information. Be concise and use **markdown** formatting.`;
+${query}
+
+Use Google Search. Be concise. Use **markdown**.`;
 
         try {
-            // Enable grounding for web search (Gemini 2.0 feature)
+            // Use Firebase Gemini Developer API grounding syntax
             const result = await model.generateContent({
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                tools: [{
-                    googleSearchRetrieval: {
-                        dynamicRetrievalConfig: {
-                            mode: 'MODE_DYNAMIC',
-                            dynamicThreshold: 0.3
-                        }
-                    }
-                }]
+                tools: [{ googleSearch: {} }]  // ✅ Correct Firebase syntax
             });
-            const response = await result.response;
-            return `🌐 ${response.text()}`; // Web icon
+            return { route: 'WEB', text: result.response.text() };
         } catch (error) {
-            console.error("Error with web search:", error);
-            // Fallback to regular generation if grounding not available
+            console.error("Web error:", error);
             try {
                 const fallback = await model.generateContent(prompt);
-                const response = await fallback.response;
-                return `💭 ${response.text()}`; // Thinking icon (no web access)
+                return { route: 'KNOWLEDGE', text: fallback.response.text() };
             } catch (err) {
-                return "Couldn't search the web right now. Try again!";
+                return { route: 'ERROR', text: "Web error!" };
             }
         }
 
     } else {
-        // CONVERSATIONAL - General knowledge, no database/web needed
-        const prompt = `${query}
+        const prompt = `Today: ${today}
 
-Be conversational, brief, and use **markdown**. Keep it under 100 words.`;
+${query}
+
+Conversational, brief, **markdown**. Max 100 words.`;
 
         try {
             const result = await model.generateContent(prompt);
-            const response = await result.response;
-            return `💭 ${response.text()}`; // Thinking icon
+            return { route: 'CHAT', text: result.response.text() };
         } catch (error) {
-            console.error("Error in conversation:", error);
-            return "I'm having trouble thinking right now!";
+            console.error("Chat error:", error);
+            return { route: 'ERROR', text: "Error!" };
         }
     }
 }
-
