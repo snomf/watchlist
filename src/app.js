@@ -61,14 +61,17 @@ async function syncWithTMDB(localMedia) {
                 // Extract and update runtime
                 let runtime = tmdbData.runtime || (tmdbData.episode_run_time && tmdbData.episode_run_time.length > 0 ? tmdbData.episode_run_time[0] : 0);
                 // Fallback for TV runtime if still 0
-                if (item.type === 'tv' && !runtime) {
+                // Handle both 'tv' and 'series' types
+                const isTVShow = item.type === 'tv' || item.type === 'series';
+                if (isTVShow && !runtime) {
                     if (tmdbData.last_episode_to_air && tmdbData.last_episode_to_air.runtime) {
                         runtime = tmdbData.last_episode_to_air.runtime;
                     } else if (tmdbData.next_episode_to_air && tmdbData.next_episode_to_air.runtime) {
                         runtime = tmdbData.next_episode_to_air.runtime;
                     }
                 }
-                if (runtime && (!item.runtime || item.runtime !== runtime)) {
+                // Update runtime if we have a value and it's different (or current is 0/null)
+                if (runtime && (item.runtime === 0 || !item.runtime || item.runtime !== runtime)) {
                     updates.runtime = runtime;
                 }
 
@@ -80,7 +83,7 @@ async function syncWithTMDB(localMedia) {
                         const rating = usRelease.release_dates.find(rd => rd.certification !== '');
                         if (rating) contentRating = rating.certification;
                     }
-                } else if (item.type === 'tv') {
+                } else if (isTVShow) {
                     if (tmdbData.content_ratings && tmdbData.content_ratings.results) {
                         const usRating = tmdbData.content_ratings.results.find(r => r.iso_3166_1 === 'US');
                         if (usRating) {
