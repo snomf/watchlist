@@ -2548,6 +2548,7 @@ async function initializeApp() {
                     const searchResults = await searchTMDB(searchTerm);
                     currentMedia = searchResults;
                     currentSort = 'popularity';
+                    currentFilter = 'all'; // Fix: Reset filter to show all search results
                     sortSelect.disabled = true;
                     renderContent();
                 }
