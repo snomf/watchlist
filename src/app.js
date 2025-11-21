@@ -514,6 +514,7 @@ async function openMovieModal(tmdbId, type) {
     // Check if we have a tracked item in our preloaded data or allMedia
     const trackedItem = allMedia.find(i => i.tmdb_id == tmdbId);
     const isItemTracked = isTracked(trackedItem);
+    console.log('OpenModal - TMDB ID:', tmdbId, 'Tracked Item:', trackedItem, 'Is Tracked:', isItemTracked); // DEBUG
 
     if (type === 'tv' || type === 'series') {
         tvProgressSection.classList.remove('hidden');
@@ -2401,6 +2402,7 @@ function setupViewControls() {
 async function initializeApp() {
     try {
         // --- 1. Load Flairs FIRST ---
+        console.log('App Initializing... v2.1'); // DEBUG
         // Load flairs
         allFlairs = await fetchAllFlairs();
 
@@ -2515,6 +2517,7 @@ async function initializeApp() {
 
         // Use both 'input' and 'keyup' events for better compatibility
         const handleSearch = async (e) => {
+            console.log('Search input event:', e.target.value); // DEBUG
             try {
                 const searchTerm = e.target.value.trim();
                 if (searchTerm === '') {
@@ -2528,6 +2531,7 @@ async function initializeApp() {
                     const watchedItemsHeader = document.getElementById('watched-items-header');
                     if (watchedItemsHeader) watchedItemsHeader.classList.add('hidden');
 
+                    console.log('Executing search for:', searchTerm); // DEBUG
                     const searchResults = await searchTMDB(searchTerm);
                     currentMedia = searchResults;
                     currentSort = 'popularity';
