@@ -1,10 +1,57 @@
 import { supabase } from './supabase-client.js';
-import { loadAndApplySettings, getAvatarHTML, userAvatars } from './settings.js';
 
 let currentUserView = 'juainny'; // Default view
+let userAvatars = { juainny: null, erick: null };
+
+// Minimal settings loader for profile page (avoids importing settings.js which triggers app init)
+async function loadSettings() {
+    const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
+    if (settings) {
+        // Apply theme
+        const theme = settings.theme || 'night';
+        document.documentElement.setAttribute('data-theme', theme);
+
+        // Apply wallpaper
+        const wallpaperOverlay = document.getElementById('wallpaper-overlay');
+        if (settings.wallpaper_url) {
+            document.body.style.backgroundImage = `url('${settings.wallpaper_url}')`;
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+            if (wallpaperOverlay) {
+                wallpaperOverlay.style.display = theme === 'smiling-friends' ? 'none' : 'block';
+            }
+        }
+
+        // Load avatars
+        userAvatars.juainny = settings.user1_avatar;
+        userAvatars.erick = settings.user2_avatar;
+
+        // Set device name
+        const savedDeviceName = localStorage.getItem('device_name');
+        const deviceNameDisplay = document.getElementById('device-name');
+        if (deviceNameDisplay) deviceNameDisplay.textContent = savedDeviceName || 'User';
+    }
+    return settings;
+}
+
+function getAvatarHTML(user, classes = '') {
+    const avatar = userAvatars[user];
+    if (!avatar) {
+        return `<div class="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">${user.charAt(0).toUpperCase()}</div>`;
+    }
+
+    if (avatar.startsWith('emoji:')) {
+        const emoji = avatar.replace('emoji:', '');
+        return `<div class="${classes} flex items-center justify-center text-4xl">${emoji}</div>`;
+    }
+
+    return `<img src="${avatar}" class="${classes} object-cover" alt="${user} avatar">`;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await loadAndApplySettings(); // Load theme, avatars, bios
+    await loadSettings();
     setupUserSwitcher();
     await loadProfile(currentUserView);
 });
