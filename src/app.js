@@ -31,7 +31,9 @@ async function syncWithTMDB(localMedia) {
             if (!item.tmdb_id || !item.type) return item;
 
             const endpoint = item.type === 'movie' ? 'movie' : 'tv';
-            const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${item.tmdb_id}?api_key=${TMDB_API_KEY}`;
+            // Add append_to_response to get complete metadata
+            const appendToResponse = 'release_dates,content_ratings,external_ids';
+            const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${item.tmdb_id}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
 
             try {
                 const response = await fetch(tmdbUrl);
@@ -45,9 +47,60 @@ async function syncWithTMDB(localMedia) {
                 const tmdbTitle = tmdbData.title || tmdbData.name;
                 const updates = {};
 
+                // Update poster and title
                 if (item.poster_path !== tmdbData.poster_path) updates.poster_path = tmdbData.poster_path;
                 if (item.title !== tmdbTitle) updates.title = tmdbTitle;
 
+                // Extract and update release_year
+                const releaseDate = tmdbData.release_date || tmdbData.first_air_date || '';
+                const releaseYear = releaseDate ? parseInt(releaseDate.split('-')[0]) : null;
+                if (releaseYear && (!item.release_year || item.release_year !== releaseYear)) {
+                    updates.release_year = releaseYear;
+                }
+
+                // Extract and update runtime
+                let runtime = tmdbData.runtime || (tmdbData.episode_run_time && tmdbData.episode_run_time.length > 0 ? tmdbData.episode_run_time[0] : 0);
+                // Fallback for TV runtime if still 0
+                if (item.type === 'tv' && !runtime) {
+                    if (tmdbData.last_episode_to_air && tmdbData.last_episode_to_air.runtime) {
+                        runtime = tmdbData.last_episode_to_air.runtime;
+                    } else if (tmdbData.next_episode_to_air && tmdbData.next_episode_to_air.runtime) {
+                        runtime = tmdbData.next_episode_to_air.runtime;
+                    }
+                }
+                if (runtime && (!item.runtime || item.runtime !== runtime)) {
+                    updates.runtime = runtime;
+                }
+
+                // Extract and update content_rating
+                let contentRating = 'N/A';
+                if (item.type === 'movie' && tmdbData.release_dates) {
+                    const usRelease = tmdbData.release_dates.results.find(r => r.iso_3166_1 === 'US');
+                    if (usRelease) {
+                        const rating = usRelease.release_dates.find(rd => rd.certification !== '');
+                        if (rating) contentRating = rating.certification;
+                    }
+                } else if (item.type === 'tv') {
+                    if (tmdbData.content_ratings && tmdbData.content_ratings.results) {
+                        const usRating = tmdbData.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                        if (usRating) {
+                            contentRating = usRating.rating;
+                        } else if (tmdbData.content_ratings.results.length > 0) {
+                            contentRating = tmdbData.content_ratings.results[0].rating;
+                        }
+                    }
+                }
+                if (contentRating !== 'N/A' && (!item.content_rating || item.content_rating === 'N/A' || item.content_rating !== contentRating)) {
+                    updates.content_rating = contentRating;
+                }
+
+                // Extract and update imdb_id
+                const imdbId = tmdbData.external_ids?.imdb_id;
+                if (imdbId && (!item.imdb_id || item.imdb_id !== imdbId)) {
+                    updates.imdb_id = imdbId;
+                }
+
+                // Update database if there are changes
                 if (Object.keys(updates).length > 0) {
                     const { error } = await supabase.from('media').update(updates).eq('id', item.id);
                     if (error) {
@@ -55,6 +108,7 @@ async function syncWithTMDB(localMedia) {
                         errorCount++;
                         return item;
                     }
+                    console.log(`✓ Updated ${item.title}:`, Object.keys(updates).join(', '));
                     updatedCount++;
                     return { ...item, ...updates };
                 }
