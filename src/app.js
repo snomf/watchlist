@@ -2660,8 +2660,8 @@ if (import.meta.hot) {
 const MOODS = [
     '24klabubu.png', 'afraid.png', 'amazed.png', 'angry.png', 'bored.png',
     'celebratory.png', 'crazy.png', 'crying.png', 'disgusted.png', 'happy.png',
-    'melted.png', 'neutral.png', 'not-a-fan.png', 'sad.png', 'satisfied.png',
-    'sexy.png', 'surprised.png', 'thinking.png'
+    'lol.png', 'melted.png', 'neutral.png', 'not-a-fan.png', 'sad.png', 'satisfied.png',
+    'sexy.png', 'surprised.png', 'tea.png', 'thinking.png'
 ];
 
 function openReactionSelector(tmdbId) {
