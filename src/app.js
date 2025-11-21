@@ -87,8 +87,7 @@ let mediaFlairsMap = new Map(); // Store flairs for each media item (mediaId -> 
 // --- RENDERING ---
 
 async function searchTMDB(query) {
-    if (!query) return [];
-    console.log('searchTMDB called with query:', query);
+    if (!query || query.trim() === '') return [];
     const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`;
     try {
         const response = await fetch(searchUrl);
@@ -102,7 +101,6 @@ async function searchTMDB(query) {
             results = results.filter(item => item.poster_path);
         }
 
-        console.log('searchTMDB returning', results.length, 'results');
         return results;
     } catch (error) {
         console.error('Error searching TMDB:', error);
@@ -286,7 +284,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
             updates.currently_watching = false;
         }
 
-        const { error } = await supabase.from('media').update(updates).eq('tmdb_id', tmdbId);
+        const { error } = await supabase.from('media').update(updates).eq('id', item.id);
 
         if (error) {
             console.error('Error updating bookmark from grid:', error);
@@ -381,8 +379,6 @@ function renderCarousel(containerId, mediaItems) {
     leftBtn.className = 'bg-black/50 hover:bg-black/80 text-white p-2 rounded-full cursor-pointer transition-colors';
     leftBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
     leftBtn.addEventListener('click', (e) => {
-        console.log('Left arrow clicked - scrollLeft:', scrollContainer.scrollLeft, 'scrollWidth:', scrollContainer.scrollWidth, 'clientWidth:', scrollContainer.clientWidth);
-        console.log('Computed overflow-x:', window.getComputedStyle(scrollContainer).overflowX);
         e.preventDefault();
         e.stopPropagation();
         const scrollAmount = scrollContainer.clientWidth * 0.8;
@@ -390,9 +386,6 @@ function renderCarousel(containerId, mediaItems) {
             left: scrollContainer.scrollLeft - scrollAmount,
             behavior: 'smooth'
         });
-        setTimeout(() => {
-            console.log('After scroll - scrollLeft:', scrollContainer.scrollLeft);
-        }, 100);
     });
     leftArrow.appendChild(leftBtn);
 
@@ -405,8 +398,6 @@ function renderCarousel(containerId, mediaItems) {
     rightBtn.className = 'bg-black/50 hover:bg-black/80 text-white p-2 rounded-full cursor-pointer transition-colors';
     rightBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
     rightBtn.addEventListener('click', (e) => {
-        console.log('Right arrow clicked - scrollLeft:', scrollContainer.scrollLeft, 'scrollWidth:', scrollContainer.scrollWidth, 'clientWidth:', scrollContainer.clientWidth);
-        console.log('Computed overflow-x:', window.getComputedStyle(scrollContainer).overflowX);
         e.preventDefault();
         e.stopPropagation();
         const scrollAmount = scrollContainer.clientWidth * 0.8;
@@ -414,9 +405,6 @@ function renderCarousel(containerId, mediaItems) {
             left: scrollContainer.scrollLeft + scrollAmount,
             behavior: 'smooth'
         });
-        setTimeout(() => {
-            console.log('After scroll - scrollLeft:', scrollContainer.scrollLeft);
-        }, 100);
     });
     rightArrow.appendChild(rightBtn);
 
@@ -656,14 +644,12 @@ async function openMovieModal(tmdbId, type) {
             if (!preloadedData.imdb_id && imdbId) updates.imdb_id = imdbId;
 
             if (Object.keys(updates).length > 0) {
-                console.log('Auto-saving missing metadata to Supabase:', updates);
                 supabase
                     .from('media')
                     .update(updates)
                     .eq('tmdb_id', tmdbId)
                     .then(({ error }) => {
                         if (error) console.error('Error auto-saving metadata:', error);
-                        else console.log('Metadata auto-saved successfully.');
                     });
             }
         }
@@ -695,7 +681,6 @@ async function openMovieModal(tmdbId, type) {
             juainny_notes: null,
             erick_notes: null,
         };
-        console.log('currentMediaItem set to:', currentMediaItem);
 
         // --- Initialize Star Ratings ---
         await initializeStarRating('juainny-rating-container', currentMediaItem?.juainny_rating || 0, debouncedSave);
@@ -785,7 +770,6 @@ async function openMovieModal(tmdbId, type) {
         if (addMoodBtn) {
             addMoodBtn.onclick = (e) => {
                 e.preventDefault();
-                console.log('Add Reaction button clicked for TMDB ID:', tmdbId);
                 openReactionSelector(tmdbId);
             };
         }
@@ -1132,6 +1116,43 @@ async function openFlairModal(mediaId) {
             }
         }
     };
+
+    // Scroll detection for sticky header fade animation
+    const modalContent = document.getElementById('flair-modal-content');
+    const modalTitle = document.getElementById('flair-modal-title');
+
+    if (modalContent && modalTitle) {
+        const handleScroll = () => {
+            if (modalContent.scrollTop > 20) {
+                // Scrolled down - fade out title
+                modalTitle.style.opacity = '0';
+            } else {
+                // At top - fade in title
+                modalTitle.style.opacity = '1';
+            }
+        };
+
+        // Add scroll listener
+        modalContent.addEventListener('scroll', handleScroll);
+
+        // Clean up on modal close
+        const originalCloseHandler = closeBtn.onclick;
+        closeBtn.onclick = () => {
+            modalContent.removeEventListener('scroll', handleScroll);
+            modalTitle.style.opacity = '1'; // Reset opacity
+            if (originalCloseHandler) originalCloseHandler();
+        };
+
+        // Also clean up on backdrop click
+        const originalModalClick = modal.onclick;
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modalContent.removeEventListener('scroll', handleScroll);
+                modalTitle.style.opacity = '1'; // Reset opacity
+            }
+            if (originalModalClick) originalModalClick(e);
+        };
+    }
 
     modal.classList.remove('hidden');
     modal.classList.remove('modal-hidden');
@@ -1825,8 +1846,6 @@ async function saveRatingsAndNotes() {
         erick_notes: document.getElementById('erick-notes').innerHTML || null,
     };
 
-    console.log('Saving to Supabase:', { tmdbId, updates });
-
     if (!tmdbId) {
         console.error('saveRatingsAndNotes: tmdbId is missing!');
         return;
@@ -1864,7 +1883,6 @@ async function saveRatingsAndNotes() {
     if (error) {
         console.error('Error saving ratings and notes:', error);
     } else {
-        console.log('Ratings and notes auto-saved successfully. Response:', data);
         // Update currentMediaItem with the latest data
         currentMediaItem = data;
     }
@@ -2328,7 +2346,6 @@ async function initializeApp() {
         // --- 1. Load Flairs FIRST ---
         // Load flairs
         allFlairs = await fetchAllFlairs();
-        console.log('Loaded flairs:', allFlairs);
 
         // Load flairs for all media
         const { data: mediaFlairsData, error: mfError } = await supabase
@@ -2355,7 +2372,6 @@ async function initializeApp() {
         supabase
             .channel('media-carousels')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
-                console.log('Real-time change received for carousels:', payload);
                 const [currentlyWatching, wantToWatch] = await Promise.all([
                     getCurrentlyWatchingMedia(),
                     getWantToWatchMedia()
@@ -2369,7 +2385,6 @@ async function initializeApp() {
         supabase
             .channel('media')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
-                console.log('Real-time change received:', payload);
                 // Re-render both carousels on any change
                 const [currentlyWatching, wantToWatch] = await Promise.all([
                     getCurrentlyWatchingMedia(),
@@ -2379,7 +2394,6 @@ async function initializeApp() {
                 renderCarousel('want-to-watch-carousel', wantToWatch);
             })
             .subscribe();
-        console.log('Initializing app...');
         const urlParams = new URLSearchParams(window.location.search);
         const shouldHardReset = urlParams.get('hardrefresh') === 'true';
 
@@ -2404,7 +2418,6 @@ async function initializeApp() {
 
         // Sync data with TMDB
         allMedia = await syncWithTMDB(allMediaItems);
-        console.log('Synced Media:', allMedia);
 
         // Main grid should only show watched media
         currentMedia = allMedia.filter(item => item.watched);
@@ -2557,8 +2570,6 @@ export function setupAllenEasterEgg() {
     const maxTime = 90000;
     const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
 
-    console.log(`Allen will appear in ${randomTime / 1000} seconds...`);
-
     allenTimeout = setTimeout(() => {
         allen.classList.remove('hidden');
         // Ensure he's visible and full size
@@ -2663,7 +2674,6 @@ const MOODS = [
 ];
 
 function openReactionSelector(tmdbId) {
-    console.log('openReactionSelector called with ID:', tmdbId);
     const container = document.getElementById('mood-modal-container');
     if (!container) {
         console.error('mood-modal-container not found!');
@@ -2721,7 +2731,6 @@ function openReactionSelector(tmdbId) {
             </div>
         </div >
         `;
-    console.log('mood-modal-container styles and innerHTML set.');
 
     // Event Listeners
     document.getElementById('close-mood-modal-btn').addEventListener('click', closeReactionSelector);
@@ -2743,11 +2752,9 @@ function openReactionSelector(tmdbId) {
 
             // Enable mood grid
             const grid = document.getElementById('mood-grid-container');
-            console.log('Removing grayscale class');
             grid.classList.remove('grayscale');
             grid.style.opacity = '1';
             grid.style.pointerEvents = 'auto';
-            console.log('Grayscale removed, classes:', grid.className);
 
             checkDoneButton();
         });
@@ -2788,7 +2795,6 @@ function checkDoneButton() {
 }
 
 window.closeReactionSelector = function () {
-    console.log('closeReactionSelector called');
     const container = document.getElementById('mood-modal-container');
     if (container) {
         container.innerHTML = '';
@@ -2799,8 +2805,6 @@ window.closeReactionSelector = function () {
 };
 
 async function saveReaction(tmdbId, user, mood) {
-    console.log(`Saving reaction for ${user}: ${mood} on movie ${tmdbId} `);
-
     const updates = {};
     // Handle both 'juainny'/'erick' and 'user1'/'user2' formats
     if (user === 'user1' || user === 'juainny') updates.juainny_reaction = mood;

@@ -1,0 +1,862 @@
+[
+  {
+    "title": "Blink Twice",
+    "type": "movie",
+    "tmdb_id": 1039828
+  },
+  {
+    "title": "Weapons",
+    "type": "movie",
+    "tmdb_id": 1094326
+  },
+  {
+    "title": "Together",
+    "type": "movie",
+    "tmdb_id": 613504
+  },
+  {
+    "title": "K-Pop Demon Hunters",
+    "type": "movie",
+    "tmdb_id": 1184346
+  },
+  {
+    "title": "Spider-Man: Homecoming",
+    "type": "movie",
+    "tmdb_id": 315635
+  },
+  {
+    "title": "Superman",
+    "type": "movie",
+    "tmdb_id": 1924
+  },
+  {
+    "title": "Black Panther",
+    "type": "movie",
+    "tmdb_id": 284054
+  },
+  {
+    "title": "Doctor Strange",
+    "type": "movie",
+    "tmdb_id": 284052
+  },
+  {
+    "title": "Black Widow",
+    "type": "movie",
+    "tmdb_id": 497698
+  },
+  {
+    "title": "Captain America: Civil War",
+    "type": "movie",
+    "tmdb_id": 271110
+  },
+  {
+    "title": "Ant-Man",
+    "type": "movie",
+    "tmdb_id": 102899
+  },
+  {
+    "title": "Avengers: Age of Ultron",
+    "type": "movie",
+    "tmdb_id": 99861
+  },
+  {
+    "title": "Guardians of the Galaxy Vol. 2",
+    "type": "movie",
+    "tmdb_id": 283995
+  },
+  {
+    "title": "Guardians of the Galaxy",
+    "type": "movie",
+    "tmdb_id": 118340
+  },
+  {
+    "title": "Captain America: The Winter Soldier",
+    "type": "movie",
+    "tmdb_id": 100402
+  },
+  {
+    "title": "Iron Man 3",
+    "type": "movie",
+    "tmdb_id": 68721
+  },
+  {
+    "title": "Thor: The Dark World",
+    "type": "movie",
+    "tmdb_id": 76338
+  },
+  {
+    "title": "The Avengers",
+    "type": "movie",
+    "tmdb_id": 24428
+  },
+  {
+    "title": "Thor",
+    "type": "movie",
+    "tmdb_id": 10195
+  },
+  {
+    "title": "The Incredible Hulk",
+    "type": "movie",
+    "tmdb_id": 1724
+  },
+  {
+    "title": "Iron Man 2",
+    "type": "movie",
+    "tmdb_id": 10138
+  },
+  {
+    "title": "Iron Man",
+    "type": "movie",
+    "tmdb_id": 1726
+  },
+  {
+    "title": "Captain Marvel",
+    "type": "movie",
+    "tmdb_id": 299537
+  },
+  {
+    "title": "Captain America: The First Avenger",
+    "type": "movie",
+    "tmdb_id": 1771
+  },
+  {
+    "title": "Opus",
+    "type": "movie",
+    "tmdb_id": 1215926
+  },
+  {
+    "title": "Madea's Destination Wedding",
+    "type": "movie",
+    "tmdb_id": 1272714
+  },
+  {
+    "title": "Adults",
+    "type": "series",
+    "tmdb_id": 230044
+  },
+  {
+    "title": "Ghosts (BBC)",
+    "type": "series",
+    "tmdb_id": 89422
+  },
+  {
+    "title": "Novocaine",
+    "type": "movie",
+    "tmdb_id": 10738
+  },
+  {
+    "title": "Three Billboards Outside Ebbing, Missouri",
+    "type": "movie",
+    "tmdb_id": 359940
+  },
+  {
+    "title": "Barbarian",
+    "type": "movie",
+    "tmdb_id": 801071
+  },
+  {
+    "title": "Paul",
+    "type": "movie",
+    "tmdb_id": 45276
+  },
+  {
+    "title": "Pokémon: Detective Pikachu",
+    "type": "movie",
+    "tmdb_id": 447404
+  },
+  {
+    "title": "The Brothers Grimsby",
+    "type": "movie",
+    "tmdb_id": 242582
+  },
+  {
+    "title": "Gone Girl",
+    "type": "movie",
+    "tmdb_id": 210577
+  },
+  {
+    "title": "The Dictator",
+    "type": "movie",
+    "tmdb_id": 81188
+  },
+  {
+    "title": "Promising Young Woman",
+    "type": "movie",
+    "tmdb_id": 582014
+  },
+  {
+    "title": "Dark Shadows",
+    "type": "movie",
+    "tmdb_id": 62213
+  },
+  {
+    "title": "Santa Clarita Diet",
+    "type": "series",
+    "tmdb_id": 67544
+  },
+  {
+    "title": "Ready or Not",
+    "type": "movie",
+    "tmdb_id": 567609
+  },
+  {
+    "title": "Please Don’t Destroy: The Treasure of Foggy Mountain",
+    "type": "movie",
+    "tmdb_id": 1058639
+  },
+  {
+    "title": "Yellowjackets",
+    "type": "series",
+    "tmdb_id": 95187
+  },
+  {
+    "title": "Booksmart",
+    "type": "movie",
+    "tmdb_id": 505600
+  },
+  {
+    "title": "Paddington in Peru",
+    "type": "movie",
+    "tmdb_id": 1014590
+  },
+  {
+    "title": "Paddington 2",
+    "type": "movie",
+    "tmdb_id": 360920
+  },
+  {
+    "title": "Common Side Effects",
+    "type": "series",
+    "tmdb_id": 246598
+  },
+  {
+    "title": "Los Espookys",
+    "type": "series",
+    "tmdb_id": 78082
+  },
+  {
+    "title": "Babygirl",
+    "type": "movie",
+    "tmdb_id": 1093121
+  },
+  {
+    "title": "Red, White & Royal Blue",
+    "type": "movie",
+    "tmdb_id": 938634
+  },
+  {
+    "title": "The Fallout",
+    "type": "movie",
+    "tmdb_id": 732317
+  },
+  {
+    "title": "All of Us Strangers",
+    "type": "movie",
+    "tmdb_id": 792307
+  },
+  {
+    "title": "Fresh",
+    "type": "movie",
+    "tmdb_id": 820609
+  },
+  {
+    "title": "Nosferatu",
+    "type": "movie",
+    "tmdb_id": 847999
+  },
+  {
+    "title": "Cunk on Life",
+    "type": "series",
+    "tmdb_id": 1253971
+  },
+  {
+    "title": "Lady Bird",
+    "type": "movie",
+    "tmdb_id": 427568
+  },
+  {
+    "title": "Wicked",
+    "type": "movie",
+    "tmdb_id": 629202
+  },
+  {
+    "title": "Wonka",
+    "type": "movie",
+    "tmdb_id": 787699
+  },
+  {
+    "title": "Hoodwinked!",
+    "type": "movie",
+    "tmdb_id": 9945
+  },
+  {
+    "title": "Borat: Cultural Learnings of America for Make Benefit Glorious Nation of Kazakhstan",
+    "type": "movie",
+    "tmdb_id": 496
+  },
+  {
+    "title": "Home Alone",
+    "type": "movie",
+    "tmdb_id": 771
+  },
+  {
+    "title": "Nerve",
+    "type": "movie",
+    "tmdb_id": 328387
+  },
+  {
+    "title": "What We Do in the Shadows",
+    "type": "movie",
+    "tmdb_id": 249624
+  },
+  {
+    "title": "Heretic",
+    "type": "movie",
+    "tmdb_id": 1127166
+  },
+  {
+    "title": "Smile 2",
+    "type": "movie",
+    "tmdb_id": 1115869
+  },
+  {
+    "title": "Smile",
+    "type": "movie",
+    "tmdb_id": 882598
+  },
+  {
+    "title": "Hereditary",
+    "type": "movie",
+    "tmdb_id": 493922
+  },
+  {
+    "title": "Man of Steel",
+    "type": "movie",
+    "tmdb_id": 49521
+  },
+  {
+    "title": "Sweetpea",
+    "type": "series",
+    "tmdb_id": 249051
+  },
+  {
+    "title": "Frozen II",
+    "type": "movie",
+    "tmdb_id": 330457
+  },
+  {
+    "title": "Frozen",
+    "type": "movie",
+    "tmdb_id": 109445
+  },
+  {
+    "title": "Bad Education",
+    "type": "movie",
+    "tmdb_id": 530723
+  },
+  {
+    "title": "The Wild Robot",
+    "type": "movie",
+    "tmdb_id": 1022796
+  },
+  {
+    "title": "Agatha All Along",
+    "type": "series",
+    "tmdb_id": 210178
+  },
+  {
+    "title": "Sweeney Todd: The Demon Barber of Fleet Street",
+    "type": "movie",
+    "tmdb_id": 13885
+  },
+  {
+    "title": "The Substance",
+    "type": "movie",
+    "tmdb_id": 1006547
+  },
+  {
+    "title": "Deadpool & Wolverine",
+    "type": "movie",
+    "tmdb_id": 533535
+  },
+  {
+    "title": "Past Lives",
+    "type": "movie",
+    "tmdb_id": 666277
+  },
+  {
+    "title": "Emily the Criminal",
+    "type": "movie",
+    "tmdb_id": 839369
+  },
+  {
+    "title": "Tyler Perry's A Madea Homecoming",
+    "type": "movie",
+    "tmdb_id": 898197
+  },
+  {
+    "title": "White Chicks",
+    "type": "movie",
+    "tmdb_id": 12154
+  },
+  {
+    "title": "Uglies",
+    "type": "movie",
+    "tmdb_id": 709081
+  },
+  {
+    "title": "Final Destination",
+    "type": "movie",
+    "tmdb_id": 9525
+  },
+  {
+    "title": "Doctor Sleep",
+    "type": "movie",
+    "tmdb_id": 501170
+  },
+  {
+    "title": "Zootopia",
+    "type": "movie",
+    "tmdb_id": 269149
+  },
+  {
+    "title": "Once Upon a Time… in Hollywood",
+    "type": "movie",
+    "tmdb_id": 466272
+  },
+  {
+    "title": "Paddington",
+    "type": "movie",
+    "tmdb_id": 122464
+  },
+  {
+    "title": "Longlegs",
+    "type": "movie",
+    "tmdb_id": 1096197
+  },
+  {
+    "title": "Knives Out",
+    "type": "movie",
+    "tmdb_id": 546554
+  },
+  {
+    "title": "Spider-Man: No Way Home",
+    "type": "movie",
+    "tmdb_id": 634649
+  },
+  {
+    "title": "Spider-Man: Far From Home",
+    "type": "movie",
+    "tmdb_id": 429617
+  },
+  {
+    "title": "Cars 3",
+    "type": "movie",
+    "tmdb_id": 260514
+  },
+  {
+    "title": "Cars 2",
+    "type": "movie",
+    "tmdb_id": 49013
+  },
+  {
+    "title": "Cars",
+    "type": "movie",
+    "tmdb_id": 920
+  },
+  {
+    "title": "Sausage Party",
+    "type": "movie",
+    "tmdb_id": 223702
+  },
+  {
+    "title": "La La Land",
+    "type": "movie",
+    "tmdb_id": 313369
+  },
+  {
+    "title": "Shiva Baby",
+    "type": "movie",
+    "tmdb_id": 530472
+  },
+  {
+    "title": "The Cat in the Hat",
+    "type": "movie",
+    "tmdb_id": 3001
+  },
+  {
+    "title": "MaXXXine",
+    "type": "movie",
+    "tmdb_id": 1025463
+  },
+  {
+    "title": "X",
+    "type": "movie",
+    "tmdb_id": 836225
+  },
+  {
+    "title": "In the Heights",
+    "type": "movie",
+    "tmdb_id": 438792
+  },
+  {
+    "title": "Palm Springs",
+    "type": "movie",
+    "tmdb_id": 587792
+  },
+  {
+    "title": "Gen V",
+    "type": "series",
+    "tmdb_id": 116212
+  },
+  {
+    "title": "The Boys",
+    "type": "series",
+    "tmdb_id": 76479
+  },
+  {
+    "title": "Descendants 3",
+    "type": "movie",
+    "tmdb_id": 521029
+  },
+  {
+    "title": "Everything Everywhere All at Once",
+    "type": "movie",
+    "tmdb_id": 545611
+  },
+  {
+    "title": "The Killing of a Sacred Deer",
+    "type": "movie",
+    "tmdb_id": 399057
+  },
+  {
+    "title": "Luca",
+    "type": "movie",
+    "tmdb_id": 508943
+  },
+  {
+    "title": "The Menu",
+    "type": "movie",
+    "tmdb_id": 593643
+  },
+  {
+    "title": "Freaky",
+    "type": "movie",
+    "tmdb_id": 654974
+  },
+  {
+    "title": "The Greatest Showman",
+    "type": "movie",
+    "tmdb_id": 316029
+  },
+  {
+    "title": "The Grand Budapest Hotel",
+    "type": "movie",
+    "tmdb_id": 120467
+  },
+  {
+    "title": "American Horror Story: 1984",
+    "type": "series",
+    "tmdb_id": 90924
+  },
+  {
+    "title": "A Haunting in Venice",
+    "type": "movie",
+    "tmdb_id": 945729
+  },
+  {
+    "title": "The Killer",
+    "type": "movie",
+    "tmdb_id": 810349
+  },
+  {
+    "title": "Eyes Wide Shut",
+    "type": "movie",
+    "tmdb_id": 345
+  },
+  {
+    "title": "Schitt's Creek",
+    "type": "series",
+    "tmdb_id": 61662
+  },
+  {
+    "title": "Boo 2! A Madea Halloween",
+    "type": "movie",
+    "tmdb_id": 447362
+  },
+  {
+    "title": "Boo! A Madea Halloween",
+    "type": "movie",
+    "tmdb_id": 382366
+  },
+  {
+    "title": "Problemista",
+    "type": "movie",
+    "tmdb_id": 822108
+  },
+  {
+    "title": "Fallout",
+    "type": "series",
+    "tmdb_id": 106379
+  },
+  {
+    "title": "But I'm a Cheerleader",
+    "type": "movie",
+    "tmdb_id": 10567
+  },
+  {
+    "title": "Strays",
+    "type": "movie",
+    "tmdb_id": 841528
+  },
+  {
+    "title": "Challengers",
+    "type": "movie",
+    "tmdb_id": 937287
+  },
+  {
+    "title": "Bottoms",
+    "type": "movie",
+    "tmdb_id": 807182
+  },
+  {
+    "title": "Migration",
+    "type": "movie",
+    "tmdb_id": 940551
+  },
+  {
+    "title": "Lisa Frankenstein",
+    "type": "movie",
+    "tmdb_id": 1094059
+  },
+  {
+    "title": "Brokeback Mountain",
+    "type": "movie",
+    "tmdb_id": 142
+  },
+  {
+    "title": "The Hunger Games: Mockingjay - Part 2",
+    "type": "movie",
+    "tmdb_id": 131634
+  },
+  {
+    "title": "The Hunger Games: Mockingjay - Part 1",
+    "type": "movie",
+    "tmdb_id": 131631
+  },
+  {
+    "title": "The Hunger Games: Catching Fire",
+    "type": "movie",
+    "tmdb_id": 101299
+  },
+  {
+    "title": "The Hunger Games",
+    "type": "movie",
+    "tmdb_id": 70160
+  },
+  {
+    "title": "Immaculate",
+    "type": "movie",
+    "tmdb_id": 1041613
+  },
+  {
+    "title": "Drive",
+    "type": "movie",
+    "tmdb_id": 64690
+  },
+  {
+    "title": "Crazy, Stupid, Love.",
+    "type": "movie",
+    "tmdb_id": 50646
+  },
+  {
+    "title": "Road House",
+    "type": "movie",
+    "tmdb_id": 359410
+  },
+  {
+    "title": "Donnie Darko",
+    "type": "movie",
+    "tmdb_id": 141
+  },
+  {
+    "title": "Ocean's Eight",
+    "type": "movie",
+    "tmdb_id": 350993
+  },
+  {
+    "title": "Blade Runner 2049",
+    "type": "movie",
+    "tmdb_id": 335984
+  },
+  {
+    "title": "Dune",
+    "type": "movie",
+    "tmdb_id": 438631
+  },
+  {
+    "title": "Poor Things",
+    "type": "movie",
+    "tmdb_id": 792307
+  },
+  {
+    "title": "Emma.",
+    "type": "movie",
+    "tmdb_id": 556678
+  },
+  {
+    "title": "Mr. & Mrs. Smith",
+    "type": "movie",
+    "tmdb_id": 787
+  },
+  {
+    "title": "Percy Jackson and the Olympians",
+    "type": "series",
+    "tmdb_id": 110492
+  },
+  {
+    "title": "Griselda",
+    "type": "series",
+    "tmdb_id": 133445
+  },
+  {
+    "title": "The Secret Life of Pets",
+    "type": "movie",
+    "tmdb_id": 328111
+  },
+  {
+    "title": "Tragedy Girls",
+    "type": "movie",
+    "tmdb_id": 435422
+  },
+  {
+    "title": "Pearl",
+    "type": "movie",
+    "tmdb_id": 949423
+  },
+  {
+    "title": "Minions",
+    "type": "movie",
+    "tmdb_id": 211672
+  },
+  {
+    "title": "Saltburn",
+    "type": "movie",
+    "tmdb_id": 930564
+  },
+  {
+    "title": "The Conjuring: The Devil Made Me Do It",
+    "type": "movie",
+    "tmdb_id": 423108
+  },
+  {
+    "title": "Despicable Me 3",
+    "type": "movie",
+    "tmdb_id": 324852
+  },
+  {
+    "title": "Despicable Me 2",
+    "type": "movie",
+    "tmdb_id": 93456
+  },
+  {
+    "title": "Glass Onion: A Knives Out Mystery",
+    "type": "movie",
+    "tmdb_id": 661374
+  },
+  {
+    "title": "Despicable Me",
+    "type": "movie",
+    "tmdb_id": 20352
+  },
+  {
+    "title": "Nightcrawler",
+    "type": "movie",
+    "tmdb_id": 242582
+  },
+  {
+    "title": "Zodiac",
+    "type": "movie",
+    "tmdb_id": 1949
+  },
+  {
+    "title": "Leave the World Behind",
+    "type": "movie",
+    "tmdb_id": 726209
+  },
+  {
+    "title": "The Grinch",
+    "type": "movie",
+    "tmdb_id": 360920
+  },
+  {
+    "title": "The Last of Us",
+    "type": "series",
+    "tmdb_id": 100088
+  },
+  {
+    "title": "Bodies Bodies Bodies",
+    "type": "movie",
+    "tmdb_id": 760104
+  },
+  {
+    "title": "Assassination Nation",
+    "type": "movie",
+    "tmdb_id": 436359
+  },
+  {
+    "title": "WandaVision",
+    "type": "series",
+    "tmdb_id": 85271
+  },
+  {
+    "title": "Five Nights at Freddy's",
+    "type": "movie",
+    "tmdb_id": 507089
+  },
+  {
+    "title": "Joker",
+    "type": "movie",
+    "tmdb_id": 475557
+  },
+  {
+    "title": "The Nightmare Before Christmas",
+    "type": "movie",
+    "tmdb_id": 9479
+  },
+  {
+    "title": "Get Out",
+    "type": "movie",
+    "tmdb_id": 419430
+  },
+  {
+    "title": "The Batman",
+    "type": "movie",
+    "tmdb_id": 414906
+  },
+  {
+    "title": "No Hard Feelings",
+    "type": "movie",
+    "tmdb_id": 884605
+  },
+  {
+    "title": "Ratatouille",
+    "type": "movie",
+    "tmdb_id": 2062
+  },
+  {
+    "title": "Descendants 2",
+    "type": "movie",
+    "tmdb_id": 415525
+  },
+  {
+    "title": "Descendants",
+    "type": "movie",
+    "tmdb_id": 305370
+  },
+  {
+    "title": "Puss in Boots",
+    "type": "movie",
+    "tmdb_id": 40049
+  }
+]

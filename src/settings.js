@@ -7,7 +7,6 @@ let allMediaForWallpapers = [];
  * Opens the settings modal and populates it with current data.
  */
 export async function openSettingsModal() {
-    console.log('openSettingsModal called');
     const settingsModal = document.getElementById('settings-modal');
     if (!settingsModal) {
         console.error('Settings modal element not found!');
@@ -15,23 +14,19 @@ export async function openSettingsModal() {
     }
 
     try {
-        console.log('Populating wallpaper selector...');
         await populateWallpaperSelector();
-        console.log('Loading current settings...');
         await loadAndApplySettings();
     } catch (error) {
         console.error('Error preparing settings modal:', error);
         // Continue opening modal even if prep fails
     }
 
-    console.log('Showing settings modal...');
     // Prevent background scrolling (matches other modals and might trigger layout fix)
     document.body.style.overflow = 'hidden';
 
     settingsModal.classList.remove('hidden');
     settingsModal.classList.remove('modal-hidden');
     settingsModal.classList.add('flex');
-    console.log('Settings modal classes updated:', settingsModal.className);
 
     // Add listeners to theme buttons for instant wallpaper preview/selection
     const themeBtns = document.querySelectorAll('.theme-btn');
@@ -147,7 +142,6 @@ async function saveSettings() {
     if (error) {
         console.error('Error saving settings:', error);
     } else {
-        console.log('Settings saved successfully!');
         await loadAndApplySettings(); // Re-apply settings after saving
         closeSettingsModal();
     }
@@ -251,16 +245,13 @@ export async function loadAndApplySettings() {
  * Initializes the settings functionality and event listeners.
  */
 export function initializeSettings() {
-    console.log('Initializing Settings module...');
     const settingsBtn = document.getElementById('settings-btn');
     const closeSettingsBtn = document.getElementById('close-settings-modal-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const removeWallpaperBtn = document.getElementById('remove-wallpaper-btn');
 
     if (settingsBtn) {
-        console.log('Settings button found, attaching listener.');
         settingsBtn.addEventListener('click', (e) => {
-            console.log('Settings button clicked');
             openSettingsModal(e);
         });
     } else {
