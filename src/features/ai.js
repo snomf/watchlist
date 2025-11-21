@@ -8,19 +8,16 @@ import { model } from '../firebase-client.js';
  * @returns {Promise<string>} - The generated summary.
  */
 export async function generateMediaSummary(mediaItem, userRatings, userNotes) {
-    const prompt = `Summarize Juainny and Erick's opinions on "${mediaItem.title || mediaItem.name}" based on:
+    const prompt = `Summarize opinions on "${mediaItem.title || mediaItem.name}":
 
-**Juainny:** ${userRatings.user1 || 'No rating'}/5 - ${userNotes.user1 || 'No notes'}
-**Erick:** ${userRatings.user2 || 'No rating'}/5 - ${userNotes.user2 || 'No notes'}
-
-**Overview:** ${mediaItem.overview}
+**Juainny:** ${userRatings.user1 || 'Not rated'}/10 - ${userNotes.user1 || 'No notes'}
+**Erick:** ${userRatings.user2 || 'Not rated'}/10 - ${userNotes.user2 || 'No notes'}
 
 Rules:
-- Use **markdown** formatting (bold, italic, lists)
-- Be concise (max 80 words)
-- Highlight agreement or disagreement
-- Skip greetings/introductions
-- Be insightful and engaging`;
+- Use **markdown** (bold, italic, lists)
+- Max 60 words
+- Highlight agreement/disagreement
+- No greetings`;
 
     try {
         const result = await model.generateContent(prompt);
@@ -39,44 +36,35 @@ Rules:
  * @returns {Promise<string>} - The AI's response.
  */
 export async function chatWithWillow(query, allMedia) {
-    // Prepare comprehensive context from allMedia  
-    const context = allMedia.map(item => ({
-        title: item.title || item.name,
-        type: item.type,
-        year: item.release_year,
-        rating: item.content_rating,
-        runtime: item.runtime,
-        watched: item.watched,
-        want_to_watch: item.want_to_watch,
-        currently_watching: item.currently_watching,
-        favorited_by: item.favorited_by,
-        ratings: {
-            juainny: item.user1_rating,
-            erick: item.user2_rating
-        },
-        notes: {
-            juainny: item.user1_notes,
-            erick: item.user2_notes
-        },
-        reactions: {
-            juainny: item.juainny_reaction,
-            erick: item.erick_reaction
-        }
+    // Build minimal summary stats to reduce tokens
+    const stats = {
+        total: allMedia.length,
+        watched: allMedia.filter(i => i.watched).length,
+        want_to_watch: allMedia.filter(i => i.want_to_watch).length,
+        currently_watching: allMedia.filter(i => i.currently_watching).length,
+        favorited: allMedia.filter(i => i.favorited_by?.length > 0).length
+    };
+
+    // Only include titles for quick lookup (massive token savings!)
+    const titles = allMedia.map(i => ({
+        t: i.title || i.name,
+        w: i.watched ? 1 : 0,
+        id: i.tmdb_id
     }));
 
-    const prompt = `You're Willow, Juainny and Erick's watchlist AI.
+    const prompt = `Willow AI for Juainny & Erick.
 
-**Database:** ${JSON.stringify(context, null, 2)}
-
+**Stats:** ${JSON.stringify(stats)}
+**Titles:** ${JSON.stringify(titles)}
 **Question:** ${query}
 
 **Rules:**
-- Answer directly using the database
-- Use **markdown** (bold, lists, etc.)
-- Be concise and informative
-- Skip introductions (no "Hey!" or "As Willow...")
-- Recommend from want_to_watch list when relevant
-- If not in database, say so briefly then use general knowledge`;
+- Ratings are /10 not /5
+- Use **markdown**
+- Be brief
+- No greetings
+- If need details about specific title, estimate based on question
+- For recommendations, suggest from titles with w:0`;
 
     try {
         const result = await model.generateContent(prompt);

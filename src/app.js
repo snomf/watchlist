@@ -809,12 +809,49 @@ async function openMovieModal(tmdbId, type) {
             // Show section if tracked
             summarySection.classList.remove('hidden');
 
-            // Check if we already have a cached summary
-            if (trackedItem.ai_summary) {
-                summaryText.innerHTML = renderMarkdown(trackedItem.ai_summary);
+            // CRITICAL: Reset summary text for new modal (fixes persistence bug)
+            summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+
+            // Check if ratings/notes exist
+            const hasRatings = trackedItem.user1_rating || trackedItem.user2_rating;
+            const hasNotes = (trackedItem.user1_notes && trackedItem.user1_notes.trim()) ||
+                (trackedItem.user2_notes && trackedItem.user2_notes.trim());
+
+            if (!hasRatings && !hasNotes) {
+                // No ratings or notes - use pre-defined message (saves tokens!)
+                summaryText.innerHTML = '<em class="text-text-muted">No ratings or notes yet. Willow will share thoughts once you add some!</em>';
+                regenerateBtn.style.display = 'none'; // Hide regenerate button
             } else {
-                // No cached summary, generate and save
-                const generateAndCache = async () => {
+                regenerateBtn.style.display = ''; // Show regenerate button
+
+                // Check if we already have a cached summary for THIS specific item
+                if (trackedItem.ai_summary) {
+                    summaryText.innerHTML = renderMarkdown(trackedItem.ai_summary);
+                } else {
+                    // No cached summary, generate and save
+                    const generateAndCache = async () => {
+                        summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
+
+                        const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
+                        const user1Notes = document.getElementById('juainny-notes').innerText;
+                        const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.user2_rating;
+                        const user2Notes = document.getElementById('erick-notes').innerText;
+
+                        const ratings = { user1: user1Rating, user2: user2Rating };
+                        const notes = { user1: user1Notes, user2: user2Notes };
+
+                        const summary = await generateMediaSummary(trackedItem, ratings, notes);
+                        summaryText.innerHTML = renderMarkdown(summary);
+
+                        // Save to database
+                        await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
+                        trackedItem.ai_summary = summary; // Update local copy
+                    };
+                    generateAndCache();
+                }
+
+                // Regenerate button - creates new summary and saves it to database
+                regenerateBtn.onclick = async () => {
                     summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
 
                     const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
@@ -828,32 +865,11 @@ async function openMovieModal(tmdbId, type) {
                     const summary = await generateMediaSummary(trackedItem, ratings, notes);
                     summaryText.innerHTML = renderMarkdown(summary);
 
-                    // Save to database
+                    // Save new summary to database (YES, it saves!)
                     await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
                     trackedItem.ai_summary = summary; // Update local copy
                 };
-                generateAndCache();
             }
-
-            // Regenerate button - creates new summary and saves it
-            regenerateBtn.onclick = async () => {
-                summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
-
-                const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
-                const user1Notes = document.getElementById('juainny-notes').innerText;
-                const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.user2_rating;
-                const user2Notes = document.getElementById('erick-notes').innerText;
-
-                const ratings = { user1: user1Rating, user2: user2Rating };
-                const notes = { user1: user1Notes, user2: user2Notes };
-
-                const summary = await generateMediaSummary(trackedItem, ratings, notes);
-                summaryText.innerHTML = renderMarkdown(summary);
-
-                // Save new summary to database
-                await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
-                trackedItem.ai_summary = summary; // Update local copy
-            };
 
         } else {
             document.getElementById('willow-summary-section').classList.add('hidden');
