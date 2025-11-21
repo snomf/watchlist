@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Watchlist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: {
+                            primary: 'var(--bg-primary)',
+                            secondary: 'var(--bg-secondary)',
+                            tertiary: 'var(--bg-tertiary)',
+                        },
+                        text: {
+                            primary: 'var(--text-primary)',
+                            secondary: 'var(--text-secondary)',
+                            muted: 'var(--text-muted)',
+                        },
+                        accent: {
+                            primary: 'var(--accent-primary)',
+                            secondary: 'var(--accent-secondary)',
+                        },
+                        border: {
+                            primary: 'var(--border-primary)',
+                        },
+                        success: 'var(--success)',
+                        warning: 'var(--warning)',
+                        danger: 'var(--danger)',
+                        info: 'var(--info)',
+                    }
+                }
+            }
+        }
+    </script>
+  <script type="module" crossorigin src="/assets/profile-DY8QEOO6.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/assets/supabase-client-BH5LktKS.js">
+  <link rel="stylesheet" crossorigin href="/assets/main-B9cFbqkZ.css">
+</head>
+
+<body class="bg-bg-primary text-text-primary min-h-screen flex flex-col transition-colors duration-300">
+    <div id="wallpaper-overlay"
+        class="fixed inset-0 z-[-1] bg-black/70 pointer-events-none transition-opacity duration-500"></div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50">
+        <div class="container mx-auto flex items-center justify-between h-16 px-4">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="nav-pill flex items-center cursor-pointer hover:opacity-80 transition">
+                    <img src="icon.png" alt="Logo" class="h-8 w-8 mr-2">
+                    <span class="font-bold text-white text-lg">Watchlist</span>
+                </a>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="text-text-muted hover:text-text-primary transition" title="Home">
+                    <i class="fas fa-home text-xl"></i>
+                </a>
+                <div class="nav-pill user-pill">
+                    <div class="relative">
+                        <button id="user-menu-btn" class="flex items-center text-sm text-white focus:outline-none">
+                            <div id="user-avatar-container" class="flex -space-x-2">
+                                <a href="/profile/juainny" id="user1-avatar-link">
+                                    <div id="user1-avatar-nav" class="w-8 h-8 rounded-full"></div>
+                                </a>
+                                <a href="/profile/erick" id="user2-avatar-link">
+                                    <div id="user2-avatar-nav" class="w-8 h-8 rounded-full"></div>
+                                </a>
+                            </div>
+                            <span id="device-name" class="ml-2 font-semibold">User</span>
+                        </button>
+                        <div id="user-menu"
+                            class="hidden absolute right-0 mt-2 w-48 bg-bg-secondary rounded-md shadow-lg py-1 z-50">
+                            <a href="index.html" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                                <i class="fas fa-home mr-2"></i>Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 flex-grow max-w-4xl">
+
+        <!-- Profile Header -->
+        <div class="relative mb-20">
+            <!-- Banner -->
+            <div class="h-48 md:h-64 w-full rounded-xl overflow-hidden relative bg-bg-tertiary group/banner">
+                <img id="profile-banner" src="" alt="Banner" class="w-full h-full object-cover hidden">
+                <div id="profile-banner-placeholder"
+                    class="w-full h-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500"></div>
+
+                <!-- Edit Banner Button -->
+                <button id="edit-banner-btn"
+                    class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white px-4 py-2 rounded-lg transition opacity-0 group-hover/banner:opacity-100 flex items-center gap-2">
+                    <i class="fas fa-image"></i>
+                    <span>Change Banner</span>
+                </button>
+            </div>
+
+            <!-- Profile Info -->
+            <div class="absolute -bottom-16 left-6 md:left-10 flex items-end gap-4">
+                <div id="profile-avatar-container"
+                    class="w-32 h-32 rounded-full border-4 border-bg-primary bg-bg-secondary overflow-hidden shadow-xl relative z-10">
+                    <!-- Avatar injected here -->
+                </div>
+                <div class="mb-2 z-10">
+                    <h1 id="profile-name" class="text-3xl font-bold text-white drop-shadow-md">User Name</h1>
+                </div>
+            </div>
+
+            <!-- User Switcher (Top Right of Profile Area) -->
+            <div class="absolute -bottom-12 right-4 flex gap-2">
+                <button id="view-juainny-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
+                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+                    Juainny
+                </button>
+                <button id="view-erick-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
+                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+                    Erick
+                </button>
+            </div>
+        </div>
+
+        <!-- Bio Section -->
+        <div class="description-container mt-4 mb-8 px-4 relative group/bio" id="profile-description">
+            <div id="bio-display-container">
+                <p id="profile-bio" class="text-text-secondary text-lg leading-relaxed inline-block">
+                    Loading bio...
+                </p>
+                <button id="edit-bio-btn"
+                    class="ml-2 text-text-muted hover:text-accent-primary transition opacity-0 group-hover/bio:opacity-100">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+            </div>
+
+            <div id="bio-edit-container" class="hidden">
+                <textarea id="bio-input" rows="4"
+                    class="w-full bg-bg-tertiary border border-border-primary rounded-lg p-3 text-text-primary focus:border-accent-primary outline-none resize-none mb-2"></textarea>
+                <div class="flex justify-end gap-2">
+                    <button id="cancel-bio-btn"
+                        class="px-4 py-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition text-sm font-semibold">Cancel</button>
+                    <button id="save-bio-btn"
+                        class="px-4 py-2 rounded-lg bg-accent-primary hover:bg-accent-secondary text-white transition text-sm font-bold">Save
+                        Bio</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div style="background-color: var(--color-bg-secondary);" class="rounded-xl overflow-hidden"
+            style="border: 1px solid var(--color-border-primary);">
+            <div class="p-4 flex justify-between items-center"
+                style="border-bottom: 1px solid var(--color-border-primary);">
+                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">Activity Feed</h2>
+                <div class="flex gap-2 text-sm">
+                    <button class="font-semibold" style="color: var(--color-accent-primary);">All</button>
+                    <!-- Future filters: <button class="text-text-muted hover:text-text-primary">Favorites</button> -->
+                </div>
+            </div>
+            <div id="activity-feed" style="border-color: var(--color-border-primary);">
+                <!-- Activity Items Injected Here -->
+                <div class="p-8 text-center" style="color: var(--color-text-muted);">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p>Loading activity...</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Banner Selector Modal -->
+    <div id="banner-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+        style="background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);">
+        <div class="rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border-primary);">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold" style="color: var(--color-text-primary);">Select Banner</h2>
+                <button id="close-banner-modal" class="text-2xl" style="color: var(--color-text-muted);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <input type="text" id="banner-search" placeholder="Search media..." class="w-full px-4 py-2 rounded-lg"
+                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+            </div>
+            <div id="banner-grid" class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                <!-- Banner options will be injected here -->
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
