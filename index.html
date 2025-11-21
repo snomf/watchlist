@@ -87,41 +87,45 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold">Notifications</h2>
-                    <div class="flex items-center gap-4">
-                        <button id="add-notification-btn"
-                            class="text-text-primary hover:text-accent-primary transition">
-                            <i class="fas fa-plus"></i>
+                    <div class="flex items-center space-x-4">
+                        <a href="profile.html" class="text-text-muted hover:text-text-primary transition"
+                            title="Profiles">
+                            <i class="fas fa-user-circle text-xl"></i>
+                        </a>
+                        <button id="notification-settings-btn"
+                            class="text-text-muted hover:text-text-primary transition" title="Settings">
+                            <i class="fas fa-cog text-xl"></i>
                         </button>
-                        <button id="close-notification-modal-btn"
-                            class="text-text-primary hover:text-accent-primary transition">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center mb-4">
-                    <span id="unread-count" class="text-sm text-text-muted"></span>
-                    <button id="mark-all-as-read-btn" class="text-sm text-accent-primary hover:underline">Mark all as
-                        read</button>
-                </div>
-                <div id="notification-filter-bar" class="flex items-center bg-bg-secondary rounded-full p-1 mb-4">
-                    <button data-filter="all"
-                        class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition btn-active">All</button>
-                    <button data-filter="feature"
-                        class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">New
-                        Features</button>
-                    <button data-filter="update"
-                        class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Updates</button>
-                    <button data-filter="announcement"
-                        class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Announcements</button>
-                </div>
-                <div id="notification-list" class="space-y-4 max-h-96 overflow-y-auto">
+                    </div> <button id="close-notification-modal-btn"
+                        class="text-text-primary hover:text-accent-primary transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
+            <div class="flex justify-between items-center mb-4">
+                <span id="unread-count" class="text-sm text-text-muted"></span>
+                <button id="mark-all-as-read-btn" class="text-sm text-accent-primary hover:underline">Mark all as
+                    read</button>
+            </div>
+            <div id="notification-filter-bar" class="flex items-center bg-bg-secondary rounded-full p-1 mb-4">
+                <button data-filter="all"
+                    class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition btn-active">All</button>
+                <button data-filter="feature"
+                    class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">New
+                    Features</button>
+                <button data-filter="update"
+                    class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Updates</button>
+                <button data-filter="announcement"
+                    class="notification-filter-btn px-4 py-2 text-sm font-semibold rounded-full transition">Announcements</button>
+            </div>
+            <div id="notification-list" class="space-y-4 max-h-96 overflow-y-auto">
+            </div>
         </div>
+    </div>
     </div>
 
     <div class="container mx-auto p-4 md:p-8 relative z-0">
@@ -460,6 +464,24 @@
         </div>
     </div>
 
+    <!-- Favorite Removal Modal -->
+    <div id="favorite-removal-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
+        <div class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6 border border-border-primary">
+            <h3 class="text-xl font-bold mb-4 text-white">Too Many Favorites!</h3>
+            <p class="text-text-secondary mb-6">You can only have 3 favorites. Please remove one to continue:</p>
+
+            <div id="favorite-removal-list" class="space-y-2 mb-6 max-h-64 overflow-y-auto">
+                <!-- Favorites will be dynamically inserted here -->
+            </div>
+
+            <button id="cancel-favorite-removal-btn"
+                class="w-full bg-transparent hover:bg-white/10 text-text-muted hover:text-white font-semibold py-2 px-4 rounded-lg transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
     <script type="module" src="/src/supabase-client.js"></script>
@@ -620,21 +642,30 @@
                             </label>
                         </div>
                     </div>
-                    <div class="border border-border-primary rounded-lg p-4 mt-4">
-                        <h3 class="text-lg font-semibold mb-2">Avatars</h3>
-                        <div class="flex gap-4">
-                            <button id="avatar-picker-user1-btn"
-                                class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
-                                <span>Juainny's Avatar</span>
-                                <div id="user1-avatar-preview" class="w-10 h-10 rounded-full mt-2"></div>
-                            </button>
-                            <button id="avatar-picker-user2-btn"
-                                class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center">
-                                <span>Erick's Avatar</span>
-                                <div id="user2-avatar-preview" class="w-10 h-10 rounded-full mt-2"></div>
-                            </button>
+                    <div class="border border-border-primary rounded-lg p-4 mb-4">
+                        <h3 class="text-lg font-semibold mb-2">User Avatars</h3>
+                        <div class="flex justify-around items-center">
+                            <div class="flex flex-col items-center gap-2">
+                                <div id="user1-avatar-preview"
+                                    class="w-16 h-16 rounded-full border-2 border-transparent">
+                                    <!-- Preview injected here -->
+                                </div>
+                                <span class="font-semibold">Juainny</span>
+                                <button id="avatar-picker-user1-btn"
+                                    class="text-xs bg-bg-tertiary hover:bg-bg-primary border border-border-primary px-3 py-1 rounded-full transition">Customize</button>
+                            </div>
+                            <div class="flex flex-col items-center gap-2">
+                                <div id="user2-avatar-preview"
+                                    class="w-16 h-16 rounded-full border-2 border-transparent">
+                                    <!-- Preview injected here -->
+                                </div>
+                                <span class="font-semibold">Erick</span>
+                                <button id="avatar-picker-user2-btn"
+                                    class="text-xs bg-bg-tertiary hover:bg-bg-primary border border-border-primary px-3 py-1 rounded-full transition">Customize</button>
+                            </div>
                         </div>
                     </div>
+
                     <div class="mt-6">
                         <h3 class="text-lg font-semibold mb-2">Select a manual wallpaper</h3>
                         <div class="space-y-4">

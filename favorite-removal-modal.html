@@ -1,0 +1,17 @@
+<!-- Favorite Removal Modal -->
+<div id="favorite-removal-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+    style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
+    <div class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6 border border-border-primary">
+        <h3 class="text-xl font-bold mb-4 text-white">Too Many Favorites</h3>
+        <p class="text-text-secondary mb-6">You can only have 3 favorites. Please remove one to continue:</p>
+
+        <div id="favorite-removal-list" class="space-y-2 mb-6 max-h-64 overflow-y-auto">
+            <!-- Favorites will be dynamically inserted here -->
+        </div>
+
+        <button id="cancel-favorite-removal-btn"
+            class="w-full bg-transparent hover:bg-white/10 text-text-muted hover:text-white font-semibold py-2 px-4 rounded-lg transition">
+            Cancel
+        </button>
+    </div>
+</div>

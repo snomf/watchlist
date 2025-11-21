@@ -366,18 +366,49 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
 }
 
 /**
- * Fetches media items that are marked as 'currently_watching'.
+ * Fetches media items that are marked as 'currently_watching', sorted by last activity.
  */
 async function getCurrentlyWatchingMedia() {
-    const { data, error } = await supabase
+    const { data: mediaItems, error } = await supabase
         .from('media')
         .select('*')
         .eq('currently_watching', true);
+
     if (error) {
         console.error('Error fetching currently watching media:', error);
         return [];
     }
-    return data;
+
+    if (!mediaItems || mediaItems.length === 0) return [];
+
+    // Fetch latest activity for these items to sort them
+    const mediaIds = mediaItems.map(item => item.id);
+    const { data: activities, error: activityError } = await supabase
+        .from('activity_log')
+        .select('media_id, created_at')
+        .in('media_id', mediaIds)
+        .order('created_at', { ascending: false });
+
+    if (activityError) {
+        console.error('Error fetching activity logs for sorting:', activityError);
+        // Fallback to default order (likely ID or created_at of media)
+        return mediaItems;
+    }
+
+    // Create a map of media_id -> latest timestamp
+    const lastActivityMap = {};
+    activities.forEach(act => {
+        if (!lastActivityMap[act.media_id]) {
+            lastActivityMap[act.media_id] = new Date(act.created_at).getTime();
+        }
+    });
+
+    // Sort media items
+    return mediaItems.sort((a, b) => {
+        const timeA = lastActivityMap[a.id] || 0;
+        const timeB = lastActivityMap[b.id] || 0;
+        return timeB - timeA; // Descending order (newest first)
+    });
 }
 
 /**
@@ -492,6 +523,21 @@ function renderCarousel(containerId, mediaItems) {
         card.style.cssText = 'flex-shrink: 0;';
         card.dataset.tmdbId = tmdbId;
         card.dataset.type = type;
+
+        // Apply Favorite Glow
+        let favoritedBy = item.favorited_by || [];
+        if (typeof favoritedBy === 'string') {
+            try { favoritedBy = JSON.parse(favoritedBy); } catch { favoritedBy = []; }
+        }
+
+        const favoritedByJuainny = favoritedBy.includes('user1');
+        const favoritedByErick = favoritedBy.includes('user2');
+
+        if (favoritedByJuainny && favoritedByErick) {
+            card.classList.add('rainbow-glow');
+        } else if (favoritedByJuainny || favoritedByErick) {
+            card.classList.add('favorite-glow');
+        }
 
         card.innerHTML = `
             <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
@@ -1522,8 +1568,35 @@ async function renderTVProgress(tmdbId, seasons) {
         document.getElementById('edit-episodes-btn').addEventListener('click', toggleEpisodesEditMode);
 
         // Initial Load
+        // Initial Load
         if (currentSeasons.length > 0) {
-            currentSeasonNumber = currentSeasons[0].season_number;
+            // Default to first season
+            let targetSeason = currentSeasons[0].season_number;
+
+            // Check activity log for last watched episode to determine "last edited" season
+            const { data: lastActivity } = await supabase
+                .from('activity_log')
+                .select('details')
+                .eq('media_id', currentInternalMediaId)
+                .eq('action_type', 'watched_episode')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (lastActivity && lastActivity.details && lastActivity.details.season) {
+                const lastSeason = lastActivity.details.season;
+                // Verify this season exists in currentSeasons
+                if (currentSeasons.some(s => s.season_number === lastSeason)) {
+                    targetSeason = lastSeason;
+                }
+            }
+
+            currentSeasonNumber = targetSeason;
+
+            // Update select dropdown to match
+            const seasonSelect = document.getElementById('season-select');
+            if (seasonSelect) seasonSelect.value = currentSeasonNumber;
+
             await renderSeasonEpisodes(currentSeasonNumber);
         } else {
             container.innerHTML = '<div class="text-center">No seasons found.</div>';
@@ -1710,6 +1783,15 @@ async function toggleEpisodeWatched(seasonNumber, episodeNumber, watched) {
         console.error('Error updating episode progress:', error);
         // Revert on error
         renderSeasonEpisodes(currentSeasonNumber); // Re-render current season to reflect actual state
+    } else {
+        // LOG ACTIVITY
+        // Since this updates for both users, we log for 'both'
+        if (watched) {
+            await logActivity('watched_episode', 'both', currentMediaItem, {
+                season: seasonNumber,
+                episode: episodeNumber
+            });
+        }
     }
 }
 
@@ -2013,6 +2095,27 @@ async function saveRatingsAndNotes() {
     if (error) {
         console.error('Error saving ratings and notes:', error);
     } else {
+        // Detect changes and log activity
+        if (currentMediaItem) {
+            // Juainny
+            if (updates.juainny_rating !== currentMediaItem.juainny_rating && updates.juainny_rating !== null) {
+                await logActivity('rate', 'juainny', data, { rating: updates.juainny_rating });
+            }
+            if (updates.juainny_notes !== currentMediaItem.juainny_notes && updates.juainny_notes !== '') {
+                // Only log if note is not empty/null, or if it changed significantly
+                // Simple check: if it's different
+                await logActivity('note_added', 'juainny', data);
+            }
+
+            // Erick
+            if (updates.erick_rating !== currentMediaItem.erick_rating && updates.erick_rating !== null) {
+                await logActivity('rate', 'erick', data, { rating: updates.erick_rating });
+            }
+            if (updates.erick_notes !== currentMediaItem.erick_notes && updates.erick_notes !== '') {
+                await logActivity('note_added', 'erick', data);
+            }
+        }
+
         // Update currentMediaItem with the latest data
         currentMediaItem = data;
     }
@@ -2122,13 +2225,47 @@ function updateFavoriteGlow(mediaItem) {
 
     [modalContent, movieCard].forEach(el => {
         if (!el) return;
-        el.classList.remove('favorite-glow', 'super-favorite-glow');
+        el.classList.remove('favorite-glow', 'rainbow-glow');
         if (favoritedByJuainny && favoritedByErick) {
-            el.classList.add('super-favorite-glow');
+            el.classList.add('rainbow-glow');
         } else if (favoritedByJuainny || favoritedByErick) {
             el.classList.add('favorite-glow');
         }
     });
+}
+
+/**
+ * Logs user activity to the activity_log table.
+ * @param {string} actionType - 'watched', 'want_to_watch', 'favorite', 'reaction', 'note_added', 'rate'
+ * @param {string} userId - 'juainny', 'erick', 'both'
+ * @param {object} mediaItem - The media item object (must have id and tmdb_id)
+ * @param {object} details - Additional details (e.g., { reaction: 'happy.png' })
+ */
+async function logActivity(actionType, userId, mediaItem, details = {}) {
+    try {
+        if (!mediaItem || !mediaItem.id) {
+            console.warn('Cannot log activity: Missing media ID');
+            return;
+        }
+
+        const { error } = await supabase
+            .from('activity_log')
+            .insert({
+                media_id: mediaItem.id,
+                tmdb_id: mediaItem.tmdb_id,
+                action_type: actionType,
+                user_id: userId,
+                details: details
+            });
+
+        if (error) {
+            console.error('Error logging activity:', error);
+        } else {
+            console.log(`Activity logged: ${actionType} by ${userId}`);
+        }
+    } catch (err) {
+        console.error('Unexpected error logging activity:', err);
+    }
 }
 
 function setupFavoriteButton() {
@@ -2155,51 +2292,156 @@ function setupFavoriteButton() {
                 return;
             }
 
-            // Ensure favorited_by is an array (handle various database formats)
-            let currentFavorites = mediaItem.favorited_by;
-            if (!currentFavorites) {
-                currentFavorites = [];
-            } else if (typeof currentFavorites === 'string') {
-                try {
-                    currentFavorites = JSON.parse(currentFavorites);
-                } catch (e) {
-                    currentFavorites = [];
-                }
-            } else if (!Array.isArray(currentFavorites)) {
-                currentFavorites = [];
-            }
-
             if (userId === 'remove-all') {
-                currentFavorites = [];
-            } else if (userId === 'user1') {
-                const isFavorited = currentFavorites.includes('user1');
-                currentFavorites = currentFavorites.filter(u => u !== 'user1');
-                if (!isFavorited) {
-                    currentFavorites.push('user1');
-                }
-            } else if (userId === 'user2') {
-                const isFavorited = currentFavorites.includes('user2');
-                currentFavorites = currentFavorites.filter(u => u !== 'user2');
-                if (!isFavorited) {
-                    currentFavorites.push('user2');
-                }
-            }
+                // Remove all favorites for this item
+                const { error } = await supabase
+                    .from('media')
+                    .update({ favorited_by: [] })
+                    .eq('tmdb_id', tmdbId);
 
-            const { data, error } = await supabase
-                .from('media')
-                .update({ favorited_by: currentFavorites })
-                .eq('tmdb_id', tmdbId)
-                .select()
-                .single();
-
-            if (error) {
-                console.error('Error updating favorites:', error);
+                if (error) console.error('Error removing all favorites:', error);
+                else {
+                    // Update local state
+                    currentMediaItem.favorited_by = [];
+                    updateFavoriteGlow(currentMediaItem);
+                }
             } else {
-                currentMediaItem = data;
-                updateFavoriteGlow(currentMediaItem);
+                // Handle single user favorite
+                const userKey = userId; // 'user1', 'user2'
+                const userLogName = userKey === 'user1' ? 'juainny' : 'erick';
+
+                // Check current favorite count for this user
+                const { data: userFavorites, error: countError } = await supabase
+                    .from('media')
+                    .select('id, tmdb_id, title, poster_path, favorited_by')
+                    .contains('favorited_by', [userKey]);
+
+                if (countError) {
+                    console.error('Error checking favorite count:', countError);
+                    userMenu.classList.add('hidden');
+                    return;
+                }
+
+                // If user already has 3 favorites and this isn't one of them, show removal modal
+                if (userFavorites && userFavorites.length >= 3) {
+                    const alreadyFavorited = userFavorites.some(fav => fav.tmdb_id === tmdbId);
+
+                    if (!alreadyFavorited) {
+                        // Show modal to pick which favorite to remove
+                        const removedTmdbId = await showFavoriteRemovalModal(userFavorites, userLogName);
+                        if (!removedTmdbId) {
+                            userMenu.classList.add('hidden');
+                            return; // User cancelled
+                        }
+
+                        // Remove the selected favorite
+                        const itemToRemove = userFavorites.find(f => f.tmdb_id === removedTmdbId);
+                        if (itemToRemove) {
+                            const newFavoritedBy = (itemToRemove.favorited_by || []).filter(u => u !== userKey);
+                            await supabase
+                                .from('media')
+                                .update({ favorited_by: newFavoritedBy })
+                                .eq('tmdb_id', removedTmdbId);
+
+                            // Update local allMedia
+                            const localIndex = allMedia.findIndex(m => m.tmdb_id == removedTmdbId);
+                            if (localIndex > -1) {
+                                allMedia[localIndex].favorited_by = newFavoritedBy;
+                            }
+                        }
+                    }
+                }
+
+                // Now add the new favorite
+                let currentFavorites = mediaItem.favorited_by || [];
+                if (typeof currentFavorites === 'string') {
+                    try { currentFavorites = JSON.parse(currentFavorites); } catch { currentFavorites = []; }
+                }
+
+                // Toggle: if already favorited, remove it
+                if (currentFavorites.includes(userKey)) {
+                    currentFavorites = currentFavorites.filter(u => u !== userKey);
+                } else {
+                    currentFavorites.push(userKey);
+                }
+
+                const { data, error } = await supabase
+                    .from('media')
+                    .update({ favorited_by: currentFavorites })
+                    .eq('tmdb_id', tmdbId)
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error('Error updating favorites:', error);
+                } else {
+                    currentMediaItem = data;
+                    updateFavoriteGlow(currentMediaItem);
+
+                    // Update allMedia
+                    const index = allMedia.findIndex(item => item.tmdb_id === tmdbId);
+                    if (index > -1) allMedia[index] = data;
+
+                    // LOG ACTIVITY (only if actually favorited, not unfavorited)
+                    if (currentFavorites.includes(userKey)) {
+                        await logActivity('favorite', userLogName, data);
+                    }
+                }
             }
+
+            renderContent(); // Re-render to update glows on grid
             userMenu.classList.add('hidden');
         }
+    });
+}
+
+async function showFavoriteRemovalModal(favorites, user) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById('favorite-removal-modal');
+        const listContainer = document.getElementById('favorite-removal-list');
+        const cancelBtn = document.getElementById('cancel-favorite-removal-btn');
+
+        // Populate list
+        listContainer.innerHTML = '';
+        favorites.forEach(fav => {
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-3 p-3 rounded-lg border border-border-primary hover:bg-bg-tertiary cursor-pointer transition';
+
+            const posterUrl = fav.poster_path
+                ? `https://image.tmdb.org/t/p/w92${fav.poster_path}`
+                : 'https://placehold.co/92x138?text=No+Image';
+
+            div.innerHTML = `
+                <img src="${posterUrl}" class="w-12 h-18 object-cover rounded" alt="${fav.title}">
+                <span class="flex-grow text-text-primary font-semibold">${fav.title}</span>
+                <button class="remove-favorite-btn text-danger hover:text-red-400 px-3 py-1 border border-danger rounded transition" data-tmdb-id="${fav.tmdb_id}">
+                    <i class="fas fa-times"></i> Remove
+                </button>
+            `;
+
+            const removeBtn = div.querySelector('.remove-favorite-btn');
+            removeBtn.addEventListener('click', () => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                resolve(fav.tmdb_id);
+            });
+
+            listContainer.appendChild(div);
+        });
+
+        // Cancel button
+        const cancelHandler = () => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            resolve(null);
+        };
+
+        cancelBtn.removeEventListener('click', cancelHandler);
+        cancelBtn.addEventListener('click', cancelHandler);
+
+        // Show modal
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     });
 }
 
@@ -2346,7 +2588,12 @@ function setupWatchedButtons() {
                 // If the item wasn't in allMedia, it's a new item from search. Add it.
                 allMedia.push(data);
             }
-            renderContent();
+
+            // LOG ACTIVITY for watched
+            if (newWatchedStatus && !isReject) {
+                await logActivity('watched', 'both', data);
+            }
+            renderContent(); // Refresh grid to reflect changes
         }
     };
 
@@ -2386,6 +2633,9 @@ function setupWatchedButtons() {
         } else {
             currentMediaItem = data;
             updateWatchedButtonUI(currentMediaItem);
+
+            // LOG ACTIVITY
+            await logActivity('currently_watching', 'both', data);
         }
     });
 
@@ -2411,6 +2661,11 @@ function setupWatchedButtons() {
         } else {
             currentMediaItem = data;
             updateWatchedButtonUI(currentMediaItem);
+
+            // LOG ACTIVITY
+            if (newWantToWatch) {
+                await logActivity('want_to_watch', 'both', data);
+            }
         }
     });
 
@@ -3004,10 +3259,12 @@ async function saveReaction(tmdbId, user, mood) {
         renderCarousel('want-to-watch-carousel', wantToWatch);
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
         .from('media')
         .update(updates)
-        .eq('tmdb_id', tmdbId);
+        .eq('tmdb_id', tmdbId)
+        .select()
+        .single();
 
     if (error) {
         console.error('Error saving reaction:', error);
@@ -3015,6 +3272,12 @@ async function saveReaction(tmdbId, user, mood) {
         // Revert optimistic update if needed (omitted for brevity)
     } else {
         console.log('Reaction saved successfully to DB for TMDB ID:', tmdbId);
+
+        // LOG ACTIVITY
+        const userLogName = (user === 'user1' || user === 'juainny') ? 'juainny' : 'erick';
+        if (data && mood) {
+            await logActivity('reaction', userLogName, data, { reaction: mood });
+        }
     }
 }
 

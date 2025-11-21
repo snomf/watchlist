@@ -222,6 +222,44 @@
     animation: super-pulse-glow 3s infinite;
 }
 
+@keyframes rainbow-glow-anim {
+    0% {
+        box-shadow: 0 0 15px 5px #ff0000;
+    }
+
+    14% {
+        box-shadow: 0 0 15px 5px #ff7f00;
+    }
+
+    28% {
+        box-shadow: 0 0 15px 5px #ffff00;
+    }
+
+    42% {
+        box-shadow: 0 0 15px 5px #00ff00;
+    }
+
+    57% {
+        box-shadow: 0 0 15px 5px #0000ff;
+    }
+
+    71% {
+        box-shadow: 0 0 15px 5px #4b0082;
+    }
+
+    85% {
+        box-shadow: 0 0 15px 5px #9400d3;
+    }
+
+    100% {
+        box-shadow: 0 0 15px 5px #ff0000;
+    }
+}
+
+.rainbow-glow {
+    animation: rainbow-glow-anim 3s linear infinite;
+}
+
 .endgame-theme {
     background:
         linear-gradient(rgba(16, 12, 42, 0.95), rgba(16, 12, 42, 0.95));
