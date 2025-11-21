@@ -646,6 +646,28 @@ async function openMovieModal(tmdbId, type) {
             imdbLink.style.display = 'none';
         }
 
+        // --- Auto-Save Missing Data to Supabase ---
+        // If we have a DB item (preloadedData) and it's missing key fields that we just fetched, save them.
+        if (preloadedData) {
+            const updates = {};
+            if (!preloadedData.release_year && releaseYear) updates.release_year = parseInt(releaseYear);
+            if (!preloadedData.runtime && runtime) updates.runtime = runtime;
+            if ((!preloadedData.content_rating || preloadedData.content_rating === 'N/A') && contentRating !== 'N/A') updates.content_rating = contentRating;
+            if (!preloadedData.imdb_id && imdbId) updates.imdb_id = imdbId;
+
+            if (Object.keys(updates).length > 0) {
+                console.log('Auto-saving missing metadata to Supabase:', updates);
+                supabase
+                    .from('media')
+                    .update(updates)
+                    .eq('tmdb_id', tmdbId)
+                    .then(({ error }) => {
+                        if (error) console.error('Error auto-saving metadata:', error);
+                        else console.log('Metadata auto-saved successfully.');
+                    });
+            }
+        }
+
         // --- Backdrop Image ---
         const backdropUrl = data.backdrop_path ? `https://image.tmdb.org/t/p/w780${data.backdrop_path}` : 'https://placehold.co/800x400?text=No+Image';
         document.getElementById('modal-backdrop-image').src = backdropUrl;
@@ -838,13 +860,14 @@ async function openMovieModal(tmdbId, type) {
                     // Parse runtime back to minutes (rough estimate or use data)
                     // Better to use the data object we have
                     const runtimeMinutes = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 0);
-                    const releaseDate = data.release_date || data.first_air_date;
+                    const releaseDateStr = data.release_date || data.first_air_date || '';
+                    const releaseYear = releaseDateStr ? parseInt(releaseDateStr.split('-')[0]) : null;
 
-                    if (confirm(`Update database with:\nYear: ${releaseDate}\nRuntime: ${runtimeMinutes}m\nRating: ${contentRating}`)) {
+                    if (confirm(`Update database with:\nYear: ${releaseYear}\nRuntime: ${runtimeMinutes}m\nRating: ${contentRating}`)) {
                         const { error } = await supabase
                             .from('media')
                             .update({
-                                release_date: releaseDate,
+                                release_year: releaseYear,
                                 runtime: runtimeMinutes,
                                 content_rating: contentRating
                             })
@@ -1236,9 +1259,18 @@ async function renderTVProgress(tmdbId, seasons) {
 
             try {
                 // Fetch details from TMDB to get necessary info for DB
-                const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}`);
+                const tmdbResponse = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=content_ratings`);
                 if (!tmdbResponse.ok) throw new Error('Failed to fetch TV details from TMDB');
                 const tmdbData = await tmdbResponse.json();
+
+                const releaseYear = tmdbData.first_air_date ? parseInt(tmdbData.first_air_date.split('-')[0]) : null;
+
+                let contentRating = 'N/A';
+                if (tmdbData.content_ratings && tmdbData.content_ratings.results) {
+                    const usRating = tmdbData.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                    if (usRating) contentRating = usRating.rating;
+                    else if (tmdbData.content_ratings.results.length > 0) contentRating = tmdbData.content_ratings.results[0].rating;
+                }
 
                 // Insert into Supabase
                 const { data: newItem, error: insertError } = await supabase
@@ -1249,10 +1281,10 @@ async function renderTVProgress(tmdbId, seasons) {
                         title: tmdbData.name,
                         poster_path: tmdbData.poster_path,
                         backdrop_path: tmdbData.backdrop_path,
-                        release_date: tmdbData.first_air_date,
+                        release_year: releaseYear,
                         source: 'fetched', // Mark as fetched so it doesn't clutter main view if filtered
                         runtime: tmdbData.episode_run_time?.[0] || 0,
-                        content_rating: 'N/A' // We could fetch this too if needed
+                        content_rating: contentRating
                     })
                     .select('id')
                     .single();
