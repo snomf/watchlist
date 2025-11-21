@@ -719,7 +719,7 @@ async function openMovieModal(tmdbId, type) {
             .from('media')
             .select('*')
             .eq('tmdb_id', tmdbId)
-            .single();
+            .maybeSingle();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 = 'Not a single row was found'
             console.error('Error fetching media item for ratings:', error);
@@ -833,7 +833,7 @@ async function openMovieModal(tmdbId, type) {
         // --- Render Flairs in Modal ---
         const modalFlairsContainer = document.getElementById('modal-flairs-container');
         if (modalFlairsContainer) {
-            const assignedFlairs = mediaFlairsMap.get(mediaItem.id) || [];
+            const assignedFlairs = (mediaItem && mediaFlairsMap.get(mediaItem.id)) || [];
             modalFlairsContainer.innerHTML = assignedFlairs.map(flair => renderFlairBadge(flair, 'text-xs px-2 py-1')).join('');
         }
 
@@ -858,7 +858,7 @@ async function openMovieModal(tmdbId, type) {
 
         // --- Marvel Marathon Logic ---
         const marvelFlairId = '45991eb5-21e1-40ee-8bde-5beee11a7dff';
-        const assignedFlairs = mediaFlairsMap.get(mediaItem.id) || [];
+        const assignedFlairs = (mediaItem && mediaFlairsMap.get(mediaItem.id)) || [];
         const isMarvelMovie = assignedFlairs.some(f => f.id === marvelFlairId || f.name === 'MCU');
 
         const marvelDisplay = document.getElementById('marvel-marathon-display');
