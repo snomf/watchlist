@@ -809,17 +809,36 @@ async function openMovieModal(tmdbId, type) {
             // Show section if tracked
             summarySection.classList.remove('hidden');
 
-            // Check if we already have a summary stored (optional, if we want to cache it in DB later)
-            // For now, we generate it on fly or check if we just generated it in this session?
-            // Let's generate it if it's missing or requested.
+            // Check if we already have a cached summary
+            if (trackedItem.ai_summary) {
+                summaryText.innerHTML = renderMarkdown(trackedItem.ai_summary);
+            } else {
+                // No cached summary, generate and save
+                const generateAndCache = async () => {
+                    summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
 
-            // Define the generation function
-            const fetchSummary = async () => {
+                    const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
+                    const user1Notes = document.getElementById('juainny-notes').innerText;
+                    const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.user2_rating;
+                    const user2Notes = document.getElementById('erick-notes').innerText;
+
+                    const ratings = { user1: user1Rating, user2: user2Rating };
+                    const notes = { user1: user1Notes, user2: user2Notes };
+
+                    const summary = await generateMediaSummary(trackedItem, ratings, notes);
+                    summaryText.innerHTML = renderMarkdown(summary);
+
+                    // Save to database
+                    await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
+                    trackedItem.ai_summary = summary; // Update local copy
+                };
+                generateAndCache();
+            }
+
+            // Regenerate button - creates new summary and saves it
+            regenerateBtn.onclick = async () => {
                 summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
 
-                // Get fresh ratings/notes from DOM or DB
-                // We can use the data we already have in 'trackedItem' but it might be stale if user just edited it.
-                // Let's use the values currently in the modal inputs for the most up-to-date context.
                 const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
                 const user1Notes = document.getElementById('juainny-notes').innerText;
                 const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.user2_rating;
@@ -829,16 +848,12 @@ async function openMovieModal(tmdbId, type) {
                 const notes = { user1: user1Notes, user2: user2Notes };
 
                 const summary = await generateMediaSummary(trackedItem, ratings, notes);
-                summaryText.textContent = summary;
+                summaryText.innerHTML = renderMarkdown(summary);
+
+                // Save new summary to database
+                await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
+                trackedItem.ai_summary = summary; // Update local copy
             };
-
-            // Initial fetch if empty or we want to refresh every time? 
-            // Let's fetch if it says "Willow is analyzing..." (default state)
-            if (summaryText.textContent.trim().includes('Willow is analyzing')) {
-                fetchSummary();
-            }
-
-            regenerateBtn.onclick = fetchSummary;
 
         } else {
             document.getElementById('willow-summary-section').classList.add('hidden');
@@ -3580,22 +3595,34 @@ if (willowChatForm) {
     });
 }
 
+// Simple markdown renderer
+function renderMarkdown(text) {
+    return text
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') // Bold
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')  // Italic
+        .replace(/^- (.+)$/gm, '<li>$1</li>') // List items
+        .replace(/(<li>.*<\/li>)/s, '<ul class="list-disc pl-4 space-y-1">$1</ul>') // Wrap lists
+        .replace(/\n/g, '<br>'); // Line breaks
+}
+
 function addChatMessage(text, sender) {
     const div = document.createElement('div');
     div.className = `flex items-start gap-2 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
 
     const avatar = sender === 'ai'
         ? `<div class="w-10 h-10 flex-shrink-0 flex items-center justify-center overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-contain"></div>`
-        : `<div class="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"><i class="fas fa-user"></i></div>`; // Generic user icon for now
+        : ''; // No user avatar
 
     const bubbleClass = sender === 'ai'
         ? 'bg-bg-tertiary text-text-primary rounded-tl-none'
         : 'bg-teal-600 text-white rounded-tr-none';
 
+    const content = sender === 'ai' ? renderMarkdown(text) : text;
+
     div.innerHTML = `
         ${avatar}
-        <div class="${bubbleClass} p-3 rounded-2xl text-sm shadow-sm max-w-[85%]">
-            ${text}
+        <div class="${bubbleClass} p-3 rounded-2xl text-sm shadow-sm max-w-[85%] markdown-content">
+            ${content}
         </div>
     `;
 
