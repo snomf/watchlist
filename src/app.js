@@ -503,16 +503,57 @@ async function openMovieModal(tmdbId, type) {
 
     // --- TV Progress ---
     const tvProgressSection = document.getElementById('tv-progress-section');
+    const tvWarningSection = document.getElementById('tv-warning-section'); // New warning section
+
+    // Helper to check if media is tracked
+    const isTracked = (item) => {
+        if (!item) return false;
+        return item.watched || item.currently_watching || item.want_to_watch;
+    };
+
+    // Check if we have a tracked item in our preloaded data or allMedia
+    const trackedItem = allMedia.find(i => i.tmdb_id == tmdbId);
+    const isItemTracked = isTracked(trackedItem);
+
     if (type === 'tv' || type === 'series') {
         tvProgressSection.classList.remove('hidden');
-        const endpoint = type === 'movie' ? 'movie' : 'tv';
-        const appendToResponse = 'credits,images,videos,release_dates,external_ids';
-        const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
-        const response = await fetch(tmdbUrl);
-        const data = await response.json();
-        await renderTVProgress(tmdbId, data.seasons);
+
+        // Create warning section if it doesn't exist
+        if (!tvWarningSection) {
+            const warningDiv = document.createElement('div');
+            warningDiv.id = 'tv-warning-section';
+            warningDiv.className = 'hidden text-center py-8 px-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20 my-4';
+            warningDiv.innerHTML = `
+                <i class="fas fa-lock text-yellow-500 text-3xl mb-3"></i>
+                <p class="text-text-primary font-semibold">Episode Guide Locked</p>
+                <p class="text-text-muted text-sm mt-2">You can't see the episode carousel until you add this as "Watched", "Watching", or "Want to Watch".</p>
+             `;
+            // Insert after progress section
+            tvProgressSection.parentNode.insertBefore(warningDiv, tvProgressSection.nextSibling);
+        }
+
+        if (isItemTracked) {
+            // Show progress, hide warning
+            tvProgressSection.classList.remove('hidden');
+            const existingWarning = document.getElementById('tv-warning-section');
+            if (existingWarning) existingWarning.classList.add('hidden');
+
+            const endpoint = type === 'movie' ? 'movie' : 'tv';
+            const appendToResponse = 'credits,images,videos,release_dates,external_ids';
+            const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
+            const response = await fetch(tmdbUrl);
+            const data = await response.json();
+            await renderTVProgress(tmdbId, data.seasons);
+        } else {
+            // Hide progress, show warning
+            tvProgressSection.classList.add('hidden');
+            const existingWarning = document.getElementById('tv-warning-section');
+            if (existingWarning) existingWarning.classList.remove('hidden');
+        }
     } else {
         tvProgressSection.classList.add('hidden');
+        const existingWarning = document.getElementById('tv-warning-section');
+        if (existingWarning) existingWarning.classList.add('hidden');
     }
 
     // Store the tmdbId in the modal for later use
@@ -865,15 +906,40 @@ async function openMovieModal(tmdbId, type) {
                     clickCount = 0;
 
                     // Trigger Update
-                    const year = document.getElementById('modal-release-year').textContent;
-                    const runtimeText = document.getElementById('modal-runtime').textContent;
-                    const rating = document.getElementById('modal-content-rating').textContent;
+                    // Use the data object from the modal scope which contains the fresh API response
 
-                    // Parse runtime back to minutes (rough estimate or use data)
-                    // Better to use the data object we have
-                    const runtimeMinutes = data.runtime || (data.episode_run_time ? data.episode_run_time[0] : 0);
+                    // 1. Runtime Calculation
+                    let runtimeMinutes = data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
+                    if (type === 'tv' && !runtimeMinutes) {
+                        if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
+                            runtimeMinutes = data.last_episode_to_air.runtime;
+                        } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
+                            runtimeMinutes = data.next_episode_to_air.runtime;
+                        }
+                    }
+
+                    // 2. Year Calculation
                     const releaseDateStr = data.release_date || data.first_air_date || '';
                     const releaseYear = releaseDateStr ? parseInt(releaseDateStr.split('-')[0]) : null;
+
+                    // 3. Content Rating Calculation
+                    let contentRating = 'N/A';
+                    if (type === 'movie' && data.release_dates) {
+                        const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
+                        if (usRelease) {
+                            const rating = usRelease.release_dates.find(rd => rd.certification !== '');
+                            if (rating) contentRating = rating.certification;
+                        }
+                    } else if (type === 'tv') {
+                        if (data.content_ratings && data.content_ratings.results) {
+                            const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                            if (usRating) {
+                                contentRating = usRating.rating;
+                            } else if (data.content_ratings.results.length > 0) {
+                                contentRating = data.content_ratings.results[0].rating;
+                            }
+                        }
+                    }
 
                     if (confirm(`Update database with:\nYear: ${releaseYear}\nRuntime: ${runtimeMinutes}m\nRating: ${contentRating}`)) {
                         const { error } = await supabase
@@ -2474,13 +2540,14 @@ async function initializeApp() {
         };
 
         // Attach multiple event listeners for resilience
-        searchBar.addEventListener('input', handleSearch);
-        searchBar.addEventListener('keyup', handleSearch);
+        const debouncedSearch = debounce(handleSearch, 300);
+        searchBar.addEventListener('input', debouncedSearch);
+        // searchBar.addEventListener('keyup', handleSearch); // Input event is sufficient and better for debouncing
 
-        // Prevent browser extensions from interfering
-        searchBar.addEventListener('focus', (e) => {
-            e.stopPropagation();
-        }, true);
+        // Prevent browser extensions from interfering - REMOVED as it might be causing issues
+        // searchBar.addEventListener('focus', (e) => {
+        //     e.stopPropagation();
+        // }, true);
 
         homeBtn.addEventListener('click', exitSearchMode);
         logoContainer.addEventListener('click', exitSearchMode);
