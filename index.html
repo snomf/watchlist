@@ -240,7 +240,7 @@
             class="movie-modal-content bg-bg-secondary rounded-2xl shadow-xl w-full md:w-3/4 mx-auto flex flex-col max-h-[90vh] relative">
             <!-- Close Button (Sticky) -->
             <button id="close-modal-btn"
-                class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-50">
+                class="absolute top-6 right-6 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-50">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
@@ -255,7 +255,9 @@
                     <div class="relative">
                         <img id="modal-backdrop-image" src="" class="w-full h-48 md:h-72 object-cover"
                             onerror="this.onerror=null;this.src='https://placehold.co/800x400/111827/ef4444?text=Image+Not+Found';">
-                        <div class="absolute inset-0 bg-gradient-to-t from-bg-secondary to-transparent"></div>
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-bg-secondary to-transparent pointer-events-none">
+                        </div>
                         <img id="iron-man-walker" src="/iron-man-walking.gif" class="hidden absolute bottom-0 left-0"
                             style="width: 100px; height: auto;">
 
@@ -272,9 +274,9 @@
                                 class="text-xs text-text-secondary hover:text-danger transition hidden ml-2">Remove
                                 Reaction</button>
                         </div>
-                        <div class="absolute top-4 right-16 flex items-center space-x-2">
+                        <div class="absolute top-6 right-20 flex items-center space-x-2">
                             <button id="manage-flairs-btn"
-                                class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10 transition-opacity duration-300"
+                                class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-30 transition-opacity duration-300 cursor-pointer"
                                 title="Manage Flairs">
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                     xmlns="http://www.w3.org/2000/svg">
