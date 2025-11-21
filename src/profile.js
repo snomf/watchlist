@@ -91,14 +91,12 @@ async function loadProfile(user) {
 
     // Update Profile Info
     const nameEl = document.getElementById('profile-name');
-    const handleEl = document.getElementById('profile-handle');
     const bioEl = document.getElementById('profile-bio');
     const avatarContainer = document.getElementById('profile-avatar-container');
     const bannerImg = document.getElementById('profile-banner');
     const bannerPlaceholder = document.getElementById('profile-banner-placeholder');
 
     nameEl.textContent = user === 'juainny' ? 'Juainny' : 'Erick';
-    handleEl.textContent = user === 'juainny' ? '@juainny' : '@erick';
 
     // Get Bio from Settings (already loaded into DOM inputs by loadAndApplySettings, or we can fetch again/use global state if we had one)
     // Since loadAndApplySettings populates inputs in the modal (which isn't here), we should probably export the data or fetch it.
@@ -117,7 +115,13 @@ async function loadProfile(user) {
         bannerPlaceholder.classList.remove('hidden');
     }
 
-    // Avatar
+    // Avatar - make sure userAvatars is populated from settings
+    // Update header avatars too
+    const navUser1 = document.getElementById('user1-avatar-nav');
+    const navUser2 = document.getElementById('user2-avatar-nav');
+    if (navUser1) navUser1.innerHTML = getAvatarHTML('juainny', 'w-full h-full');
+    if (navUser2) navUser2.innerHTML = getAvatarHTML('erick', 'w-full h-full');
+
     avatarContainer.innerHTML = getAvatarHTML(user, 'w-full h-full');
 
     // Setup Bio Editing
@@ -200,7 +204,7 @@ async function loadActivityFeed(user) {
         .select(`
             *,
             media:media_id (
-                title, name, poster_path, backdrop_path, type
+                title, poster_path, backdrop_path, type
             )
         `)
         .or(`user_id.eq.${user},user_id.eq.both`)
@@ -275,7 +279,7 @@ function createActivityItem(activity, viewUser) {
         ? `https://image.tmdb.org/t/p/w92${media.poster_path}`
         : 'https://placehold.co/92x138?text=No+Image';
 
-    const title = media.title || media.name || 'Unknown Title';
+    const title = media.title || 'Unknown Title';
 
     div.innerHTML = `
         <div class="flex-shrink-0 mt-1">
