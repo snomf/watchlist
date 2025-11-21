@@ -797,8 +797,8 @@ async function openMovieModal(tmdbId, type) {
         }
 
         // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
-        // Only if we have a tracked item in the DB
-        if (isItemTracked && trackedItem && trackedItem.id) {
+        // Only if we have a tracked item in the DB AND it's watched (not just want_to_watch)
+        if (isItemTracked && trackedItem && trackedItem.id && trackedItem.watched) {
             const updates = {};
 
             // --- Willow's Thoughts (AI Summary) ---
