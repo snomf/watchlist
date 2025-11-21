@@ -111,16 +111,10 @@ async function loadProfile(user) {
         const bio = user === 'juainny' ? settings.juainny_bio : settings.erick_bio;
         bioEl.textContent = bio || `No bio yet for ${user === 'juainny' ? 'Juainny' : 'Erick'}.`;
 
-        // Banner (using wallpaper for now, or we could add specific profile banners later)
-        // For now, let's use the main wallpaper if set, or a default color
-        if (settings.wallpaper_url) {
-            bannerImg.src = settings.wallpaper_url;
-            bannerImg.classList.remove('hidden');
-            bannerPlaceholder.classList.add('hidden');
-        } else {
-            bannerImg.classList.add('hidden');
-            bannerPlaceholder.classList.remove('hidden');
-        }
+        // Banner - leave empty for now, will be editable in the future
+        // TODO: Add banner editing functionality with juainny_banner/erick_banner columns
+        bannerImg.classList.add('hidden');
+        bannerPlaceholder.classList.remove('hidden');
     }
 
     // Avatar
@@ -206,7 +200,7 @@ async function loadActivityFeed(user) {
         .select(`
             *,
             media:media_id (
-                title, name, poster_path, backdrop_path, media_type
+                title, name, poster_path, backdrop_path, type
             )
         `)
         .or(`user_id.eq.${user},user_id.eq.both`)
