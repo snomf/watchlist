@@ -87,10 +87,17 @@
         <!-- Profile Header -->
         <div class="relative mb-20">
             <!-- Banner -->
-            <div class="h-48 md:h-64 w-full rounded-xl overflow-hidden relative bg-bg-tertiary">
+            <div class="h-48 md:h-64 w-full rounded-xl overflow-hidden relative bg-bg-tertiary group/banner">
                 <img id="profile-banner" src="" alt="Banner" class="w-full h-full object-cover hidden">
                 <div id="profile-banner-placeholder"
-                    class="w-full h-full bg-gradient-to-r from-accent-primary to-accent-secondary opacity-50"></div>
+                    class="w-full h-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500"></div>
+
+                <!-- Edit Banner Button -->
+                <button id="edit-banner-btn"
+                    class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white px-4 py-2 rounded-lg transition opacity-0 group-hover/banner:opacity-100 flex items-center gap-2">
+                    <i class="fas fa-image"></i>
+                    <span>Change Banner</span>
+                </button>
             </div>
 
             <!-- Profile Info -->
