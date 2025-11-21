@@ -301,7 +301,10 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         }
     });
 
-    movieCard.addEventListener('click', () => openMovieModal(tmdbId, type));
+    movieCard.addEventListener('click', (e) => {
+        console.log('Movie card clicked:', title); // DEBUG
+        openMovieModal(tmdbId, type);
+    });
     grid.appendChild(movieCard);
 }
 
@@ -587,11 +590,12 @@ async function openMovieModal(tmdbId, type) {
     const appendToResponse = 'credits,images,videos,release_dates,external_ids,content_ratings'; // Added content_ratings explicitly
     const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
 
+    let data; // Declare data here to be accessible by the click handler
     try {
         const response = await fetch(tmdbUrl);
         if (!response.ok) throw new Error('Failed to fetch modal data.');
 
-        const data = await response.json();
+        data = await response.json();
 
         // Update currentMediaItem with fresh data (merging with existing if possible to keep DB fields)
         // But wait, data is from TMDB, it doesn't have our DB fields (reactions, etc.)
