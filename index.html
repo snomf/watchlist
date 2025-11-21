@@ -236,184 +236,191 @@
 
     <div id="movie-modal" class="fixed inset-0 hidden items-center justify-center modal-hidden p-4 z-[55]"
         style="backdrop-filter: blur(8px);">
-        <div class="movie-modal-content bg-bg-secondary rounded-2xl shadow-xl w-full md:w-3/4 mx-auto max-h-[90vh] overflow-y-auto"
-            style="max-height: 90vh;">
-            <div class="relative">
-                <img id="modal-backdrop-image" src="" class="w-full h-48 md:h-72 object-cover"
-                    onerror="this.onerror=null;this.src='https://placehold.co/800x400/111827/ef4444?text=Image+Not+Found';">
-                <div class="absolute inset-0 bg-gradient-to-t from-bg-secondary to-transparent"></div>
-                <img id="iron-man-walker" src="/iron-man-walking.gif" class="hidden absolute bottom-0 left-0"
-                    style="width: 100px; height: auto;">
-                <button id="close-modal-btn"
-                    class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
-                </button>
-                <div id="modal-title-container" class="absolute bottom-4 left-4"></div>
-                <div class="absolute top-4 left-4 flex items-center space-x-2" id="mood-controls">
-                    <button id="add-mood-btn"
-                        class="bg-blue-600 hover:bg-blue-700 text-text-primary font-bold py-2 px-4 rounded-full transition flex items-center justify-center">
-                        <i class="fas fa-plus mr-2"></i>
-                        <span>Add Reaction</span>
-                    </button>
-                    <div id="modal-mood-display" class="flex space-x-2">
-                    </div>
-                    <button id="remove-mood-btn"
-                        class="text-xs text-text-secondary hover:text-danger transition hidden ml-2">Remove
-                        Reaction</button>
-                </div>
-                <div class="absolute top-4 right-16 flex items-center space-x-2">
-                    <button id="manage-flairs-btn"
-                        class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10"
-                        title="Manage Flairs">
+        <div
+            class="movie-modal-content bg-bg-secondary rounded-2xl shadow-xl w-full md:w-3/4 mx-auto flex flex-col max-h-[90vh]">
+            <!-- Sticky Header with Backdrop, Close Button, and Manage Flairs Button -->
+            <div class="sticky top-0 z-20 rounded-t-2xl overflow-hidden">
+                <div class="relative">
+                    <img id="modal-backdrop-image" src="" class="w-full h-48 md:h-72 object-cover"
+                        onerror="this.onerror=null;this.src='https://placehold.co/800x400/111827/ef4444?text=Image+Not+Found';">
+                    <div class="absolute inset-0 bg-gradient-to-t from-bg-secondary to-transparent"></div>
+                    <img id="iron-man-walker" src="/iron-man-walking.gif" class="hidden absolute bottom-0 left-0"
+                        style="width: 100px; height: auto;">
+                    <button id="close-modal-btn"
+                        class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                                d="M6 18L18 6M6 6l12 12">
                             </path>
                         </svg>
+                    </button>
+                    <div id="modal-title-container" class="absolute bottom-4 left-4"></div>
+                    <div class="absolute top-4 left-4 flex items-center space-x-2" id="mood-controls">
+                        <button id="add-mood-btn"
+                            class="bg-blue-600 hover:bg-blue-700 text-text-primary font-bold py-2 px-4 rounded-full transition flex items-center justify-center">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span>Add Reaction</span>
+                        </button>
+                        <div id="modal-mood-display" class="flex space-x-2">
+                        </div>
+                        <button id="remove-mood-btn"
+                            class="text-xs text-text-secondary hover:text-danger transition hidden ml-2">Remove
+                            Reaction</button>
+                    </div>
+                    <div class="absolute top-4 right-16 flex items-center space-x-2">
+                        <button id="manage-flairs-btn"
+                            class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10 transition-opacity duration-300"
+                            title="Manage Flairs">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                                </path>
+                            </svg>
 
+                    </div>
                 </div>
             </div>
 
-            <!-- Marvel Marathon Special Display -->
-            <div id="marvel-marathon-display"
-                class="hidden flex-col items-center justify-center p-8 text-center space-y-6 min-h-[300px]">
-                <img src="/mm-logo.png" alt="Marvel Marathon" class="w-32 h-auto animate-pulse">
-                <div class="space-y-2">
-                    <h3 class="text-2xl font-bold text-red-500">Marvel Marathon Exclusive</h3>
-                    <p class="text-text-secondary max-w-md mx-auto">
-                        This movie can be found in Marvel Marathon and can be edited there.
-                    </p>
-                    <a href="https://mm.juainny.com/" target="_blank"
-                        class="inline-block mt-4 text-accent-primary hover:text-accent-secondary underline font-semibold transition">
-                        Visit Marvel Marathon
-                    </a>
-                </div>
-            </div>
-
-            <div id="normal-modal-content" class="block">
-                <div class="p-6">
-                    <div class="flex justify-between items-start mb-2">
-                        <h2 id="modal-title" class="text-3xl font-bold"></h2>
-                        <div id="modal-flairs-container" class="flex flex-wrap gap-1 justify-end mt-1"></div>
-                    </div>
-                    <div class="mb-4 flex justify-start">
-                        <div id="modal-stats-pill"
-                            class="flex items-center space-x-3 text-sm text-text-muted bg-black/20 backdrop-blur-sm rounded-full px-4 py-2 select-none cursor-pointer hover:bg-black/30 transition">
-                            <span id="modal-release-year"></span>
-                            <span>•</span>
-                            <span id="modal-runtime"></span>
-                            <span>•</span>
-                            <span id="modal-content-rating"></span>
-                            <span class="ml-2 cursor-pointer" id="title-tooltip" title="">
-                                <i class="fas fa-question-circle text-text-muted"></i>
-                            </span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-4 my-4">
-                        <div class="relative">
-                            <button id="favorite-btn"
-                                class="bg-yellow-500 hover:bg-yellow-600 text-text-primary font-bold py-2 px-4 rounded-full transition flex items-center justify-center">
-                                <i class="fas fa-star mr-2"></i>
-                                <span>Favorite</span>
-                            </button>
-                            <div id="user-selection-menu"
-                                class="hidden absolute top-full mt-2 w-48 bg-bg-tertiary p-2 rounded-lg shadow-lg z-10">
-                                <button id="user1-btn"
-                                    class="block w-full text-left px-4 py-2 text-text-primary hover:bg-bg-secondary rounded">Juainny</button>
-                                <button id="user2-btn"
-                                    class="block w-full text-left px-4 py-2 text-text-primary hover:bg-bg-secondary rounded">Erick</button>
-                                <button id="remove-all-btn"
-                                    class="block w-full text-left px-4 py-2 text-danger hover:bg-bg-secondary rounded">Remove
-                                    All Favorites</button>
-                            </div>
-                        </div>
-                        <a id="modal-imdb-link" href="#" target="_blank"
-                            class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
-                            <i class="fab fa-imdb fa-2x"></i>
-                            <span id="modal-score" class="text-lg font-bold"></span>
+            <!-- Scrollable Content Area -->
+            <div id="movie-modal-scrollable-content" class="overflow-y-auto">
+                <!-- Marvel Marathon Special Display -->
+                <div id="marvel-marathon-display"
+                    class="hidden flex-col items-center justify-center p-8 text-center space-y-6 min-h-[300px]">
+                    <img src="/mm-logo.png" alt="Marvel Marathon" class="w-32 h-auto animate-pulse">
+                    <div class="space-y-2">
+                        <h3 class="text-2xl font-bold text-red-500">Marvel Marathon Exclusive</h3>
+                        <p class="text-text-secondary max-w-md mx-auto">
+                            This movie can be found in Marvel Marathon and can be edited there.
+                        </p>
+                        <a href="https://mm.juainny.com/" target="_blank"
+                            class="inline-block mt-4 text-accent-primary hover:text-accent-secondary underline font-semibold transition">
+                            Visit Marvel Marathon
                         </a>
                     </div>
-                    <p id="modal-overview" class="text-text-secondary mb-6">Overview goes here...</p>
+                </div>
 
-                    <div id="end-time-calculator" class="text-sm text-text-muted my-4">
-                        <p>If you start at <span id="start-time-hour" class="font-bold cursor-pointer"></span>:<span
-                                id="start-time-minute" class="font-bold cursor-pointer"></span>, you would end at
-                            <span id="end-time" class="font-bold"></span>.
-                        </p>
-                    </div>
-
-                    <div class="border-t border-border-primary pt-4 space-y-4">
-                        <div id="tv-progress-section" class="hidden">
-                            <h3 class="text-lg font-semibold mb-2">Episode Progress</h3>
-                            <div id="tv-progress-container" class="bg-bg-tertiary rounded-lg">
-                                <!-- Seasons and episodes will be dynamically inserted here -->
+                <div id="normal-modal-content" class="block">
+                    <div class="p-6">
+                        <div class="flex justify-between items-start mb-2">
+                            <h2 id="modal-title" class="text-3xl font-bold"></h2>
+                            <div id="modal-flairs-container" class="flex flex-wrap gap-1 justify-end mt-1"></div>
+                        </div>
+                        <div class="mb-4 flex justify-start">
+                            <div id="modal-stats-pill"
+                                class="flex items-center space-x-3 text-sm text-text-muted bg-black/20 backdrop-blur-sm rounded-full px-4 py-2 select-none cursor-pointer hover:bg-black/30 transition">
+                                <span id="modal-release-year"></span>
+                                <span>•</span>
+                                <span id="modal-runtime"></span>
+                                <span>•</span>
+                                <span id="modal-content-rating"></span>
+                                <span class="ml-2 cursor-pointer" id="title-tooltip" title="">
+                                    <i class="fas fa-question-circle text-text-muted"></i>
+                                </span>
                             </div>
                         </div>
-                        <div id="notes-section" class="hidden">
-                            <div class="flex justify-between items-center mb-2">
-                                <h3 class="text-lg font-semibold">Post-Watch Ratings</h3>
-                                <button id="remove-rating-btn"
-                                    class="text-xs text-text-muted hover:text-danger transition hidden">Remove All
-                                    Ratings</button>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="bg-bg-tertiary p-4 rounded-lg">
-                                    <div class="flex items-center mb-2">
-                                        <div id="juainny-avatar"
-                                            class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">
-                                            J</div>
-                                        <h4 class="text-md font-semibold text-text-secondary">Juainny's Rating</h4>
-                                    </div>
-                                    <div id="juainny-rating-container">
-                                        <!-- Star rating component will be injected here -->
-                                    </div>
-                                    <div id="juainny-notes" contenteditable="true"
-                                        class="mt-2 block w-full rounded-md bg-bg-primary border border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary p-2 min-h-[4rem] max-h-[12rem] overflow-y-auto">
-                                    </div>
-                                </div>
-                                <div class="bg-bg-tertiary p-4 rounded-lg">
-                                    <div class="flex items-center mb-2">
-                                        <div id="erick-avatar"
-                                            class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">
-                                            E</div>
-                                        <h4 class="text-md font-semibold text-text-secondary">Erick's Rating</h4>
-                                    </div>
-                                    <div id="erick-rating-container">
-                                        <!-- Star rating component will be injected here -->
-                                    </div>
-                                    <div id="erick-notes" contenteditable="true"
-                                        class="mt-2 block w-full rounded-md bg-bg-primary border border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary p-2 min-h-[4rem] max-h-[12rem] overflow-y-auto">
-                                    </div>
+                        <div class="flex items-center gap-4 my-4">
+                            <div class="relative">
+                                <button id="favorite-btn"
+                                    class="bg-yellow-500 hover:bg-yellow-600 text-text-primary font-bold py-2 px-4 rounded-full transition flex items-center justify-center">
+                                    <i class="fas fa-star mr-2"></i>
+                                    <span>Favorite</span>
+                                </button>
+                                <div id="user-selection-menu"
+                                    class="hidden absolute top-full mt-2 w-48 bg-bg-tertiary p-2 rounded-lg shadow-lg z-10">
+                                    <button id="user1-btn"
+                                        class="block w-full text-left px-4 py-2 text-text-primary hover:bg-bg-secondary rounded">Juainny</button>
+                                    <button id="user2-btn"
+                                        class="block w-full text-left px-4 py-2 text-text-primary hover:bg-bg-secondary rounded">Erick</button>
+                                    <button id="remove-all-btn"
+                                        class="block w-full text-left px-4 py-2 text-danger hover:bg-bg-secondary rounded">Remove
+                                        All Favorites</button>
                                 </div>
                             </div>
+                            <a id="modal-imdb-link" href="#" target="_blank"
+                                class="flex items-center space-x-2 text-yellow-400 hover:text-yellow-300">
+                                <i class="fab fa-imdb fa-2x"></i>
+                                <span id="modal-score" class="text-lg font-bold"></span>
+                            </a>
                         </div>
-                        <div class="flex flex-col gap-2">
-                            <button id="currently-watching-btn"
-                                class="w-full bg-blue-600 hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
-                                Currently Watching
-                            </button>
-                            <button id="remove-currently-watching-btn"
-                                class="hidden w-full bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
-                                Remove from Currently Watching
-                            </button>
-                            <div class="flex gap-2">
-                                <button id="toggle-watched-btn"
-                                    class="w-full bg-success hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
-                                    Mark as Watched
+                        <p id="modal-overview" class="text-text-secondary mb-6">Overview goes here...</p>
+
+                        <div id="end-time-calculator" class="text-sm text-text-muted my-4">
+                            <p>If you start at <span id="start-time-hour" class="font-bold cursor-pointer"></span>:<span
+                                    id="start-time-minute" class="font-bold cursor-pointer"></span>, you would end at
+                                <span id="end-time" class="font-bold"></span>.
+                            </p>
+                        </div>
+
+                        <div class="border-t border-border-primary pt-4 space-y-4">
+                            <div id="tv-progress-section" class="hidden">
+                                <h3 class="text-lg font-semibold mb-2">Episode Progress</h3>
+                                <div id="tv-progress-container" class="bg-bg-tertiary rounded-lg">
+                                    <!-- Seasons and episodes will be dynamically inserted here -->
+                                </div>
+                            </div>
+                            <div id="notes-section" class="hidden">
+                                <div class="flex justify-between items-center mb-2">
+                                    <h3 class="text-lg font-semibold">Post-Watch Ratings</h3>
+                                    <button id="remove-rating-btn"
+                                        class="text-xs text-text-muted hover:text-danger transition hidden">Remove All
+                                        Ratings</button>
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="bg-bg-tertiary p-4 rounded-lg">
+                                        <div class="flex items-center mb-2">
+                                            <div id="juainny-avatar"
+                                                class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">
+                                                J</div>
+                                            <h4 class="text-md font-semibold text-text-secondary">Juainny's Rating</h4>
+                                        </div>
+                                        <div id="juainny-rating-container">
+                                            <!-- Star rating component will be injected here -->
+                                        </div>
+                                        <div id="juainny-notes" contenteditable="true"
+                                            class="mt-2 block w-full rounded-md bg-bg-primary border border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary p-2 min-h-[4rem] max-h-[12rem] overflow-y-auto">
+                                        </div>
+                                    </div>
+                                    <div class="bg-bg-tertiary p-4 rounded-lg">
+                                        <div class="flex items-center mb-2">
+                                            <div id="erick-avatar"
+                                                class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">
+                                                E</div>
+                                            <h4 class="text-md font-semibold text-text-secondary">Erick's Rating</h4>
+                                        </div>
+                                        <div id="erick-rating-container">
+                                            <!-- Star rating component will be injected here -->
+                                        </div>
+                                        <div id="erick-notes" contenteditable="true"
+                                            class="mt-2 block w-full rounded-md bg-bg-primary border border-border-primary shadow-sm focus:border-accent-primary focus:ring-accent-primary sm:text-sm text-text-primary p-2 min-h-[4rem] max-h-[12rem] overflow-y-auto">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col gap-2">
+                                <button id="currently-watching-btn"
+                                    class="w-full bg-blue-600 hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                                    Currently Watching
                                 </button>
-                                <button id="bookmark-btn"
-                                    class="w-auto bg-gray-600 hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
-                                    <i class="fas fa-bookmark"></i>
+                                <button id="remove-currently-watching-btn"
+                                    class="hidden w-full bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                                    Remove from Currently Watching
                                 </button>
-                                <button id="toggle-rejected-btn"
-                                    class="w-auto bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <div class="flex gap-2">
+                                    <button id="toggle-watched-btn"
+                                        class="w-full bg-success hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                                        Mark as Watched
+                                    </button>
+                                    <button id="bookmark-btn"
+                                        class="w-auto bg-gray-600 hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                                        <i class="fas fa-bookmark"></i>
+                                    </button>
+                                    <button id="toggle-rejected-btn"
+                                        class="w-auto bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -459,93 +466,26 @@
 
 
     <!-- Flair Management Modal -->
-    <div id="flair-modal" class="fixed inset-0 z-[60] hidden items-center justify-center modal-hidden p-4"
-        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
-        <div class="modal-backdrop fixed inset-0" id="close-flair-modal-backdrop"></div>
+    <div id="flair-modal"
+        class="fixed inset-0 hidden items-center justify-center modal-hidden p-4 z-[60] bg-black/50 backdrop-blur-sm">
         <div
-            class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md border border-border-primary relative z-10 flex flex-col max-h-[90vh]">
-            <!-- Sticky Header -->
-            <div class="sticky top-0 z-20 bg-bg-secondary rounded-t-lg px-6 pt-6 pb-4 border-b border-border-primary">
+            class="bg-bg-secondary rounded-2xl shadow-xl w-full md:w-2/3 lg:w-1/2 max-h-[90vh] overflow-y-auto p-6 space-y-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-text-primary">MANAGE FLAIRS</h2>
                 <button id="close-flair-modal-btn"
-                    class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
+                    class="flex-1 bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 rounded text-sm transition shadow-lg">
+                    Create Flair
                 </button>
-                <h3 id="flair-modal-title" class="text-xl font-bold text-text-primary transition-opacity duration-300">
-                    Manage Flairs</h3>
-            </div>
-
-            <!-- Scrollable Content -->
-            <div id="flair-modal-content" class="overflow-y-auto px-6 pb-6 pt-4 custom-scrollbar">
-                <!-- Current Flairs -->
-                <div class="mb-6">
-                    <h4 class="text-sm font-semibold text-text-muted mb-2">Assigned Flairs (Max 2)</h4>
-                    <div id="current-flairs-list"
-                        class="flex flex-wrap gap-2 min-h-[2rem] p-2 border border-border-primary rounded-lg bg-bg-tertiary">
-                        <!-- Assigned flairs will be injected here -->
-                    </div>
-                </div>
-
-                <!-- Available Flairs -->
-                <div class="mb-6">
-                    <h4 class="text-sm font-semibold text-text-muted mb-2">Available Flairs</h4>
-                    <div id="available-flairs-list"
-                        class="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-border-primary rounded-lg bg-bg-tertiary custom-scrollbar">
-                        <!-- Available flairs will be injected here -->
-                    </div>
-                </div>
-
-                <!-- Create/Edit Flair -->
-                <div class="border-t border-border-primary pt-4">
-                    <button id="toggle-create-flair-btn"
-                        class="text-accent-primary hover:underline text-sm font-semibold flex items-center gap-1">
-                        <i class="fas fa-plus"></i> Create New Flair
-                    </button>
-
-                    <div id="create-flair-form" class="hidden mt-4 space-y-3 bg-bg-tertiary p-3 rounded-lg">
-                        <input type="hidden" id="edit-flair-id">
-                        <div class="flex justify-between items-center mb-2">
-                            <h5 id="flair-form-title" class="text-xs font-bold text-text-muted uppercase">New Flair
-                            </h5>
-                            <button id="cancel-edit-flair-btn"
-                                class="hidden text-xs text-text-muted hover:text-text-primary">Cancel</button>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-text-muted mb-1">Name</label>
-                            <input type="text" id="new-flair-name"
-                                class="w-full bg-bg-primary border border-border-primary rounded px-2 py-1 text-sm text-text-primary focus:border-accent-primary outline-none"
-                                placeholder="e.g., MCU, Horror">
-                        </div>
-                        <div class="flex gap-2">
-                            <div class="flex-1">
-                                <label class="block text-xs text-text-muted mb-1">Color</label>
-                                <input type="color" id="new-flair-color"
-                                    class="w-full h-8 bg-bg-primary border border-border-primary rounded cursor-pointer"
-                                    value="#ef4444">
-                            </div>
-                            <div class="flex-1">
-                                <label class="block text-xs text-text-muted mb-1">Emoji</label>
-                                <input type="text" id="new-flair-icon"
-                                    class="w-full bg-bg-primary border border-border-primary rounded px-2 py-1 text-sm text-text-primary focus:border-accent-primary outline-none"
-                                    placeholder="🛡️">
-                            </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button id="save-new-flair-btn"
-                                class="flex-1 bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 rounded text-sm transition shadow-lg">
-                                Create Flair
-                            </button>
-                            <button id="delete-flair-btn"
-                                class="hidden px-3 bg-danger/20 hover:bg-danger text-danger hover:text-white font-bold py-2 rounded text-sm transition border border-danger/50">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <button id="delete-flair-btn"
+                    class="hidden px-3 bg-danger/20 hover:bg-danger text-danger hover:text-white font-bold py-2 rounded text-sm transition border border-danger/50">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
         </div>
+    </div>
+    </div>
+    </div>
     </div>
 
     <!-- Reaction Tooltip -->

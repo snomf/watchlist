@@ -491,6 +491,9 @@ async function openMovieModal(tmdbId, type) {
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
 
+    // Declare manageFlairsBtn at function scope to avoid redeclaration
+    let manageFlairsBtn;
+
     // Prevent background scrolling
     document.body.style.overflow = 'hidden';
 
@@ -782,17 +785,19 @@ async function openMovieModal(tmdbId, type) {
         }
 
         // --- Flair Management ---
-        const manageFlairsBtn = document.getElementById('manage-flairs-btn');
+        manageFlairsBtn = document.getElementById('manage-flairs-btn');
         if (manageFlairsBtn) {
-            manageFlairsBtn.onclick = async (e) => {
-                e.preventDefault();
-                // Ensure media exists first
-                const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
-                if (mediaItem) {
-                    openFlairModal(mediaItem.id);
-                }
-            };
+            manageFlairsBtn.classList.remove('hidden');
         }
+
+        manageFlairsBtn.onclick = async (e) => {
+            e.preventDefault();
+            // Ensure media exists first
+            const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+            if (mediaItem) {
+                openFlairModal(mediaItem.id);
+            }
+        };
 
         // --- Marvel Marathon Logic ---
         const marvelFlairId = '45991eb5-21e1-40ee-8bde-5beee11a7dff';
@@ -819,6 +824,29 @@ async function openMovieModal(tmdbId, type) {
         modal.classList.remove('hidden');
         modal.classList.remove('modal-hidden');
         modal.classList.add('flex');
+
+        // --- Scroll Detection for Sticky Header Fade Animation ---
+        const modalScrollableContent = document.getElementById('movie-modal-scrollable-content');
+        // manageFlairsBtn already declared at function scope
+
+        if (modalScrollableContent && manageFlairsBtn) {
+            const handleScroll = () => {
+                if (modalScrollableContent.scrollTop > 20) {
+                    // Scrolled down - fade out manage flairs button
+                    manageFlairsBtn.style.opacity = '0';
+                    manageFlairsBtn.style.pointerEvents = 'none';
+                } else {
+                    // At top - fade in manage flairs button
+                    manageFlairsBtn.style.opacity = '1';
+                    manageFlairsBtn.style.pointerEvents = 'auto';
+                }
+            };
+
+            // Remove any existing scroll listener first
+            modalScrollableContent.removeEventListener('scroll', handleScroll);
+            // Add scroll listener
+            modalScrollableContent.addEventListener('scroll', handleScroll);
+        }
 
         // --- Triple Click Stats Update ---
         const statsPill = document.getElementById('modal-stats-pill');
@@ -1116,43 +1144,6 @@ async function openFlairModal(mediaId) {
             }
         }
     };
-
-    // Scroll detection for sticky header fade animation
-    const modalContent = document.getElementById('flair-modal-content');
-    const modalTitle = document.getElementById('flair-modal-title');
-
-    if (modalContent && modalTitle) {
-        const handleScroll = () => {
-            if (modalContent.scrollTop > 20) {
-                // Scrolled down - fade out title
-                modalTitle.style.opacity = '0';
-            } else {
-                // At top - fade in title
-                modalTitle.style.opacity = '1';
-            }
-        };
-
-        // Add scroll listener
-        modalContent.addEventListener('scroll', handleScroll);
-
-        // Clean up on modal close
-        const originalCloseHandler = closeBtn.onclick;
-        closeBtn.onclick = () => {
-            modalContent.removeEventListener('scroll', handleScroll);
-            modalTitle.style.opacity = '1'; // Reset opacity
-            if (originalCloseHandler) originalCloseHandler();
-        };
-
-        // Also clean up on backdrop click
-        const originalModalClick = modal.onclick;
-        modal.onclick = (e) => {
-            if (e.target === modal) {
-                modalContent.removeEventListener('scroll', handleScroll);
-                modalTitle.style.opacity = '1'; // Reset opacity
-            }
-            if (originalModalClick) originalModalClick(e);
-        };
-    }
 
     modal.classList.remove('hidden');
     modal.classList.remove('modal-hidden');
