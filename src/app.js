@@ -2660,9 +2660,16 @@ if (import.meta.hot) {
 const MOODS = [
     '24klabubu.png', 'afraid.png', 'amazed.png', 'angry.png', 'bored.png',
     'celebratory.png', 'crazy.png', 'crying.png', 'disgusted.png', 'happy.png',
-    'lol.png', 'melted.png', 'neutral.png', 'not-a-fan.png', 'sad.png', 'satisfied.png',
-    'sexy.png', 'surprised.png', 'tea.png', 'thinking.png'
+    'melted.png', 'neutral.png', 'not-a-fan.png', 'sad.png', 'satisfied.png',
+    'sexy.png', 'surprised.png', 'thinking.png', 'tea.png', 'lol.png'
 ];
+
+const MOOD_LABELS = {
+    'tea.png': 'Das Tea',
+    'lol.png': 'Laughter',
+    '24klabubu.png': '24k Labubu',
+    'not-a-fan.png': 'Not A Fan'
+};
 
 function openReactionSelector(tmdbId) {
     const container = document.getElementById('mood-modal-container');
@@ -2708,12 +2715,15 @@ function openReactionSelector(tmdbId) {
                 </div>
 
                 <div id="mood-grid-container" class="mood-grid grayscale transition-all duration-300" style="opacity: 0.5; pointer-events: none;">
-                    ${MOODS.map(mood => `
-                        <div class="mood-option" data-mood="${mood}" role="button" aria-label="${mood}">
-                            <img src="moods/${mood}" alt="${mood}">
-                            <span class="mood-label">${mood.replace('.png', '').replace(/-/g, ' ')}</span>
+                    ${MOODS.map(mood => {
+        const label = MOOD_LABELS[mood] || mood.replace('.png', '').replace(/-/g, ' ').replace(/_/g, ' ');
+        return `
+                        <div class="mood-option" data-mood="${mood}" role="button" aria-label="${label}">
+                            <img src="moods/${mood}" alt="${label}">
+                            <span class="mood-label">${label}</span>
                         </div>
-                    `).join('')}
+                    `;
+    }).join('')}
                 </div>
 
                 <div class="mt-8 text-center">
@@ -2825,14 +2835,13 @@ async function saveReaction(tmdbId, user, mood) {
     // This prevents database bloat from just viewing/browsing items
 
 
-    // Optimistic update for currentMediaItem
+    // Optimistic update
     if (currentMediaItem && currentMediaItem.tmdb_id == tmdbId) {
-        if (user === 'user1' || user === 'juainny') currentMediaItem.juainny_reaction = mood;
-        if (user === 'user2' || user === 'erick') currentMediaItem.erick_reaction = mood;
+        if (user === 'user1') currentMediaItem.juainny_reaction = mood;
+        if (user === 'user2') currentMediaItem.erick_reaction = mood;
         updateModalReactionDisplay();
     }
 
-    // Update in allMedia array for grid/carousel updates
     const itemIndex = allMedia.findIndex(i => i.tmdb_id == tmdbId);
     if (itemIndex > -1) {
         allMedia[itemIndex] = { ...allMedia[itemIndex], ...updates };
@@ -2843,9 +2852,6 @@ async function saveReaction(tmdbId, user, mood) {
         renderCarousel('currently-watching-carousel', currentlyWatching);
         const wantToWatch = await getWantToWatchMedia();
         renderCarousel('want-to-watch-carousel', wantToWatch);
-
-        // Refresh all reaction avatars to ensure they're updated everywhere
-        refreshAllReactionAvatars();
     }
 
     const { error } = await supabase
@@ -2988,11 +2994,15 @@ function showReactionTooltip(reactionElement) {
     const user = reactionElement.dataset.user; // "Juainny" or "Erick"
     const reactionFile = reactionElement.dataset.reaction; // e.g., "neutral.png"
 
-    // Get reaction name from filename (remove .png and capitalize)
-    const reactionName = reactionFile.replace('.png', '').replace(/_/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
+    // Get reaction name
+    let reactionName = MOOD_LABELS[reactionFile];
+
+    if (!reactionName) {
+        reactionName = reactionFile.replace('.png', '').replace(/_/g, ' ').replace(/-/g, ' ')
+            .split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
 
     // Set avatar
     tooltipAvatar.innerHTML = getAvatarHTML(user.toLowerCase(), 'w-6 h-6');

@@ -1,34 +1,35 @@
-# Marvel Marathon
+# Watchlist
 
-This website helps you and your friends track your progress through the Marvel Cinematic Universe (MCU) together. It syncs your watched status and ratings across devices in real-time, fetches movie and show details, and displays posters and stats.
+A collaborative watchlist app that helps you and your friends track movies and TV shows together. It syncs your watched status, ratings, and reactions across devices in real-time.
 
 ## Features
 
-*   **Real-time Sync:** Your watched status and ratings are synced across all your devices in real-time.
-*   **Movie & Show Details:** Get detailed information about every movie and show in the MCU, including release dates, runtimes, and overviews.
-*   **Posters:** Eye-catching posters for every movie and show.
-*   **Marathon Stats:** Keep track of your progress with detailed stats, including:
-    *   Total time watched
-    *   Time remaining
-    *   Number of items watched
-    *   Percentage of the marathon completed
+*   **Real-time Sync:** Your watched status, ratings, and reactions are synced across all your devices in real-time.
+*   **Search & Add:** Search for any movie or TV show using TMDB and add it to your watchlist.
+*   **Movie & Show Details:** View detailed information including release dates, runtimes, content ratings, and overviews.
+*   **Posters & Backdrops:** Eye-catching posters and backdrop images for every movie and show.
 *   **Filtering & Views:**
-    *   Filter by movies or TV shows.
+    *   Filter by movies, TV shows, or watched items.
     *   Toggle between a grid view and a list view.
+    *   Sort by alphabetical, release date, or length.
 *   **Feeling Lucky?:** Get a random movie suggestion for what to watch next.
-*   **User Ratings:** Rate movies and see your friends' ratings.
-*   **Post-Watch Notes:** Add your own notes to movies after you've watched them.
-*   **Jarvis AI Summaries:** Get AI-powered summaries for each movie.
-*   **Customizable Wallpaper:** Personalize your experience by setting a custom wallpaper.
-*   **Banner:** Display a message to all users with a configurable banner.
+*   **Reactions:** React to movies with custom emoji reactions that show on the poster.
+*   **User Ratings:** Rate movies with a 5-star system and see your friends' ratings.
+*   **Post-Watch Notes:** Add rich text notes to movies after you've watched them.
+*   **Flairs:** Create custom flair badges to tag and organize your media.
+*   **TV Progress Tracking:** Track your progress through TV series by season and episode.
+*   **Customizable Themes:** Choose from multiple themes including Night Mode, Avengers Endgame, and Smiling Friends.
+*   **Custom Avatars:** Set custom gradient or image avatars for each user.
+*   **Customizable Wallpaper:** Personalize your experience by setting a custom wallpaper from your watchlist.
 
 ## How to Use
 
-1.  **Browse the MCU:** Scroll through the list of movies and TV shows.
-2.  **Mark as Watched:** Click on a movie or show to open the details modal, then click "Mark as Watched".
-3.  **Rate & Review:** In the details modal, you can give a star rating and add your notes.
-4.  **Track Your Progress:** The "Marathon Stats" section will automatically update as you watch more movies and shows.
-5.  **Customize:** Use the sidebar to change your wallpaper or access other settings.
+1.  **Search for Media:** Use the search bar to find movies or TV shows to add to your watchlist.
+2.  **Add to Watchlist:** Click on a search result to open the details modal, then use the bookmark button or "Currently Watching" button to add it.
+3.  **Mark as Watched:** Click "Mark as Watched" in the details modal to track what you've seen.
+4.  **Rate & Review:** Give a star rating and add your notes in the details modal.
+5.  **Add Reactions:** Click "Add Reaction" to react to a movie with an emoji.
+6.  **Customize:** Click the user menu in the top right to access Settings for themes, avatars, and wallpapers.
 
 ### Notifications
 
@@ -67,21 +68,25 @@ To add a new notification, you need to add a new object to this array. Here is t
 *   `date` (string): The date of the notification in `YYYY-MM-DD` format.
 *   `unreadBy` (array): An array of user IDs who have read the notification. This should be an empty array `[]` for new notifications.
 
-### Adding New Emojis
-
-To add a new emoji to the mood selector, follow these steps:
-
-1.  **Add the Emoji Image:**
-    *   Place your new emoji image (as a `.png` file) in the `public/moods` directory.
-    *   Make sure the file name is in `kebab-case` (e.g., `new-emoji.png`).
-
-2.  **Update the Moods List:**
-    *   Open the `src/index.js` file.
-    *   Find the `moods` array (around line 1420).
-    *   Add a new object to the array for your new emoji, following this format:
-
-    ```javascript
-    { name: 'Your Emoji Name', image: 'your-emoji-file-name.png' }
-    ```
-
-    *   Replace `'Your Emoji Name'` with the desired display name and `'your-emoji-file-name.png'` with the actual file name of your emoji.
+70: ### Adding New Emojis
+71: 
+72: To add a new emoji to the mood selector, follow these steps:
+73: 
+74: 1.  **Add the Emoji Image:**
+75:     *   Place your new emoji image (as a `.png` file) in the `public/moods` directory.
+76:     *   Make sure the file name is in `kebab-case` (e.g., `new-emoji.png`) if you want the name to be auto-generated, OR use any name and map it in step 3.
+77: 
+78: 2.  **Update the Moods List:**
+79:     *   Open the `src/app.js` file.
+80:     *   Find the `MOODS` array.
+81:     *   Add your new filename to the array: `'new-emoji.png'`.
+82: 
+83: 3.  **Add a Custom Label (Optional):**
+84:     *   If you want a specific display name (e.g., "Das Tea" for `tea.png`), add it to the `MOOD_LABELS` object in `src/app.js`:
+85: 
+86:     ```javascript
+87:     const MOOD_LABELS = {
+88:         'tea.png': 'Das Tea',
+89:         'new-emoji.png': 'My Custom Name'
+90:     };
+91:     ```
