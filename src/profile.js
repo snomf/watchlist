@@ -48,21 +48,21 @@ function getAvatarHTML(user, sizeClass = '') {
     const avatar = userAvatars[user];
     if (!avatar) {
         const color = user === 'juainny' ? 'bg-purple-500' : 'bg-blue-500';
-        return `<div class="${sizeClass} rounded-full ${color} flex items-center justify-center text-white font-bold border border-white/20">${user[0].toUpperCase()}</div>`;
+        return `<div class="${sizeClass} rounded-full ${color} flex items-center justify-center text-white font-bold">${user[0].toUpperCase()}</div>`;
     }
 
     const { type, color1, color2, icon, imageUrl } = avatar;
 
     if (type === 'image' && imageUrl) {
         return `
-            <div class="${sizeClass} rounded-full border border-white/20 relative overflow-hidden">
+            <div class="${sizeClass} rounded-full relative overflow-hidden">
                 <img src="${imageUrl}" class="w-full h-full object-cover">
             </div>
         `;
     }
 
     return `
-        <div class="${sizeClass} rounded-full flex items-center justify-center border border-white/20 relative overflow-hidden"
+        <div class="${sizeClass} rounded-full flex items-center justify-center relative overflow-hidden"
              style="background: linear-gradient(135deg, ${color1}, ${color2});">
             <img src="avatars/${icon}" class="w-[60%] h-[60%] object-contain drop-shadow-sm">
         </div>

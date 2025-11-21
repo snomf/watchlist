@@ -89,21 +89,85 @@ async function fetchAllMediaForWallpapers() {
 }
 
 /**
- * Populates the wallpaper dropdown in the settings modal.
+ * Sets up the wallpaper modal selector
  */
-async function populateWallpaperSelector() {
-    await fetchAllMediaForWallpapers();
-    const bannerSelect = document.getElementById('movie-banner-select');
-    if (!bannerSelect) return;
+function setupWallpaperModal() {
+    const wallpaperBtn = document.getElementById('wallpaper-btn');
+    const modal = document.getElementById('wallpaper-modal');
+    const closeBtn = document.getElementById('close-wallpaper-modal');
+    const searchInput = document.getElementById('wallpaper-search');
 
-    bannerSelect.innerHTML = '<option value="">-- Select a Movie --</option>'; // Reset
-    allMediaForWallpapers.forEach(item => {
-        const option = document.createElement('option');
-        option.value = `https://image.tmdb.org/t/p/original${item.backdrop_path}`;
-        option.textContent = item.title;
-        bannerSelect.appendChild(option);
+    if (!wallpaperBtn || !modal) return;
+
+    wallpaperBtn.addEventListener('click', async () => {
+        modal.classList.remove('hidden');
+        await loadWallpaperOptions();
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+        }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+        filterWallpaperOptions(e.target.value);
     });
 }
+
+async function loadWallpaperOptions() {
+    if (allMediaForWallpapers.length === 0) {
+        const { data, error } = await supabase.from('media').select('title, backdrop_path');
+        if (error) {
+            console.error('Error fetching media for wallpapers:', error);
+            return;
+        }
+        allMediaForWallpapers = data.filter(item => item.backdrop_path);
+    }
+    renderWallpaperOptions(allMediaForWallpapers);
+}
+
+function renderWallpaperOptions(media) {
+    const grid = document.getElementById('wallpaper-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    media.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'cursor-pointer rounded-lg overflow-hidden transition hover:scale-105';
+        div.style.border = '2px solid var(--color-border-primary)';
+
+        const backdropUrl = `https://image.tmdb.org/t/p/original${item.backdrop_path}`;
+
+        div.innerHTML = `
+            <img src="${backdropUrl}" class="w-full h-24 object-cover">
+            <div class="p-2" style="background-color: var(--color-bg-tertiary);">
+                <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">${item.title}</p>
+            </div>
+        `;
+
+        div.addEventListener('click', async () => {
+            selectedWallpaper = backdropUrl;
+            await saveSettings();
+            document.getElementById('wallpaper-modal').classList.add('hidden');
+        });
+
+        grid.appendChild(div);
+    });
+}
+
+function filterWallpaperOptions(query) {
+    const filtered = allMediaForWallpapers.filter(item =>
+        item.title.toLowerCase().includes(query.toLowerCase())
+    );
+    renderWallpaperOptions(filtered);
+}
+
+let selectedWallpaper = null;
 
 /**
  * Saves the selected theme and wallpaper to Supabase.
@@ -119,25 +183,25 @@ async function saveSettings() {
     const selectedThemeBtn = document.querySelector('.theme-btn.border-accent-primary');
     const selectedTheme = selectedThemeBtn ? selectedThemeBtn.dataset.theme : 'night';
 
-    const selectedWallpaper = document.getElementById('movie-banner-select').value;
-    const hideImages = document.getElementById('hide-search-images-toggle').checked;
+    // Get wallpaper URL from selectedWallpaper (set by modal selection)
+    const wallpaperUrl = selectedWallpaper || null;
 
-    const { error } = await supabase
-        .from('settings')
-        .update({
-            theme: selectedTheme,
-            wallpaper_url: selectedWallpaper,
-            hide_search_results_without_images: hideImages,
-        })
-        .eq('id', 1);
+    // Device Name
+    const deviceNameInput = document.getElementById('device-name-input');
+    const deviceName = deviceNameInput ? deviceNameInput.value.trim() : '';
 
     // Save device name to localStorage
-    const deviceName = document.getElementById('device-name-input').value;
-    localStorage.setItem('device_name', deviceName);
+    if (deviceName) {
+        localStorage.setItem('device_name', deviceName);
+    }
 
-    // Update UI immediately
     const deviceNameDisplay = document.getElementById('device-name');
     if (deviceNameDisplay) deviceNameDisplay.textContent = deviceName || 'User';
+
+    const { error } = await supabase.from('settings').update({
+        theme: selectedTheme,
+        wallpaper_url: wallpaperUrl
+    }).eq('id', 1);
 
     if (error) {
         console.error('Error saving settings:', error);
@@ -299,10 +363,13 @@ export function initializeSettings() {
         });
     });
 
+    // Setup Wallpaper Modal
+    setupWallpaperModal();
+
     if (removeWallpaperBtn) {
-        removeWallpaperBtn.addEventListener('click', () => {
-            const bannerSelect = document.getElementById('movie-banner-select');
-            if (bannerSelect) bannerSelect.value = '';
+        removeWallpaperBtn.addEventListener('click', async () => {
+            selectedWallpaper = null;
+            await saveSettings();
         });
     }
 
