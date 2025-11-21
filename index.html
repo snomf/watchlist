@@ -274,7 +274,7 @@
                                 class="text-xs text-text-secondary hover:text-danger transition hidden ml-2">Remove
                                 Reaction</button>
                         </div>
-                        <div class="absolute top-6 right-20 flex items-center space-x-2">
+                        <div class="absolute top-6 right-15 flex items-center space-x-2">
                             <button id="manage-flairs-btn"
                                 class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-30 transition-opacity duration-300 cursor-pointer"
                                 title="Manage Flairs">
@@ -469,21 +469,86 @@
 
 
     <!-- Flair Management Modal -->
+    <!-- Flair Management Modal -->
     <div id="flair-modal"
         class="fixed inset-0 hidden items-center justify-center modal-hidden p-4 z-[60] bg-black/50 backdrop-blur-sm">
         <div
-            class="bg-bg-secondary rounded-2xl shadow-xl w-full md:w-2/3 lg:w-1/2 max-h-[90vh] overflow-y-auto p-6 space-y-6">
+            class="bg-bg-secondary rounded-2xl shadow-xl w-full md:w-2/3 lg:w-1/2 max-h-[90vh] overflow-y-auto p-6 space-y-6 relative">
+
+            <!-- Close Button -->
+            <button id="close-flair-modal-btn"
+                class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
             <!-- Header -->
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold text-text-primary">MANAGE FLAIRS</h2>
-                <button id="close-flair-modal-btn"
-                    class="flex-1 bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 rounded text-sm transition shadow-lg">
-                    Create Flair
-                </button>
-                <button id="delete-flair-btn"
-                    class="hidden px-3 bg-danger/20 hover:bg-danger text-danger hover:text-white font-bold py-2 rounded text-sm transition border border-danger/50">
-                    <i class="fas fa-trash"></i>
-                </button>
+            </div>
+
+            <!-- Current Flairs (Assigned to this media) -->
+            <div>
+                <h3 class="text-lg font-semibold mb-2 text-text-secondary">Assigned Flairs</h3>
+                <div id="current-flairs-list"
+                    class="flex flex-wrap gap-2 min-h-[3rem] bg-bg-tertiary p-4 rounded-lg border border-border-primary border-dashed">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Available Flairs (All flairs) -->
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-lg font-semibold text-text-secondary">Available Flairs</h3>
+                    <button id="toggle-create-flair-btn"
+                        class="text-sm text-accent-primary hover:underline font-semibold">+ Create New</button>
+                </div>
+                <div id="available-flairs-list" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-1">
+                    <!-- Injected by JS -->
+                </div>
+            </div>
+
+            <!-- Create/Edit Flair Form -->
+            <div id="create-flair-form"
+                class="hidden bg-bg-tertiary p-4 rounded-lg border border-border-primary space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 id="flair-form-title" class="text-lg font-bold text-text-primary">NEW FLAIR</h3>
+                    <button id="delete-flair-btn" class="hidden text-danger hover:text-red-400"><i
+                            class="fas fa-trash"></i></button>
+                </div>
+                <input type="hidden" id="edit-flair-id">
+
+                <div>
+                    <label class="block text-sm font-medium text-text-muted mb-1">Name</label>
+                    <input type="text" id="new-flair-name"
+                        class="w-full bg-bg-primary border border-border-primary rounded px-3 py-2 text-text-primary focus:border-accent-primary outline-none"
+                        placeholder="e.g., Masterpiece">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted mb-1">Color</label>
+                        <input type="color" id="new-flair-color"
+                            class="w-full h-10 bg-bg-primary border border-border-primary rounded cursor-pointer"
+                            value="#ef4444">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted mb-1">Icon (Emoji)</label>
+                        <input type="text" id="new-flair-icon"
+                            class="w-full bg-bg-primary border border-border-primary rounded px-3 py-2 text-text-primary focus:border-accent-primary outline-none"
+                            placeholder="🔥">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button id="save-new-flair-btn"
+                        class="flex-1 bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 rounded transition">Create
+                        Flair</button>
+                    <button id="cancel-edit-flair-btn"
+                        class="flex-1 bg-transparent hover:bg-white/10 text-text-muted hover:text-white font-semibold py-2 rounded transition border border-border-primary">Cancel</button>
+                </div>
             </div>
         </div>
     </div>
