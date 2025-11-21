@@ -24,9 +24,17 @@ async function loadSettings() {
             }
         }
 
-        // Load avatars
-        userAvatars.juainny = settings.user1_avatar;
-        userAvatars.erick = settings.user2_avatar;
+        // Load avatars - properly parse JSONB data
+        if (settings.juainny_avatar) {
+            userAvatars.juainny = typeof settings.juainny_avatar === 'string'
+                ? JSON.parse(settings.juainny_avatar)
+                : settings.juainny_avatar;
+        }
+        if (settings.erick_avatar) {
+            userAvatars.erick = typeof settings.erick_avatar === 'string'
+                ? JSON.parse(settings.erick_avatar)
+                : settings.erick_avatar;
+        }
 
         // Set device name
         const savedDeviceName = localStorage.getItem('device_name');
@@ -36,18 +44,29 @@ async function loadSettings() {
     return settings;
 }
 
-function getAvatarHTML(user, classes = '') {
+function getAvatarHTML(user, sizeClass = '') {
     const avatar = userAvatars[user];
     if (!avatar) {
-        return `<div class="w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold text-xl">${user.charAt(0).toUpperCase()}</div>`;
+        const color = user === 'juainny' ? 'bg-purple-500' : 'bg-blue-500';
+        return `<div class="${sizeClass} rounded-full ${color} flex items-center justify-center text-white font-bold border border-white/20">${user[0].toUpperCase()}</div>`;
     }
 
-    if (avatar.startsWith('emoji:')) {
-        const emoji = avatar.replace('emoji:', '');
-        return `<div class="${classes} flex items-center justify-center text-4xl">${emoji}</div>`;
+    const { type, color1, color2, icon, imageUrl } = avatar;
+
+    if (type === 'image' && imageUrl) {
+        return `
+            <div class="${sizeClass} rounded-full border border-white/20 relative overflow-hidden">
+                <img src="${imageUrl}" class="w-full h-full object-cover">
+            </div>
+        `;
     }
 
-    return `<img src="${avatar}" class="${classes} object-cover" alt="${user} avatar">`;
+    return `
+        <div class="${sizeClass} rounded-full flex items-center justify-center border border-white/20 relative overflow-hidden"
+             style="background: linear-gradient(135deg, ${color1}, ${color2});">
+            <img src="avatars/${icon}" class="w-[60%] h-[60%] object-contain drop-shadow-sm">
+        </div>
+    `;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
