@@ -837,20 +837,24 @@ async function openMovieModal(tmdbId, type) {
             modalFlairsContainer.innerHTML = assignedFlairs.map(flair => renderFlairBadge(flair, 'text-xs px-2 py-1')).join('');
         }
 
-        // --- Flair Management ---
+        // --- Manage Flairs Button ---
         manageFlairsBtn = document.getElementById('manage-flairs-btn');
         if (manageFlairsBtn) {
-            manageFlairsBtn.classList.remove('hidden');
-        }
-
-        manageFlairsBtn.onclick = async (e) => {
-            e.preventDefault();
-            // Ensure media exists first
-            const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
-            if (mediaItem) {
-                openFlairModal(mediaItem.id);
+            // Hide flair button if item is not tracked (not watched, want_to_watch, or currently_watching)
+            if (isItemTracked) {
+                manageFlairsBtn.classList.remove('hidden');
+                manageFlairsBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    // Ensure media exists first
+                    const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+                    if (mediaItem) {
+                        openFlairModal(mediaItem.id);
+                    }
+                };
+            } else {
+                manageFlairsBtn.classList.add('hidden');
             }
-        };
+        }
 
         // --- Marvel Marathon Logic ---
         const marvelFlairId = '45991eb5-21e1-40ee-8bde-5beee11a7dff';
