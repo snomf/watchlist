@@ -812,14 +812,16 @@ async function openMovieModal(tmdbId, type) {
             // CRITICAL: Reset summary text for new modal (fixes persistence bug)
             summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
-            // Check if ratings/notes exist (check for actual content, not empty HTML)
-            const hasRatings = (trackedItem.user1_rating && trackedItem.user1_rating > 0) ||
-                (trackedItem.user2_rating && trackedItem.user2_rating > 0);
+            // Check if ratings/notes exist - FIXED: Use correct field names!
+            const hasRatings = (trackedItem.juainny_rating && trackedItem.juainny_rating > 0) ||
+                (trackedItem.erick_rating && trackedItem.erick_rating > 0);
 
             // Strip HTML tags and check for actual text content
-            const cleanNote1 = trackedItem.user1_notes?.replace(/<[^>]*>/g, '').trim() || '';
-            const cleanNote2 = trackedItem.user2_notes?.replace(/<[^>]*>/g, '').trim() || '';
+            const cleanNote1 = trackedItem.juainny_notes?.replace(/<[^>]*>/g, '').trim() || '';
+            const cleanNote2 = trackedItem.erick_notes?.replace(/<[^>]*>/g, '').trim() || '';
             const hasNotes = cleanNote1.length > 0 || cleanNote2.length > 0;
+
+            console.log('Summary check:', { hasRatings, hasNotes, trackedItem }); // Debug
 
             if (!hasRatings && !hasNotes) {
                 // No ratings or notes - use pre-defined message (saves tokens!)
@@ -836,20 +838,30 @@ async function openMovieModal(tmdbId, type) {
                     const generateAndCache = async () => {
                         summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
 
-                        const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
+                        const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.juainny_rating;
                         const user1Notes = document.getElementById('juainny-notes').innerText;
-                        const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.user2_rating;
+                        const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.erick_rating;
                         const user2Notes = document.getElementById('erick-notes').innerText;
 
                         const ratings = { user1: user1Rating, user2: user2Rating };
                         const notes = { user1: user1Notes, user2: user2Notes };
 
-                        const summary = await generateMediaSummary(trackedItem, ratings, notes);
-                        summaryText.innerHTML = renderMarkdown(summary);
+                        try {
+                            const summary = await generateMediaSummary(trackedItem, ratings, notes);
+                            summaryText.innerHTML = renderMarkdown(summary);
 
-                        // Save to database
-                        await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
-                        trackedItem.ai_summary = summary; // Update local copy
+                            // Save to database
+                            const { error } = await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
+                            if (error) {
+                                console.error('Failed to save summary:', error);
+                            } else {
+                                console.log('Summary saved successfully!');
+                                trackedItem.ai_summary = summary; // Update local copy
+                            }
+                        } catch (error) {
+                            console.error('Summary generation error:', error);
+                            summaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
+                        }
                     };
                     generateAndCache();
                 }
@@ -858,20 +870,30 @@ async function openMovieModal(tmdbId, type) {
                 regenerateBtn.onclick = async () => {
                     summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
 
-                    const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
+                    const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.juainny_rating;
                     const user1Notes = document.getElementById('juainny-notes').innerText;
-                    const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.user2_rating;
+                    const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.erick_rating;
                     const user2Notes = document.getElementById('erick-notes').innerText;
 
                     const ratings = { user1: user1Rating, user2: user2Rating };
                     const notes = { user1: user1Notes, user2: user2Notes };
 
-                    const summary = await generateMediaSummary(trackedItem, ratings, notes);
-                    summaryText.innerHTML = renderMarkdown(summary);
+                    try {
+                        const summary = await generateMediaSummary(trackedItem, ratings, notes);
+                        summaryText.innerHTML = renderMarkdown(summary);
 
-                    // Save new summary to database (YES, it saves!)
-                    await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
-                    trackedItem.ai_summary = summary; // Update local copy
+                        // Save new summary to database
+                        const { error } = await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
+                        if (error) {
+                            console.error('Failed to save regenerated summary:', error);
+                        } else {
+                            console.log('Regenerated summary saved successfully!');
+                            trackedItem.ai_summary = summary; // Update local copy
+                        }
+                    } catch (error) {
+                        console.error('Summary regeneration error:', error);
+                        summaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
+                    }
                 };
             }
 
@@ -3567,19 +3589,23 @@ const willowChatMessages = document.getElementById('willow-chat-messages');
 window.toggleWillowChat = function () {
     const isHidden = willowChatModal.classList.contains('hidden');
     if (isHidden) {
+        // Show modal
         willowChatModal.classList.remove('hidden');
-        // Small delay to allow display:block to apply before transition
+        // Animate in: scale up and fade in
         setTimeout(() => {
-            willowChatContainer.classList.remove('translate-y-full');
-            willowChatContainer.classList.add('translate-y-0');
+            willowChatContainer.style.opacity = '1';
+            willowChatContainer.style.transform = 'scale(1)';
         }, 10);
-        willowChatInput.focus();
+        setTimeout(() => willowChatInput.focus(), 350);
     } else {
-        willowChatContainer.classList.remove('translate-y-0');
-        willowChatContainer.classList.add('translate-y-full');
+        // Animate out: scale down and fade out
+        willowChatContainer.style.opacity = '0';
+        willowChatContainer.style.transform = 'scale(0.95)';
         setTimeout(() => {
             willowChatModal.classList.add('hidden');
-        }, 300); // Match transition duration
+            // Reset transform
+            willowChatContainer.style.transform = 'scale(0.95)';
+        }, 300);
     }
 };
 
