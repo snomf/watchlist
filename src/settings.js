@@ -75,6 +75,8 @@ export function closeSettingsModal() {
         settingsModal.classList.add('hidden');
         settingsModal.classList.add('modal-hidden');
         settingsModal.classList.remove('flex');
+        // Restore background scrolling
+        document.body.style.overflow = '';
     }
 }
 
@@ -203,6 +205,10 @@ export async function loadAndApplySettings() {
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');
     if (wallpaper_url) {
         document.body.style.backgroundImage = `url('${wallpaper_url}')`;
+        document.body.style.backgroundSize = 'cover';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundRepeat = 'no-repeat';
+        document.body.style.backgroundAttachment = 'fixed';
         // Hide overlay for Smiling Friends theme, show for others
         if (theme === 'smiling-friends') {
             wallpaperOverlay.style.display = 'none';
@@ -211,6 +217,10 @@ export async function loadAndApplySettings() {
         }
     } else {
         document.body.style.backgroundImage = 'none';
+        document.body.style.backgroundSize = '';
+        document.body.style.backgroundPosition = '';
+        document.body.style.backgroundRepeat = '';
+        document.body.style.backgroundAttachment = '';
         wallpaperOverlay.style.display = 'none';
     }
 
