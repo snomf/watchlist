@@ -1,8 +1,10 @@
 import { supabase } from './supabase-client.js';
+import './firebase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
 import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './settings.js';
 import { initializeStarRating } from './features/ratings.js';
 import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, removeFlairFromMedia, renderFlairBadge } from './features/flairs.js';
+import { generateMediaSummary, chatWithWillow } from './features/ai.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -797,6 +799,54 @@ async function openMovieModal(tmdbId, type) {
         // Only if we have a tracked item in the DB
         if (isItemTracked && trackedItem && trackedItem.id) {
             const updates = {};
+
+            // --- Willow's Thoughts (AI Summary) ---
+            const summarySection = document.getElementById('willow-summary-section');
+            const summaryText = document.getElementById('willow-summary-text');
+            const regenerateBtn = document.getElementById('regenerate-summary-btn');
+
+            // Show section if tracked
+            summarySection.classList.remove('hidden');
+
+            // Check if we already have a summary stored (optional, if we want to cache it in DB later)
+            // For now, we generate it on fly or check if we just generated it in this session?
+            // Let's generate it if it's missing or requested.
+
+            // Define the generation function
+            const fetchSummary = async () => {
+                summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
+
+                // Get fresh ratings/notes from DOM or DB
+                // We can use the data we already have in 'trackedItem' but it might be stale if user just edited it.
+                // Let's use the values currently in the modal inputs for the most up-to-date context.
+                const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.user1_rating;
+                const user1Notes = document.getElementById('juainny-notes').innerText;
+                const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.user2_rating;
+                const user2Notes = document.getElementById('erick-notes').innerText;
+
+                const ratings = { user1: user1Rating, user2: user2Rating };
+                const notes = { user1: user1Notes, user2: user2Notes };
+
+                const summary = await generateMediaSummary(trackedItem, ratings, notes);
+                summaryText.textContent = summary;
+            };
+
+            // Initial fetch if empty or we want to refresh every time? 
+            // Let's fetch if it says "Willow is analyzing..." (default state)
+            if (summaryText.textContent.trim().includes('Willow is analyzing')) {
+                fetchSummary();
+            }
+
+            regenerateBtn.onclick = fetchSummary;
+
+        } else {
+            document.getElementById('willow-summary-section').classList.add('hidden');
+        }
+
+        // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
+        // Only if we have a tracked item in the DB
+        if (isItemTracked && trackedItem && trackedItem.id) {
+            const updates = {};
             if (!trackedItem.release_year && releaseYear) updates.release_year = parseInt(releaseYear);
             if (!trackedItem.runtime && runtime) updates.runtime = runtime;
             if ((!trackedItem.content_rating || trackedItem.content_rating === 'N/A') && contentRating !== 'N/A') updates.content_rating = contentRating;
@@ -812,6 +862,7 @@ async function openMovieModal(tmdbId, type) {
                     });
             }
         }
+
 
         // --- Backdrop Image ---
         const backdropUrl = data.backdrop_path ? `https://image.tmdb.org/t/p/w780${data.backdrop_path}` : 'https://placehold.co/800x400?text=No+Image';
@@ -3506,4 +3557,111 @@ function showConfirmationModal(title, message) {
             resolve('cancel');
         };
     });
+}
+// --- Willow Chat Logic ---
+
+const willowFab = document.getElementById('willow-fab');
+const willowChatModal = document.getElementById('willow-chat-modal');
+const willowChatContainer = document.getElementById('willow-chat-container');
+const willowChatForm = document.getElementById('willow-chat-form');
+const willowChatInput = document.getElementById('willow-chat-input');
+const willowChatMessages = document.getElementById('willow-chat-messages');
+
+if (willowFab) {
+    willowFab.addEventListener('click', toggleWillowChat);
+}
+
+window.toggleWillowChat = function () {
+    const isHidden = willowChatModal.classList.contains('hidden');
+    if (isHidden) {
+        willowChatModal.classList.remove('hidden');
+        // Small delay to allow display:block to apply before transition
+        setTimeout(() => {
+            willowChatContainer.classList.remove('translate-y-full');
+            willowChatContainer.classList.add('translate-y-0');
+        }, 10);
+        willowChatInput.focus();
+    } else {
+        willowChatContainer.classList.remove('translate-y-0');
+        willowChatContainer.classList.add('translate-y-full');
+        setTimeout(() => {
+            willowChatModal.classList.add('hidden');
+        }, 300); // Match transition duration
+    }
+};
+
+if (willowChatForm) {
+    willowChatForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const query = willowChatInput.value.trim();
+        if (!query) return;
+
+        // Add User Message
+        addChatMessage(query, 'user');
+        willowChatInput.value = '';
+        willowChatInput.disabled = true;
+
+        // Show Typing Indicator
+        const typingId = addTypingIndicator();
+
+        // Call AI
+        // Pass allMedia as context
+        const response = await chatWithWillow(query, allMedia);
+
+        // Remove Typing Indicator
+        removeChatMessage(typingId);
+
+        // Add AI Message
+        addChatMessage(response, 'ai');
+        willowChatInput.disabled = false;
+        willowChatInput.focus();
+    });
+}
+
+function addChatMessage(text, sender) {
+    const div = document.createElement('div');
+    div.className = `flex items-start gap-2 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
+
+    const avatar = sender === 'ai'
+        ? `<div class="w-8 h-8 rounded-full bg-teal-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-cover"></div>`
+        : `<div class="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"><i class="fas fa-user"></i></div>`; // Generic user icon for now
+
+    const bubbleClass = sender === 'ai'
+        ? 'bg-bg-tertiary text-text-primary rounded-tl-none'
+        : 'bg-teal-600 text-white rounded-tr-none';
+
+    div.innerHTML = `
+        ${avatar}
+        <div class="${bubbleClass} p-3 rounded-2xl text-sm shadow-sm max-w-[85%]">
+            ${text}
+        </div>
+    `;
+
+    willowChatMessages.appendChild(div);
+    willowChatMessages.scrollTop = willowChatMessages.scrollHeight;
+    return div.id = 'msg-' + Date.now();
+}
+
+function addTypingIndicator() {
+    const div = document.createElement('div');
+    div.id = 'typing-' + Date.now();
+    div.className = 'flex items-start gap-2';
+    div.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-teal-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-cover"></div>
+        <div class="bg-bg-tertiary p-3 rounded-2xl rounded-tl-none text-text-primary text-sm shadow-sm">
+            <div class="flex space-x-1">
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+            </div>
+        </div>
+    `;
+    willowChatMessages.appendChild(div);
+    willowChatMessages.scrollTop = willowChatMessages.scrollHeight;
+    return div.id;
+}
+
+function removeChatMessage(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
 }
