@@ -101,6 +101,11 @@ async function searchTMDB(query) {
             results = results.filter(item => item.poster_path);
         }
 
+        if (settings?.hide_search_results_without_images) {
+            results = results.filter(item => item.poster_path);
+        }
+
+        console.log('TMDB Search Results:', results.length); // DEBUG
         return results;
     } catch (error) {
         console.error('Error searching TMDB:', error);
@@ -109,6 +114,7 @@ async function searchTMDB(query) {
 }
 
 function renderContent() {
+    console.log('Rendering content. Current Filter:', currentFilter, 'Media Count:', currentMedia.length); // DEBUG
     const movieGrid = document.getElementById('movie-grid');
     const movieList = document.getElementById('movie-list');
 
@@ -200,6 +206,7 @@ function renderContent() {
  * @param {string} posterUrl - The URL for the poster image.
  */
 function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
+    // console.log('Creating card for:', title, tmdbId); // DEBUG - Commented out to avoid spam, uncomment if needed
     const movieCard = document.createElement('div');
     movieCard.className = 'movie-card relative rounded-lg shadow-lg overflow-hidden cursor-pointer group';
     if (isWatched) {
