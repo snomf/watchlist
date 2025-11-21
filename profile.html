@@ -111,12 +111,12 @@
 
             <!-- User Switcher (Top Right of Profile Area) -->
             <div class="absolute -bottom-12 right-4 flex gap-2">
-                <button id="view-juainny-btn"
-                    class="px-4 py-2 rounded-full bg-bg-tertiary hover:bg-bg-secondary border border-border-primary transition font-semibold text-sm">
+                <button id="view-juainny-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
+                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
                     Juainny
                 </button>
-                <button id="view-erick-btn"
-                    class="px-4 py-2 rounded-full bg-bg-tertiary hover:bg-bg-secondary border border-border-primary transition font-semibold text-sm">
+                <button id="view-erick-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
+                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
                     Erick
                 </button>
             </div>
@@ -148,17 +148,19 @@
         </div>
 
         <!-- Activity Feed -->
-        <div class="bg-bg-secondary rounded-xl border border-border-primary overflow-hidden">
-            <div class="p-4 border-b border-border-primary flex justify-between items-center">
-                <h2 class="text-xl font-bold">Activity Feed</h2>
+        <div style="background-color: var(--color-bg-secondary);" class="rounded-xl overflow-hidden"
+            style="border: 1px solid var(--color-border-primary);">
+            <div class="p-4 flex justify-between items-center"
+                style="border-bottom: 1px solid var(--color-border-primary);">
+                <h2 class="text-xl font-bold" style="color: var(--color-text-primary);">Activity Feed</h2>
                 <div class="flex gap-2 text-sm">
-                    <button class="text-accent-primary font-semibold">All</button>
+                    <button class="font-semibold" style="color: var(--color-accent-primary);">All</button>
                     <!-- Future filters: <button class="text-text-muted hover:text-text-primary">Favorites</button> -->
                 </div>
             </div>
-            <div id="activity-feed" class="divide-y divide-border-primary">
+            <div id="activity-feed" style="border-color: var(--color-border-primary);">
                 <!-- Activity Items Injected Here -->
-                <div class="p-8 text-center text-text-muted">
+                <div class="p-8 text-center" style="color: var(--color-text-muted);">
                     <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
                     <p>Loading activity...</p>
                 </div>
@@ -166,6 +168,27 @@
         </div>
 
     </main>
+
+    <!-- Banner Selector Modal -->
+    <div id="banner-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center"
+        style="background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);">
+        <div class="rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto"
+            style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border-primary);">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold" style="color: var(--color-text-primary);">Select Banner</h2>
+                <button id="close-banner-modal" class="text-2xl" style="color: var(--color-text-muted);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="mb-4">
+                <input type="text" id="banner-search" placeholder="Search media..." class="w-full px-4 py-2 rounded-lg"
+                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+            </div>
+            <div id="banner-grid" class="grid grid-cols-2 gap-4 max-h-96 overflow-y-auto">
+                <!-- Banner options will be injected here -->
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="/src/supabase-client.js"></script>
     <script type="module" src="/src/profile.js"></script>

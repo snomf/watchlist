@@ -72,8 +72,107 @@ function getAvatarHTML(user, sizeClass = '') {
 document.addEventListener('DOMContentLoaded', async () => {
     await loadSettings();
     setupUserSwitcher();
+    setupBannerSelector();
     await loadProfile(currentUserView);
 });
+
+let allMediaForBanners = [];
+
+function setupBannerSelector() {
+    const editBannerBtn = document.getElementById('edit-banner-btn');
+    const modal = document.getElementById('banner-modal');
+    const closeBtn = document.getElementById('close-banner-modal');
+    const searchInput = document.getElementById('banner-search');
+
+    editBannerBtn.addEventListener('click', async () => {
+        modal.classList.remove('hidden');
+        await loadBannerOptions();
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+        }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+        filterBannerOptions(e.target.value);
+    });
+}
+
+async function loadBannerOptions() {
+    if (allMediaForBanners.length === 0) {
+        const { data, error } = await supabase.from('media').select('title, backdrop_path');
+        if (error) {
+            console.error('Error fetching media for banners:', error);
+            return;
+        }
+        allMediaForBanners = data.filter(item => item.backdrop_path);
+    }
+    renderBannerOptions(allMediaForBanners);
+}
+
+function renderBannerOptions(media) {
+    const grid = document.getElementById('banner-grid');
+    grid.innerHTML = '';
+
+    media.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'cursor-pointer rounded-lg overflow-hidden transition hover:scale-105';
+        div.style.border = '2px solid var(--color-border-primary)';
+
+        const backdropUrl = `https://image.tmdb.org/t/p/w500${item.backdrop_path}`;
+
+        div.innerHTML = `
+            <img src="${backdropUrl}" class="w-full h-24 object-cover">
+            <div class="p-2" style="background-color: var(--color-bg-tertiary);">
+                <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">${item.title}</p>
+            </div>
+        `;
+
+        div.addEventListener('click', async () => {
+            await saveBanner(backdropUrl);
+        });
+
+        grid.appendChild(div);
+    });
+}
+
+function filterBannerOptions(query) {
+    const filtered = allMediaForBanners.filter(item =>
+        item.title.toLowerCase().includes(query.toLowerCase())
+    );
+    renderBannerOptions(filtered);
+}
+
+async function saveBanner(bannerUrl) {
+    const column = `${currentUserView}_banner`;
+    const updateObj = {};
+    updateObj[column] = bannerUrl;
+
+    const { error } = await supabase.from('settings').update(updateObj).eq('id', 1);
+
+    if (error) {
+        console.error('Error saving banner:', error);
+        alert('Failed to save banner.');
+        return;
+    }
+
+    // Update UI
+    const bannerImg = document.getElementById('profile-banner');
+    const bannerPlaceholder = document.getElementById('profile-banner-placeholder');
+
+    bannerImg.src = bannerUrl;
+    bannerImg.classList.remove('hidden');
+    bannerPlaceholder.classList.add('hidden');
+
+    // Close modal
+    document.getElementById('banner-modal').classList.add('hidden');
+}
 
 function setupUserSwitcher() {
     const btnJuainny = document.getElementById('view-juainny-btn');
@@ -254,42 +353,49 @@ function createActivityItem(activity, viewUser) {
     const date = new Date(created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
     const div = document.createElement('div');
-    div.className = 'p-4 hover:bg-bg-tertiary/50 transition flex gap-4 items-start';
+    div.className = 'p-4 transition flex gap-4 items-start';
+    div.style.borderBottom = '1px solid var(--color-border-primary)';
+    div.addEventListener('mouseenter', () => {
+        div.style.backgroundColor = 'var(--color-bg-tertiary)';
+    });
+    div.addEventListener('mouseleave', () => {
+        div.style.backgroundColor = '';
+    });
 
     // Icon based on action
     let iconClass = 'fa-circle';
-    let iconColor = 'text-text-muted';
+    let iconColor = 'var(--color-text-muted)';
     let actionText = 'did something with';
 
     switch (action_type) {
         case 'watched':
             iconClass = 'fa-check-circle';
-            iconColor = 'text-success';
+            iconColor = 'var(--color-success)';
             actionText = 'watched';
             break;
         case 'want_to_watch':
             iconClass = 'fa-bookmark';
-            iconColor = 'text-info';
+            iconColor = 'var(--color-accent-primary)';
             actionText = 'wants to watch';
             break;
         case 'favorite':
             iconClass = 'fa-star';
-            iconColor = 'text-yellow-500';
+            iconColor = '#facc15';
             actionText = 'favorited';
             break;
         case 'reaction':
             iconClass = 'fa-face-smile';
-            iconColor = 'text-accent-primary';
+            iconColor = 'var(--color-accent-primary)';
             actionText = 'reacted to';
             break;
         case 'note_added':
             iconClass = 'fa-sticky-note';
-            iconColor = 'text-warning';
+            iconColor = '#f59e0b';
             actionText = 'added a note to';
             break;
         case 'rate':
             iconClass = 'fa-star-half-alt';
-            iconColor = 'text-orange-400';
+            iconColor = '#fb923c';
             actionText = 'rated';
             break;
     }
@@ -302,30 +408,30 @@ function createActivityItem(activity, viewUser) {
 
     div.innerHTML = `
         <div class="flex-shrink-0 mt-1">
-            <i class="fas ${iconClass} ${iconColor} text-xl"></i>
+            <i class="fas ${iconClass} text-xl" style="color: ${iconColor};"></i>
         </div>
         <div class="flex-grow">
             <div class="flex justify-between items-start">
-                <p class="text-text-primary">
+                <p style="color: var(--color-text-primary);">
                     <span class="font-semibold">${viewUser === 'juainny' ? 'Juainny' : 'Erick'}</span>
-                    <span class="text-text-muted">${actionText}</span>
-                    <span class="font-semibold text-accent-primary">${title}</span>
+                    <span style="color: var(--color-text-muted);">${actionText}</span>
+                    <span class="font-semibold" style="color: var(--color-accent-primary);">${title}</span>
                 </p>
-                <span class="text-xs text-text-muted whitespace-nowrap ml-2">${date}</span>
+                <span class="text-xs whitespace-nowrap ml-2" style="color: var(--color-text-muted);">${date}</span>
             </div>
             ${details && details.reaction ? `
-                <div class="mt-2 bg-bg-primary p-2 rounded-lg inline-block border border-border-primary">
+                <div class="mt-2 p-2 rounded-lg inline-block" style="background-color: var(--color-bg-primary); border: 1px solid var(--color-border-primary);">
                     <img src="moods/${details.reaction}" class="w-8 h-8 object-contain" alt="Reaction">
                 </div>
             ` : ''}
             ${details && details.note ? `
-                <div class="mt-2 bg-bg-primary p-3 rounded-lg border border-border-primary text-sm italic text-text-secondary">
+                <div class="mt-2 p-3 rounded-lg text-sm italic" style="background-color: var(--color-bg-primary); border: 1px solid var(--color-border-primary); color: var(--color-text-secondary);">
                     "${details.note}"
                 </div>
             ` : ''}
              ${details && details.rating ? `
-                <div class="mt-2 text-yellow-400 text-sm">
-                    ${'★'.repeat(Math.round(details.rating))} <span class="text-text-muted">(${details.rating}/5)</span>
+                <div class="mt-2 text-sm" style="color: var(--color-star-filled);">
+                    ${'★'.repeat(Math.round(details.rating))} <span style="color: var(--color-text-muted);">(${details.rating}/5)</span>
                 </div>
             ` : ''}
         </div>
