@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js';
-import { setupAllenEasterEgg } from './app.js'; // Import the function
+import { setupAllenEasterEgg } from './features/easter-eggs.js';
 
 let allMediaForWallpapers = [];
 

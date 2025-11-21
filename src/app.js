@@ -5,6 +5,7 @@ import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './setti
 import { initializeStarRating } from './features/ratings.js';
 import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, removeFlairFromMedia, renderFlairBadge } from './features/flairs.js';
 import { generateMediaSummary, chatWithWillow } from './features/ai.js';
+import { setupAllenEasterEgg } from './features/easter-eggs.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -2994,46 +2995,7 @@ async function initializeApp() {
 }
 
 // --- EASTER EGG ---
-let allenTimeout;
 
-export function setupAllenEasterEgg() {
-    const allen = document.getElementById('allen-easter-egg');
-    if (!allen) return;
-
-    // Clear existing timeout
-    if (allenTimeout) clearTimeout(allenTimeout);
-
-    // Check theme
-    const currentTheme = document.documentElement.getAttribute('data-theme');
-
-    if (currentTheme !== 'smiling-friends') {
-        allen.classList.add('hidden');
-        allen.style.transform = 'scale(1)'; // Reset scale
-        return;
-    }
-
-    // Random time between 37s and 90s
-    const minTime = 37000;
-    const maxTime = 90000;
-    const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
-
-    allenTimeout = setTimeout(() => {
-        allen.classList.remove('hidden');
-        // Ensure he's visible and full size
-        allen.style.transform = 'scale(1)';
-    }, randomTime);
-
-    // Click interaction
-    allen.onclick = () => {
-        allen.style.transform = 'scale(0)';
-        setTimeout(() => {
-            allen.classList.add('hidden');
-            // Reset for next time? Or just once per session? 
-            // Let's restart the timer for endless fun
-            setupAllenEasterEgg();
-        }, 500); // Wait for transition
-    };
-}
 
 /**
  * Sets up the event listener for the user menu button.
@@ -3567,10 +3529,6 @@ const willowChatForm = document.getElementById('willow-chat-form');
 const willowChatInput = document.getElementById('willow-chat-input');
 const willowChatMessages = document.getElementById('willow-chat-messages');
 
-if (willowFab) {
-    willowFab.addEventListener('click', toggleWillowChat);
-}
-
 window.toggleWillowChat = function () {
     const isHidden = willowChatModal.classList.contains('hidden');
     if (isHidden) {
@@ -3589,6 +3547,10 @@ window.toggleWillowChat = function () {
         }, 300); // Match transition duration
     }
 };
+
+if (willowFab) {
+    willowFab.addEventListener('click', window.toggleWillowChat);
+}
 
 if (willowChatForm) {
     willowChatForm.addEventListener('submit', async (e) => {
