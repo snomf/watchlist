@@ -47,17 +47,36 @@
 
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-bg-secondary/80 backdrop-blur-md border-b border-border-primary shadow-lg">
-        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-            <div class="flex items-center gap-4">
-                <a href="index.html"
-                    class="text-2xl font-bold text-accent-primary hover:text-accent-secondary transition flex items-center gap-2">
-                    <i class="fas fa-arrow-left"></i> Back
+        <div class="container mx-auto flex items-center justify-between h-16 px-4">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="nav-pill flex items-center cursor-pointer hover:opacity-80 transition">
+                    <img src="icon.png" alt="Logo" class="h-8 w-8 mr-2">
+                    <span class="font-bold text-white text-lg">Watchlist</span>
                 </a>
             </div>
-            <div class="flex items-center gap-4">
-                <div id="user1-avatar-nav" class="w-8 h-8 rounded-full border border-border-primary overflow-hidden">
-                </div>
-                <div id="user2-avatar-nav" class="w-8 h-8 rounded-full border border-border-primary overflow-hidden">
+
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="text-text-muted hover:text-text-primary transition" title="Home">
+                    <i class="fas fa-home text-xl"></i>
+                </a>
+                <div class="nav-pill user-pill">
+                    <div class="relative">
+                        <button id="user-menu-btn" class="flex items-center text-sm text-white focus:outline-none">
+                            <div id="user-avatar-container" class="flex -space-x-2">
+                                <div id="user1-avatar-nav"
+                                    class="w-8 h-8 rounded-full border border-border-primary overflow-hidden"></div>
+                                <div id="user2-avatar-nav"
+                                    class="w-8 h-8 rounded-full border border-border-primary overflow-hidden"></div>
+                            </div>
+                            <span id="device-name" class="ml-2 font-semibold">User</span>
+                        </button>
+                        <div id="user-menu"
+                            class="hidden absolute right-0 mt-2 w-48 bg-bg-secondary rounded-md shadow-lg py-1 z-50">
+                            <a href="index.html" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                                <i class="fas fa-home mr-2"></i>Home
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

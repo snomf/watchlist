@@ -204,10 +204,12 @@ export async function loadAndApplySettings() {
         document.body.style.backgroundRepeat = 'no-repeat';
         document.body.style.backgroundAttachment = 'fixed';
         // Hide overlay for Smiling Friends theme, show for others
-        if (theme === 'smiling-friends') {
-            wallpaperOverlay.style.display = 'none';
-        } else {
-            wallpaperOverlay.style.display = 'block';
+        if (wallpaperOverlay) {
+            if (theme === 'smiling-friends') {
+                wallpaperOverlay.style.display = 'none';
+            } else {
+                wallpaperOverlay.style.display = 'block';
+            }
         }
     } else {
         document.body.style.backgroundImage = 'none';
@@ -215,7 +217,7 @@ export async function loadAndApplySettings() {
         document.body.style.backgroundPosition = '';
         document.body.style.backgroundRepeat = '';
         document.body.style.backgroundAttachment = '';
-        wallpaperOverlay.style.display = 'none';
+        if (wallpaperOverlay) wallpaperOverlay.style.display = 'none';
     }
 
     // Trigger Easter Egg check
