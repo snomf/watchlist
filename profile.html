@@ -63,8 +63,12 @@
                     <div class="relative">
                         <button id="user-menu-btn" class="flex items-center text-sm text-white focus:outline-none">
                             <div id="user-avatar-container" class="flex -space-x-2">
-                                <div id="user1-avatar-nav" class="w-8 h-8 rounded-full"></div>
-                                <div id="user2-avatar-nav" class="w-8 h-8 rounded-full"></div>
+                                <a href="/profile/juainny" id="user1-avatar-link">
+                                    <div id="user1-avatar-nav" class="w-8 h-8 rounded-full"></div>
+                                </a>
+                                <a href="/profile/erick" id="user2-avatar-link">
+                                    <div id="user2-avatar-nav" class="w-8 h-8 rounded-full"></div>
+                                </a>
                             </div>
                             <span id="device-name" class="ml-2 font-semibold">User</span>
                         </button>
@@ -123,7 +127,7 @@
         </div>
 
         <!-- Bio Section -->
-        <div class="mt-4 mb-8 px-4 relative group/bio">
+        <div class="description-container mt-4 mb-8 px-4 relative group/bio" id="profile-description">
             <div id="bio-display-container">
                 <p id="profile-bio" class="text-text-secondary text-lg leading-relaxed inline-block">
                     Loading bio...

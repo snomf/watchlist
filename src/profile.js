@@ -1,6 +1,12 @@
 import { supabase } from './supabase-client.js';
 
 let currentUserView = 'juainny'; // Default view
+// Override with URL query param if present
+const urlParams = new URLSearchParams(window.location.search);
+const userParam = urlParams.get('user');
+if (userParam && (userParam === 'juainny' || userParam === 'erick')) {
+    currentUserView = userParam;
+}
 let userAvatars = { juainny: null, erick: null };
 
 // Minimal settings loader for profile page (avoids importing settings.js which triggers app init)
@@ -218,6 +224,7 @@ async function loadProfile(user) {
 
     // Get Bio from Settings (already loaded into DOM inputs by loadAndApplySettings, or we can fetch again/use global state if we had one)
     // Since loadAndApplySettings populates inputs in the modal (which isn't here), we should probably export the data or fetch it.
+    // Since loadAndApplySettings populates elements in the modal (which isn't here), we should probably export the data or fetch it.
     // Actually, loadAndApplySettings in settings.js fetches data but only populates elements if they exist.
     // Let's just fetch the settings directly here to be safe and clean.
 
@@ -227,10 +234,16 @@ async function loadProfile(user) {
         const bio = user === 'juainny' ? settings.juainny_bio : settings.erick_bio;
         bioEl.textContent = bio || `No bio yet for ${user === 'juainny' ? 'Juainny' : 'Erick'}.`;
 
-        // Banner - leave empty for now, will be editable in the future
-        // TODO: Add banner editing functionality with juainny_banner/erick_banner columns
-        bannerImg.classList.add('hidden');
-        bannerPlaceholder.classList.remove('hidden');
+        // Banner handling
+        const bannerUrl = user === 'juainny' ? settings.juainny_banner : settings.erick_banner;
+        if (bannerUrl) {
+            bannerImg.src = bannerUrl;
+            bannerImg.classList.remove('hidden');
+            bannerPlaceholder.classList.add('hidden');
+        } else {
+            bannerImg.classList.add('hidden');
+            bannerPlaceholder.classList.remove('hidden');
+        }
     }
 
     // Avatar - make sure userAvatars is populated from settings
