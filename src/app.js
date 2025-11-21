@@ -686,14 +686,14 @@ async function openMovieModal(tmdbId, type) {
             imdbLink.style.display = 'none';
         }
 
-        // --- Auto-Save Missing Data to Supabase ---
-        // If we have a DB item (preloadedData) and it's missing key fields that we just fetched, save them.
-        if (preloadedData) {
+        // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
+        // Only if we have a tracked item in the DB
+        if (isItemTracked && trackedItem && trackedItem.id) {
             const updates = {};
-            if (!preloadedData.release_year && releaseYear) updates.release_year = parseInt(releaseYear);
-            if (!preloadedData.runtime && runtime) updates.runtime = runtime;
-            if ((!preloadedData.content_rating || preloadedData.content_rating === 'N/A') && contentRating !== 'N/A') updates.content_rating = contentRating;
-            if (!preloadedData.imdb_id && imdbId) updates.imdb_id = imdbId;
+            if (!trackedItem.release_year && releaseYear) updates.release_year = parseInt(releaseYear);
+            if (!trackedItem.runtime && runtime) updates.runtime = runtime;
+            if ((!trackedItem.content_rating || trackedItem.content_rating === 'N/A') && contentRating !== 'N/A') updates.content_rating = contentRating;
+            if (!trackedItem.imdb_id && imdbId) updates.imdb_id = imdbId;
 
             if (Object.keys(updates).length > 0) {
                 supabase
@@ -2496,6 +2496,12 @@ async function initializeApp() {
 
         // Setup search bar
         const searchBar = document.getElementById('search-bar');
+        // Prevent extensions from interfering
+        searchBar.setAttribute('autocomplete', 'off');
+        searchBar.setAttribute('data-lpignore', 'true');
+        searchBar.setAttribute('data-form-type', 'other');
+        searchBar.setAttribute('spellcheck', 'false');
+
         const sortSelect = document.getElementById('sort-select');
 
         const homeBtn = document.getElementById('home-btn');
