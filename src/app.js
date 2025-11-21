@@ -3585,7 +3585,7 @@ function addChatMessage(text, sender) {
     div.className = `flex items-start gap-2 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
 
     const avatar = sender === 'ai'
-        ? `<div class="w-8 h-8 rounded-full bg-teal-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-cover"></div>`
+        ? `<div class="w-10 h-10 flex-shrink-0 flex items-center justify-center overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-contain"></div>`
         : `<div class="w-8 h-8 rounded-full bg-gray-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"><i class="fas fa-user"></i></div>`; // Generic user icon for now
 
     const bubbleClass = sender === 'ai'
@@ -3609,7 +3609,7 @@ function addTypingIndicator() {
     div.id = 'typing-' + Date.now();
     div.className = 'flex items-start gap-2';
     div.innerHTML = `
-        <div class="w-8 h-8 rounded-full bg-teal-600 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-cover"></div>
+        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-contain"></div>
         <div class="bg-bg-tertiary p-3 rounded-2xl rounded-tl-none text-text-primary text-sm shadow-sm">
             <div class="flex space-x-1">
                 <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>

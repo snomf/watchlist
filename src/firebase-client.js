@@ -1,34 +1,37 @@
 import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
-import { getVertexAI, getGenerativeModel } from "firebase/vertexai";
+import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
 
-// TODO: Replace the following with your app's Firebase project configuration
-// See: https://firebase.google.com/docs/web/learn-more#config-object
+// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyB7ijoC19A2krXR4kchbLEK_OZy_I53hsY",
-    authDomain: "marvelmarathon.firebaseapp.com",
-    projectId: "marvelmarathon",
-    storageBucket: "marvelmarathon.firebasestorage.app",
-    messagingSenderId: "436493932151",
-    appId: "1:436493932151:web:9e2907b98d3132bf159872"
+    apiKey: "AIzaSyCmAiYHJ77vZCNzP1juaeU4xQ_KV6kc5h4",
+    authDomain: "watchlist-b2fd0.firebaseapp.com",
+    projectId: "watchlist-b2fd0",
+    storageBucket: "watchlist-b2fd0.firebasestorage.app",
+    messagingSenderId: "917010956394",
+    appId: "1:917010956394:web:6ed1aa6e057ceced48ca13",
+    measurementId: "G-ZZFBMG2K1G"
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const firebaseApp = initializeApp(firebaseConfig);
+
+// Initialize Analytics
+const analytics = getAnalytics(firebaseApp);
 
 // Initialize App Check
 if (typeof window !== 'undefined') {
-    // Using the reCAPTCHA site key provided by the user
-    const appCheck = initializeAppCheck(app, {
+    const appCheck = initializeAppCheck(firebaseApp, {
         provider: new ReCaptchaV3Provider('6LdRTRQsAAAAAK07rxxw0rG2s7iBlrx_zLaLs4u5'),
         isTokenAutoRefreshEnabled: true
     });
 }
 
-// Initialize Vertex AI
-const vertexAI = getVertexAI(app);
+// Initialize the Gemini Developer API backend service
+const ai = getAI(firebaseApp, { backend: new GoogleAIBackend() });
 
-// Initialize Gemini 2.5 Flash Model
-const model = getGenerativeModel(vertexAI, { model: "gemini-2.5-flash" });
+// Create a GenerativeModel instance
+const model = getGenerativeModel(ai, { model: "gemini-2.5-flash" });
 
-export { app, vertexAI, model };
+export { firebaseApp as app, analytics, model };
