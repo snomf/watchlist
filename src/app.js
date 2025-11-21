@@ -2825,13 +2825,14 @@ async function saveReaction(tmdbId, user, mood) {
     // This prevents database bloat from just viewing/browsing items
 
 
-    // Optimistic update
+    // Optimistic update for currentMediaItem
     if (currentMediaItem && currentMediaItem.tmdb_id == tmdbId) {
-        if (user === 'user1') currentMediaItem.juainny_reaction = mood;
-        if (user === 'user2') currentMediaItem.erick_reaction = mood;
+        if (user === 'user1' || user === 'juainny') currentMediaItem.juainny_reaction = mood;
+        if (user === 'user2' || user === 'erick') currentMediaItem.erick_reaction = mood;
         updateModalReactionDisplay();
     }
 
+    // Update in allMedia array for grid/carousel updates
     const itemIndex = allMedia.findIndex(i => i.tmdb_id == tmdbId);
     if (itemIndex > -1) {
         allMedia[itemIndex] = { ...allMedia[itemIndex], ...updates };
@@ -2842,6 +2843,9 @@ async function saveReaction(tmdbId, user, mood) {
         renderCarousel('currently-watching-carousel', currentlyWatching);
         const wantToWatch = await getWantToWatchMedia();
         renderCarousel('want-to-watch-carousel', wantToWatch);
+
+        // Refresh all reaction avatars to ensure they're updated everywhere
+        refreshAllReactionAvatars();
     }
 
     const { error } = await supabase
