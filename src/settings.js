@@ -25,6 +25,9 @@ export async function openSettingsModal() {
     }
 
     console.log('Showing settings modal...');
+    // Prevent background scrolling (matches other modals and might trigger layout fix)
+    document.body.style.overflow = 'hidden';
+
     settingsModal.classList.remove('hidden');
     settingsModal.classList.remove('modal-hidden');
     settingsModal.classList.add('flex');
