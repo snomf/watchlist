@@ -85,136 +85,76 @@
         </div>
     </header>
 
-    <!-- Profile Header -->
-    <div class="relative px-4 sm:px-8 pb-4">
-        <!-- Banner -->
-        <div class="h-48 md:h-64 w-full rounded-xl overflow-hidden relative bg-bg-tertiary group/banner">
-            <img id="profile-banner" src="" alt="Banner" class="w-full h-full object-cover hidden">
-            <div id="profile-banner-placeholder"
-                class="w-full h-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500"></div>
+    <main class="container mx-auto px-4 py-8 flex-grow max-w-4xl">
 
-            <!-- Edit Banner Button -->
-            <button id="edit-banner-btn"
-                class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white px-4 py-2 rounded-lg transition opacity-0 group-hover/banner:opacity-100 flex items-center gap-2">
-                <i class="fas fa-image"></i>
-                <span>Change Banner</span>
-            </button>
-        </div>
+        <!-- Profile Header -->
+        <div class="relative mb-20">
+            <!-- Banner -->
+            <div class="h-48 md:h-64 w-full rounded-xl overflow-hidden relative bg-bg-tertiary group/banner">
+                <img id="profile-banner" src="" alt="Banner" class="w-full h-full object-cover hidden">
+                <div id="profile-banner-placeholder"
+                    class="w-full h-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500"></div>
 
-        <div class="flex flex-col md:flex-row items-start md:items-end -mt-12 md:-mt-16 mb-6 gap-4">
-            <!-- Avatar -->
-            <div class="relative group">
-                <div
-                    class="w-24 h-24 md:w-32 md:h-32 rounded-full border-4 border-bg-secondary overflow-hidden bg-bg-tertiary shadow-lg">
-                    <img id="profile-avatar" src="" alt="Avatar" class="w-full h-full object-cover">
-                </div>
-                <button onclick="openSettingsModal()"
-                    class="absolute bottom-0 right-0 bg-bg-tertiary text-text-primary p-2 rounded-full shadow-md hover:bg-bg-primary transition border border-white/10">
-                    <i class="fas fa-camera text-sm"></i>
+                <!-- Edit Banner Button -->
+                <button id="edit-banner-btn"
+                    class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white px-4 py-2 rounded-lg transition opacity-0 group-hover/banner:opacity-100 flex items-center gap-2">
+                    <i class="fas fa-image"></i>
+                    <span>Change Banner</span>
                 </button>
             </div>
 
-            <!-- User Info -->
-            <div class="flex-1 mt-2 md:mt-0 min-w-0 w-full">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 id="profile-name" class="text-2xl md:text-3xl font-bold text-text-primary truncate">
-                            Loading...</h1>
-                        <div class="mt-1 group/bio">
-                            <div id="bio-display-container" class="flex items-center">
-                                <p id="profile-bio" class="text-text-muted text-sm md:text-base line-clamp-2">
-                                    No bio yet.</p>
-                                <button id="edit-bio-btn"
-                                    class="ml-2 text-text-muted hover:text-accent-primary transition opacity-100 md:opacity-0 md:group-hover/bio:opacity-100 p-2">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </button>
-                            </div>
-                            <!-- Edit Bio Form -->
-                            <div id="bio-edit-container" class="hidden mt-2">
-                                <textarea id="bio-input" rows="3"
-                                    class="w-full bg-bg-primary border border-white/10 rounded-lg p-2 text-text-primary text-sm focus:border-accent-primary outline-none resize-none mb-2"></textarea>
-                                <div class="flex justify-end gap-2">
-                                    <button id="cancel-bio-btn"
-                                        class="px-3 py-1 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-primary transition text-xs font-semibold">Cancel</button>
-                                    <button id="save-bio-btn"
-                                        class="px-3 py-1 rounded-lg bg-accent-primary hover:bg-accent-hover text-white transition text-xs font-bold">Save</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Profile Info -->
+            <div
+                class="absolute -bottom-16 left-6 md:left-10 flex flex-col md:flex-row items-center md:items-end gap-4 text-center md:text-left">
+                <div id="profile-avatar-container"
+                    class="w-32 h-32 rounded-full border-4 border-bg-primary bg-bg-secondary overflow-hidden shadow-xl relative z-10">
+                    <!-- Avatar injected here -->
+                </div>
+                <div class="mb-2 z-10">
+                    <h1 id="profile-name" class="text-3xl font-bold text-white drop-shadow-md">User Name</h1>
+                </div>
+            </div>
 
-                    <!-- Stats/Actions -->
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <div class="flex gap-4 px-4 py-2 bg-bg-tertiary rounded-xl border border-white/5">
-                            <div class="text-center">
-                                <span id="stat-watched" class="block text-lg font-bold text-accent-primary">0</span>
-                                <span class="text-xs text-text-muted uppercase tracking-wider">Watched</span>
-                            </div>
-                            <div class="w-px bg-white/10"></div>
-                            <div class="text-center">
-                                <span id="stat-favorites" class="block text-lg font-bold text-yellow-500">0</span>
-                                <span class="text-xs text-text-muted uppercase tracking-wider">Favorites</span>
-                            </div>
-                        </div>
-                    </div>
+            <!-- User Switcher (Top Right of Profile Area) -->
+            <div class="absolute -bottom-12 right-4 flex gap-2">
+                <button id="view-juainny-btn"
+                    class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
+                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
+                    Juainny
+                </button>
+                <button id="view-erick-btn"
+                    class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
+                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
+                    Erick
+                </button>
+            </div>
+        </div>
+
+        <!-- Bio Section -->
+        <div class="description-container mt-4 mb-8 px-6 py-6 relative group/bio rounded-xl shadow-lg"
+            id="profile-description"
+            style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border-primary);">
+            <div id="bio-display-container">
+                <p id="profile-bio" class="text-text-secondary text-lg leading-relaxed inline-block">
+                    Loading bio...
+                </p>
+                <button id="edit-bio-btn" class="ml-2 text-text-muted hover:text-accent-primary transition">
+                    <i class="fas fa-pencil-alt"></i>
+                </button>
+            </div>
+
+            <div id="bio-edit-container" class="hidden">
+                <textarea id="bio-input" rows="4"
+                    class="w-full bg-bg-tertiary border border-border-primary rounded-lg p-3 text-text-primary focus:border-accent-primary outline-none resize-none mb-2"></textarea>
+                <div class="flex justify-end gap-2">
+                    <button id="cancel-bio-btn"
+                        class="px-4 py-2 rounded-lg text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition text-sm font-semibold">Cancel</button>
+                    <button id="save-bio-btn"
+                        class="px-4 py-2 rounded-lg bg-accent-primary hover:bg-accent-secondary text-white transition text-sm font-bold">Save
+                        Bio</button>
                 </div>
             </div>
         </div>
-
-        <!-- User Switcher (Top Right of Profile Area) -->
-        <div class="absolute -bottom-12 right-4 flex gap-2">
-            <button id="view-juainny-btn"
-                class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
-                style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
-                Juainny
-            </button>
-            <button id="view-erick-btn"
-                class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
-                style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
-                Erick
-            </button>
-        </div>
-    </div>
-
-    <main class="container mx-auto px-4 py-8 flex-grow max-w-4xl">
-
-        class="w-full h-full bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500"></div>
-
-        <!-- Edit Banner Button -->
-        <button id="edit-banner-btn"
-            class="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white px-4 py-2 rounded-lg transition opacity-0 group-hover/banner:opacity-100 flex items-center gap-2">
-            <i class="fas fa-image"></i>
-            <span>Change Banner</span>
-        </button>
-        </div>
-
-        <!-- Profile Info -->
-        <div class="absolute -bottom-16 left-6 md:left-10 flex items-end gap-4">
-            <div id="profile-avatar-container"
-                class="w-32 h-32 rounded-full border-4 border-bg-primary bg-bg-secondary overflow-hidden shadow-xl relative z-10">
-                <!-- Avatar injected here -->
-            </div>
-            <div class="mb-2 z-10">
-                <h1 id="profile-name" class="text-3xl font-bold text-white drop-shadow-md">User Name</h1>
-            </div>
-        </div>
-
-        <!-- User Switcher (Top Right of Profile Area) -->
-        <div class="absolute -bottom-12 right-4 flex gap-2">
-            <button id="view-juainny-btn"
-                class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
-                style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
-                Juainny
-            </button>
-            <button id="view-erick-btn"
-                class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
-                style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
-                Erick
-            </button>
-        </div>
-        </div>
-
-
 
         <!-- Activity Feed -->
         <div style="background-color: var(--color-bg-secondary);" class="rounded-xl overflow-hidden"

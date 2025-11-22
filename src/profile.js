@@ -422,45 +422,35 @@ function createActivityItem(activity, viewUser) {
     // Icon based on action
     let iconClass = 'fa-circle';
     let iconColor = 'var(--color-text-muted)';
-    let actionText = 'interacted with';
+    let actionText = 'updated';
 
     switch (action_type) {
         case 'watched':
             iconClass = 'fa-check-circle';
-            iconColor = 'var(--color-accent-primary)';
+            iconColor = 'var(--color-success)';
             actionText = 'watched';
             break;
         case 'want_to_watch':
             iconClass = 'fa-bookmark';
-            iconColor = '#fbbf24'; // yellow-400
+            iconColor = 'var(--color-accent-primary)';
             actionText = 'wants to watch';
             break;
-        case 'currently_watching':
-            iconClass = 'fa-play-circle';
-            iconColor = '#3b82f6'; // blue-500
-            actionText = 'is watching';
-            break;
-        case 'rating':
-            iconClass = 'fa-star';
-            iconColor = '#f59e0b'; // yellow-500
-            actionText = 'rated';
-            break;
-        case 'review':
-            iconClass = 'fa-comment-alt';
-            iconColor = '#10b981'; // green-500
-            actionText = 'reviewed';
-            break;
         case 'favorite':
-            iconClass = 'fa-heart';
-            iconColor = '#ef4444'; // red-500
+            iconClass = 'fa-star';
+            iconColor = '#facc15';
             actionText = 'favorited';
+            break;
+        case 'reaction':
+            iconClass = 'fa-face-smile';
+            iconColor = 'var(--color-accent-primary)';
+            actionText = 'reacted to';
             break;
         case 'note_added':
             iconClass = 'fa-sticky-note';
             iconColor = '#f59e0b';
             actionText = count > 1 ? `added ${count} notes to` : 'added a note to';
             break;
-        case 'rate': // This case was 'rate' in the original, now it's 'rating' above. Keeping for backward compatibility if needed, but 'rating' is preferred.
+        case 'rate':
             iconClass = 'fa-star-half-alt';
             iconColor = '#fb923c';
             actionText = 'rated';

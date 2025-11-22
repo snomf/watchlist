@@ -260,19 +260,15 @@ export async function loadAndApplySettings() {
     document.getElementById('hide-search-images-toggle').checked = hide_search_results_without_images;
 
     // Apply wallpaper
-    const wallpaperBackground = document.getElementById('wallpaper-background');
-    const wallpaperOverlay = document.getElementById('wallpaper-overlay'); // Keep reference for overlay logic
-    if (wallpaper_url && wallpaperBackground) {
-        wallpaperBackground.style.backgroundImage = `url('${wallpaper_url}')`;
-        wallpaperBackground.style.backgroundSize = 'cover';
+    const wallpaperOverlay = document.getElementById('wallpaper-overlay');
+    if (wallpaper_url) {
+        document.body.style.backgroundImage = `url('${wallpaper_url}')`;
+        document.body.style.backgroundSize = 'cover';
         // Use better positioning for mobile
         const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        wallpaperBackground.style.backgroundPosition = isMobile ? 'center top' : 'center';
-        wallpaperBackground.style.backgroundRepeat = 'no-repeat';
-        wallpaperBackground.style.backgroundAttachment = 'fixed';
-        // Clear body background to avoid conflicts
-        document.body.style.backgroundImage = '';
-
+        document.body.style.backgroundPosition = isMobile ? 'center top' : 'center';
+        document.body.style.backgroundRepeat = 'no-repeat';
+        document.body.style.backgroundAttachment = 'fixed';
         // Hide overlay for Smiling Friends theme, show for others
         if (wallpaperOverlay) {
             if (theme === 'smiling-friends') {

@@ -28,8 +28,41 @@ export const tools = [
         }
     },
     {
+        name: "get_list_by_status",
+        description: "Fetches a list of media items filtered by their status (watched, want_to_watch, currently_watching).",
+        parameters: {
+            type: "object",
+            properties: {
+                status: {
+                    type: "string",
+                    description: "The status to filter by: 'watched', 'want_to_watch', or 'currently_watching'.",
+                    enum: ["watched", "want_to_watch", "currently_watching"]
+                },
+                limit: {
+                    type: "number",
+                    description: "The number of items to fetch (default 20)."
+                }
+            },
+            required: ["status"]
+        }
+    },
+    {
+        name: "search_tmdb",
+        description: "Searches for movies or TV shows in the global TMDB database (online search). Use this when the user asks for something not in their watchlist.",
+        parameters: {
+            type: "object",
+            properties: {
+                query: {
+                    type: "string",
+                    description: "The movie or TV show title to search for."
+                }
+            },
+            required: ["query"]
+        }
+    },
+    {
         name: "search_media",
-        description: "Searches the media table in the database for specific titles.",
+        description: "Searches the LOCAL watchlist database for specific titles. Use this first to see if they already have it.",
         parameters: {
             type: "object",
             properties: {
@@ -162,25 +195,6 @@ export const tools = [
             },
             required: ["tmdb_id"]
         }
-    },
-    {
-        name: "get_media_by_status",
-        description: "Fetches media items based on their status (watched, want_to_watch, currently_watching).",
-        parameters: {
-            type: "object",
-            properties: {
-                status: {
-                    type: "string",
-                    description: "The status to filter by: 'watched', 'want_to_watch', or 'currently_watching'.",
-                    enum: ["watched", "want_to_watch", "currently_watching"]
-                },
-                limit: {
-                    type: "number",
-                    description: "The maximum number of items to return (default 10)."
-                }
-            },
-            required: ["status"]
-        }
     }
 ];
 
@@ -211,6 +225,50 @@ export const toolImplementations = {
 
         if (error) return `Error fetching settings: ${error.message}`;
         return JSON.stringify(data);
+    },
+
+    async get_list_by_status({ status, limit = 20 }) {
+        const safeLimit = Math.min(Math.max(limit, 1), 50);
+        let query = supabase.from('media').select('title, type, release_year, tmdb_id');
+
+        if (status === 'watched') {
+            query = query.eq('watched', true);
+        } else if (status === 'want_to_watch') {
+            query = query.eq('want_to_watch', true);
+        } else if (status === 'currently_watching') {
+            query = query.eq('currently_watching', true);
+        } else {
+            return "Invalid status. Please use 'watched', 'want_to_watch', or 'currently_watching'.";
+        }
+
+        const { data, error } = await query.limit(safeLimit);
+
+        if (error) return `Error fetching list: ${error.message}`;
+        if (!data || data.length === 0) return `No items found in '${status}' list.`;
+
+        return JSON.stringify(data);
+    },
+
+    async search_tmdb({ query }) {
+        try {
+            const response = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&include_adult=false`);
+            if (!response.ok) {
+                return "Error searching TMDB.";
+            }
+            const data = await response.json();
+            const results = data.results.slice(0, 5).map(item => ({
+                title: item.title || item.name,
+                type: item.media_type,
+                year: item.release_date || item.first_air_date,
+                overview: item.overview,
+                tmdb_id: item.id
+            }));
+
+            if (results.length === 0) return "No results found online.";
+            return JSON.stringify(results);
+        } catch (err) {
+            return `Error connecting to TMDB: ${err.message}`;
+        }
     },
 
     async search_media({ query }) {
@@ -380,25 +438,5 @@ export const toolImplementations = {
 
         if (error) return `Error marking media as watched: ${error.message}`;
         return `Marked '${existing.title}' as watched.`;
-    },
-
-    async get_media_by_status({ status, limit = 10 }) {
-        const validStatuses = ['watched', 'want_to_watch', 'currently_watching'];
-        if (!validStatuses.includes(status)) {
-            return `Invalid status. Must be one of: ${validStatuses.join(', ')}`;
-        }
-
-        const safeLimit = Math.min(Math.max(limit, 1), 50);
-        const { data, error } = await supabase
-            .from('media')
-            .select('title, type, release_year')
-            .eq(status, true)
-            .order('updated_at', { ascending: false }) // Assuming updated_at exists, otherwise created_at
-            .limit(safeLimit);
-
-        if (error) return `Error fetching media by status: ${error.message}`;
-        if (!data || data.length === 0) return `No media found with status '${status}'.`;
-
-        return JSON.stringify(data);
     }
 };
