@@ -617,6 +617,17 @@ async function openMovieModal(tmdbId, type) {
     const footer = document.querySelector('footer');
     if (footer) footer.classList.add('hidden');
 
+    // Setup Profile Links
+    const juainnyLink = document.getElementById('juainny-profile-link');
+    const erickLink = document.getElementById('erick-profile-link');
+
+    if (juainnyLink) {
+        juainnyLink.onclick = () => window.location.href = '/profile?user=juainny';
+    }
+    if (erickLink) {
+        erickLink.onclick = () => window.location.href = '/profile?user=erick';
+    }
+
     // --- TV Progress ---
     const tvProgressSection = document.getElementById('tv-progress-section');
     const tvWarningSection = document.getElementById('tv-warning-section'); // New warning section

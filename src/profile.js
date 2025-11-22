@@ -199,18 +199,22 @@ async function loadProfile(user) {
     const btnJuainny = document.getElementById('view-juainny-btn');
     const btnErick = document.getElementById('view-erick-btn');
 
+    // Reset classes
+    const activeClasses = ['bg-accent-primary', 'text-white', 'border-transparent', 'shadow-lg', 'scale-105'];
+    const inactiveClasses = ['bg-bg-tertiary', 'text-text-primary', 'border-border-primary', 'hover:bg-bg-primary'];
+
     if (user === 'juainny') {
-        btnJuainny.classList.add('bg-accent-primary', 'text-white', 'border-transparent');
-        btnJuainny.classList.remove('bg-bg-tertiary', 'text-text-primary', 'border-border-primary');
+        btnJuainny.classList.add(...activeClasses);
+        btnJuainny.classList.remove(...inactiveClasses);
 
-        btnErick.classList.remove('bg-accent-primary', 'text-white', 'border-transparent');
-        btnErick.classList.add('bg-bg-tertiary', 'text-text-primary', 'border-border-primary');
+        btnErick.classList.remove(...activeClasses);
+        btnErick.classList.add(...inactiveClasses);
     } else {
-        btnErick.classList.add('bg-accent-primary', 'text-white', 'border-transparent');
-        btnErick.classList.remove('bg-bg-tertiary', 'text-text-primary', 'border-border-primary');
+        btnErick.classList.add(...activeClasses);
+        btnErick.classList.remove(...inactiveClasses);
 
-        btnJuainny.classList.remove('bg-accent-primary', 'text-white', 'border-transparent');
-        btnJuainny.classList.add('bg-bg-tertiary', 'text-text-primary', 'border-border-primary');
+        btnJuainny.classList.remove(...activeClasses);
+        btnJuainny.classList.add(...inactiveClasses);
     }
 
     // Update Profile Info
@@ -222,12 +226,7 @@ async function loadProfile(user) {
 
     nameEl.textContent = user === 'juainny' ? 'Juainny' : 'Erick';
 
-    // Get Bio from Settings (already loaded into DOM inputs by loadAndApplySettings, or we can fetch again/use global state if we had one)
-    // Since loadAndApplySettings populates inputs in the modal (which isn't here), we should probably export the data or fetch it.
-    // Since loadAndApplySettings populates elements in the modal (which isn't here), we should probably export the data or fetch it.
-    // Actually, loadAndApplySettings in settings.js fetches data but only populates elements if they exist.
-    // Let's just fetch the settings directly here to be safe and clean.
-
+    // Get Bio from Settings
     const { data: settings } = await supabase.from('settings').select('*').eq('id', 1).single();
 
     if (settings) {
@@ -340,7 +339,7 @@ async function loadActivityFeed(user) {
         `)
         .or(`user_id.eq.${user},user_id.eq.both`)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(50); // Increased limit to allow for grouping
 
     if (error) {
         console.error('Error fetching activity:', error);
@@ -355,14 +354,59 @@ async function loadActivityFeed(user) {
 
     feedContainer.innerHTML = '';
 
-    activities.forEach(activity => {
-        const item = createActivityItem(activity, user);
+    // Group activities
+    const groupedActivities = groupActivities(activities);
+
+    groupedActivities.forEach(group => {
+        const item = createActivityItem(group, user);
         feedContainer.appendChild(item);
     });
 }
 
+function groupActivities(activities) {
+    const grouped = [];
+    if (activities.length === 0) return grouped;
+
+    let currentGroup = {
+        ...activities[0],
+        count: 1,
+        timestamps: [activities[0].created_at]
+    };
+
+    for (let i = 1; i < activities.length; i++) {
+        const activity = activities[i];
+        const prevActivity = currentGroup;
+
+        // Check if same user, action, and media
+        const isSameUser = activity.user_id === prevActivity.user_id;
+        const isSameAction = activity.action_type === prevActivity.action_type;
+        const isSameMedia = activity.media_id === prevActivity.media_id;
+
+        // Check if within a reasonable time window (e.g., same day)
+        const date1 = new Date(activity.created_at).toDateString();
+        const date2 = new Date(prevActivity.created_at).toDateString();
+        const isSameDay = date1 === date2;
+
+        if (isSameUser && isSameAction && isSameMedia && isSameDay) {
+            currentGroup.count++;
+            currentGroup.timestamps.push(activity.created_at);
+            // Keep the latest details if they differ, or merge them if needed
+            // For notes, we might want to show the latest note or indicate multiple notes
+        } else {
+            grouped.push(currentGroup);
+            currentGroup = {
+                ...activity,
+                count: 1,
+                timestamps: [activity.created_at]
+            };
+        }
+    }
+    grouped.push(currentGroup);
+    return grouped;
+}
+
 function createActivityItem(activity, viewUser) {
-    const { action_type, details, created_at, media } = activity;
+    const { action_type, details, created_at, media, count } = activity;
     const date = new Date(created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
     const div = document.createElement('div');
@@ -404,7 +448,7 @@ function createActivityItem(activity, viewUser) {
         case 'note_added':
             iconClass = 'fa-sticky-note';
             iconColor = '#f59e0b';
-            actionText = 'added a note to';
+            actionText = count > 1 ? `added ${count} notes to` : 'added a note to';
             break;
         case 'rate':
             iconClass = 'fa-star-half-alt';
@@ -440,6 +484,7 @@ function createActivityItem(activity, viewUser) {
             ${details && details.note ? `
                 <div class="mt-2 p-3 rounded-lg text-sm italic" style="background-color: var(--color-bg-primary); border: 1px solid var(--color-border-primary); color: var(--color-text-secondary);">
                     "${details.note}"
+                    ${count > 1 ? `<span class="text-xs text-text-muted block mt-1">(and ${count - 1} more updates)</span>` : ''}
                 </div>
             ` : ''}
              ${details && details.rating ? `

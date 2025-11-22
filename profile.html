@@ -50,7 +50,7 @@
         <div class="container mx-auto flex items-center justify-between h-16 px-4">
             <div class="flex items-center gap-2">
                 <a href="index.html" class="nav-pill flex items-center cursor-pointer hover:opacity-80 transition">
-                    <img src="icon.png" alt="Logo" class="h-8 w-8 mr-2">
+                    <img src="mm-logo.png" alt="Logo" class="h-8 w-auto mr-2">
                     <span class="font-bold text-white text-lg">Watchlist</span>
                 </a>
             </div>
@@ -115,19 +115,23 @@
 
             <!-- User Switcher (Top Right of Profile Area) -->
             <div class="absolute -bottom-12 right-4 flex gap-2">
-                <button id="view-juainny-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
-                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+                <button id="view-juainny-btn"
+                    class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
+                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
                     Juainny
                 </button>
-                <button id="view-erick-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
-                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+                <button id="view-erick-btn"
+                    class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
+                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
                     Erick
                 </button>
             </div>
         </div>
 
         <!-- Bio Section -->
-        <div class="description-container mt-4 mb-8 px-4 relative group/bio" id="profile-description">
+        <div class="description-container mt-4 mb-8 px-6 py-6 relative group/bio rounded-xl shadow-lg"
+            id="profile-description"
+            style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border-primary);">
             <div id="bio-display-container">
                 <p id="profile-bio" class="text-text-secondary text-lg leading-relaxed inline-block">
                     Loading bio...
