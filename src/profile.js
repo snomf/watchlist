@@ -199,9 +199,9 @@ async function loadProfile(user) {
     const btnJuainny = document.getElementById('view-juainny-btn');
     const btnErick = document.getElementById('view-erick-btn');
 
-    // Reset classes
-    const activeClasses = ['bg-accent-primary', 'text-white', 'border-transparent', 'shadow-lg', 'scale-105'];
-    const inactiveClasses = ['bg-bg-tertiary', 'text-text-primary', 'border-border-primary', 'hover:bg-bg-primary'];
+    // Reset classes - swapped so inactive is more prominent
+    const inactiveClasses = ['bg-accent-primary', 'text-white', 'border-transparent', 'shadow-lg', 'scale-105'];
+    const activeClasses = ['bg-bg-tertiary', 'text-text-primary', 'border-border-primary', 'hover:bg-bg-primary', 'opacity-50'];
 
     if (user === 'juainny') {
         btnJuainny.classList.add(...activeClasses);
