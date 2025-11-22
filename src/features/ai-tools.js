@@ -114,6 +114,42 @@ export const tools = [
         }
     },
     {
+        name: "update_media_notes",
+        description: "Updates the notes for a media item for a specific user.",
+        parameters: {
+            type: "object",
+            properties: {
+                tmdb_id: {
+                    type: "number",
+                    description: "The TMDB ID of the media."
+                },
+                note: {
+                    type: "string",
+                    description: "The content of the note."
+                },
+                user: {
+                    type: "string",
+                    description: "The user adding the note ('juainny' or 'erick')."
+                }
+            },
+            required: ["tmdb_id", "note", "user"]
+        }
+    },
+    {
+        name: "get_media_notes",
+        description: "Retrieves the notes and ratings for a specific media item by title.",
+        parameters: {
+            type: "object",
+            properties: {
+                title: {
+                    type: "string",
+                    description: "The title of the media to get notes for."
+                }
+            },
+            required: ["title"]
+        }
+    },
+    {
         name: "mark_watched",
         description: "Marks a media item as watched.",
         parameters: {
@@ -255,6 +291,54 @@ export const toolImplementations = {
 
         if (error) return `Error rating media: ${error.message}`;
         return `Rated '${tmdb_id}' as ${rating}/10 for ${user}.`;
+    },
+
+    async update_media_notes({ tmdb_id, note, user }) {
+        const column = user.toLowerCase() === 'juainny' ? 'juainny_notes' : 'erick_notes';
+
+        const { data: existing } = await supabase
+            .from('media')
+            .select('id')
+            .eq('tmdb_id', tmdb_id)
+            .single();
+
+        if (!existing) return "Media item not found in database. Please add it first.";
+
+        const { error } = await supabase
+            .from('media')
+            .update({ [column]: note })
+            .eq('id', existing.id);
+
+        if (error) return `Error updating notes: ${error.message}`;
+        return `Updated notes for '${tmdb_id}' for ${user}.`;
+    },
+
+    async get_media_notes({ title }) {
+        const { data, error } = await supabase
+            .from('media')
+            .select('title, juainny_notes, erick_notes, juainny_rating, erick_rating')
+            .ilike('title', `%${title}%`)
+            .limit(1)
+            .single();
+
+        if (error) {
+            if (error.code === 'PGRST116') {
+                return `No media found with title matching "${title}".`;
+            }
+            return `Error fetching notes: ${error.message}`;
+        }
+
+        return JSON.stringify({
+            title: data.title,
+            juainny: {
+                notes: data.juainny_notes || "No notes yet",
+                rating: data.juainny_rating || "Not rated"
+            },
+            erick: {
+                notes: data.erick_notes || "No notes yet",
+                rating: data.erick_rating || "Not rated"
+            }
+        });
     },
 
     async mark_watched({ tmdb_id }) {
