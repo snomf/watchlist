@@ -727,13 +727,28 @@ async function openMovieModal(tmdbId, type) {
         const titleElement = document.getElementById('modal-title');
         titleElement.innerHTML = ''; // Clear previous content
         const bestLogo = data.images?.logos?.find(logo => logo.iso_639_1 === 'en' && !logo.file_path.endsWith('.svg')) || data.images?.logos?.[0];
+        const titleText = data.title || data.name;
 
         if (bestLogo) {
             const logoUrl = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
             // Using inline style for max-width to ensure it applies
-            titleElement.innerHTML = `<img src="${logoUrl}" alt="${data.title || data.name} Logo" class="max-h-20 object-contain" style="max-width: 14.4rem;">`;
+            titleElement.innerHTML = `<img src="${logoUrl}" alt="${titleText} Logo" class="max-h-20 object-contain cursor-pointer" style="max-width: 14.4rem;">`;
+
+            // Add double-click event to copy title
+            const logoImg = titleElement.querySelector('img');
+            if (logoImg) {
+                logoImg.addEventListener('dblclick', () => {
+                    // Copy title to clipboard
+                    navigator.clipboard.writeText(titleText).then(() => {
+                        // Show custom "Copied!" popup
+                        showCopiedPopup();
+                    }).catch(err => {
+                        console.error('Failed to copy text:', err);
+                    });
+                });
+            }
         } else {
-            titleElement.textContent = data.title || data.name;
+            titleElement.textContent = titleText;
         }
 
         const releaseDate = data.release_date || data.first_air_date || '';
@@ -3542,6 +3557,51 @@ function toggleReactionTooltip(reactionElement, event) {
         showReactionTooltip(reactionElement);
     }
 }
+
+/**
+ * Shows a custom "Copied!" popup notification
+ */
+function showCopiedPopup() {
+    // Create popup element if it doesn't exist
+    let popup = document.getElementById('copied-popup');
+    if (!popup) {
+        popup = document.createElement('div');
+        popup.id = 'copied-popup';
+        popup.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[9999] pointer-events-none';
+        popup.innerHTML = `
+            <div class="bg-black/90 backdrop-blur-md text-white px-6 py-3 rounded-lg shadow-2xl flex items-center gap-2 border border-white/20">
+                <i class="fas fa-check-circle text-green-400"></i>
+                <span class="text-lg font-semibold">Copied!</span>
+            </div>
+        `;
+        document.body.appendChild(popup);
+    }
+
+    // Reset any existing animation
+    popup.style.opacity = '0';
+    popup.style.transform = 'translate(-50%, -50%) scale(0.8)';
+    popup.classList.remove('hidden');
+
+    // Trigger fade-in animation
+    requestAnimationFrame(() => {
+        popup.style.transition = 'opacity 0.2s ease-out, transform 0.2s ease-out';
+        popup.style.opacity = '1';
+        popup.style.transform = 'translate(-50%, -50%) scale(1)';
+    });
+
+    // Fade out after 1.5 seconds
+    setTimeout(() => {
+        popup.style.transition = 'opacity 0.3s ease-in, transform 0.3s ease-in';
+        popup.style.opacity = '0';
+        popup.style.transform = 'translate(-50%, -50%) scale(0.8)';
+
+        // Hide completely after animation
+        setTimeout(() => {
+            popup.classList.add('hidden');
+        }, 300);
+    }, 1500);
+}
+
 
 
 function showConfirmationModal(title, message) {
