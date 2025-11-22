@@ -143,6 +143,7 @@ let currentView = 'grid';
 let currentSort = 'default';
 let allFlairs = []; // Store all available flairs
 let mediaFlairsMap = new Map(); // Store flairs for each media item (mediaId -> flairs[])
+let isSearchMode = false; // Track if we're currently in search mode
 
 // --- RENDERING ---
 
@@ -220,7 +221,7 @@ function renderContent() {
             const title = item.title || item.name;
             const type = item.type || item.media_type;
             const tmdbId = item.tmdb_id || item.id;
-            createMovieCard(movieGrid, title, type, tmdbId, posterUrl, item.watched);
+            createMovieCard(movieGrid, title, type, tmdbId, posterUrl, item.watched, isSearchMode);
         }
     } else { // currentView === 'list'
         movieGrid.innerHTML = '';
@@ -264,8 +265,10 @@ function renderContent() {
  * @param {string} type - The type of media ('movie' or 'tv').
  * @param {number} tmdbId - The TMDB ID.
  * @param {string} posterUrl - The URL for the poster image.
+ * @param {boolean} isWatched - Whether the media is watched.
+ * @param {boolean} showBookmark - Whether to show the bookmark button (for search mode).
  */
-function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
+function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched, showBookmark = false) {
     // console.log('Creating card for:', title, tmdbId); // DEBUG - Commented out to avoid spam, uncomment if needed
     const movieCard = document.createElement('div');
     movieCard.className = 'movie-card relative rounded-lg shadow-lg overflow-hidden cursor-pointer group';
@@ -313,9 +316,11 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         <div class="absolute bottom-0 left-0 right-0 p-4">
             <!-- Title removed as per user request -->
         </div>
-        <button class="bookmark-icon absolute bottom-2 right-2 text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity">
+        ${showBookmark ? `
+        <button class="bookmark-icon absolute bottom-2 right-2 text-white text-2xl transition-opacity">
             <i class="fas fa-bookmark"></i>
         </button>
+        ` : ''}
     `;
 
     // Add hover event listeners to reactions
@@ -332,34 +337,38 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched) {
         });
     });
 
-    // Stop propagation on the bookmark icon to prevent the modal from opening
-    const bookmarkBtn = movieCard.querySelector('.bookmark-icon');
-    bookmarkBtn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const posterPath = posterUrl.includes('image.tmdb.org') ? posterUrl.replace('https://image.tmdb.org/t/p/w500', '') : null;
-        const mediaItem = await ensureMediaItemExists(tmdbId, type, title, posterPath);
-        if (!mediaItem) return;
+    // Add bookmark functionality only if in search mode
+    if (showBookmark) {
+        const bookmarkBtn = movieCard.querySelector('.bookmark-icon');
+        if (bookmarkBtn) {
+            bookmarkBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const posterPath = posterUrl.includes('image.tmdb.org') ? posterUrl.replace('https://image.tmdb.org/t/p/w500', '') : null;
+                const mediaItem = await ensureMediaItemExists(tmdbId, type, title, posterPath);
+                if (!mediaItem) return;
 
-        // Update local map if needed (though ensureMediaItemExists returns the item, we might need to re-fetch flairs if it was just created)
-        if (!mediaFlairsMap.has(mediaItem.id)) {
-            mediaFlairsMap.set(mediaItem.id, []);
+                // Update local map if needed
+                if (!mediaFlairsMap.has(mediaItem.id)) {
+                    mediaFlairsMap.set(mediaItem.id, []);
+                }
+
+                const newWantToWatch = !mediaItem.want_to_watch;
+                const updates = { want_to_watch: newWantToWatch };
+                if (newWantToWatch) {
+                    updates.currently_watching = false;
+                }
+
+                const { error } = await supabase.from('media').update(updates).eq('id', mediaItem.id);
+
+                if (error) {
+                    console.error('Error updating bookmark from grid:', error);
+                } else {
+                    // Visually update the icon
+                    bookmarkBtn.classList.toggle('text-accent-primary', newWantToWatch);
+                }
+            });
         }
-
-        const newWantToWatch = !mediaItem.want_to_watch;
-        const updates = { want_to_watch: newWantToWatch };
-        if (newWantToWatch) {
-            updates.currently_watching = false;
-        }
-
-        const { error } = await supabase.from('media').update(updates).eq('id', item.id);
-
-        if (error) {
-            console.error('Error updating bookmark from grid:', error);
-        } else {
-            // Visually update the icon
-            bookmarkBtn.classList.toggle('text-accent-primary', newWantToWatch);
-        }
-    });
+    }
 
     movieCard.addEventListener('click', (e) => {
         console.log('Movie card clicked:', title); // DEBUG
@@ -2977,6 +2986,7 @@ async function initializeApp() {
             homeBtn.classList.add('hidden');
             currentlyWatchingSection.classList.remove('hidden');
             wantToWatchSection.classList.remove('hidden');
+            isSearchMode = false; // Exit search mode
 
             // Show section headers
             const watchedItemsHeader = document.getElementById('watched-items-header');
@@ -2997,8 +3007,9 @@ async function initializeApp() {
                     homeBtn.classList.remove('hidden');
                     currentlyWatchingSection.classList.add('hidden');
                     wantToWatchSection.classList.add('hidden');
+                    isSearchMode = true; // Enter search mode
 
-                    // Hide section headers in search mode
+                    // Hide section headers
                     const watchedItemsHeader = document.getElementById('watched-items-header');
                     if (watchedItemsHeader) watchedItemsHeader.classList.add('hidden');
 
