@@ -21,7 +21,7 @@ const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
  * @returns {Array} - The updated array of media objects after syncing.
  */
 async function syncWithTMDB(localMedia) {
-    console.log('Starting TMDB data synchronization...');
+    // console.log('Starting TMDB data synchronization...');
     const BATCH_SIZE = 10;
     let updatedMedia = [];
     let updatedCount = 0;
@@ -114,7 +114,7 @@ async function syncWithTMDB(localMedia) {
                         errorCount++;
                         return item;
                     }
-                    console.log(`✓ Updated ${item.title}:`, Object.keys(updates).join(', '));
+                    // console.log(`✓ Updated ${item.title}:`, Object.keys(updates).join(', '));
                     updatedCount++;
                     return { ...item, ...updates };
                 }
@@ -130,7 +130,7 @@ async function syncWithTMDB(localMedia) {
         updatedMedia = updatedMedia.concat(batchResults);
     }
 
-    console.log(`TMDB sync complete. Updated: ${updatedCount}/${localMedia.length}. Errors: ${errorCount}`);
+    // console.log(`TMDB sync complete. Updated: ${updatedCount}/${localMedia.length}. Errors: ${errorCount}`);
     return updatedMedia;
 }
 
@@ -166,7 +166,7 @@ async function searchTMDB(query) {
             results = results.filter(item => item.poster_path);
         }
 
-        console.log('TMDB Search Results:', results.length); // DEBUG
+        // console.log('TMDB Search Results:', results.length); // DEBUG
         return results;
     } catch (error) {
         console.error('Error searching TMDB:', error);
@@ -175,7 +175,7 @@ async function searchTMDB(query) {
 }
 
 function renderContent() {
-    console.log('Rendering content. Current Filter:', currentFilter, 'Media Count:', currentMedia.length); // DEBUG
+    // console.log('Rendering content. Current Filter:', currentFilter, 'Media Count:', currentMedia.length); // DEBUG
     const movieGrid = document.getElementById('movie-grid');
     const movieList = document.getElementById('movie-list');
 
@@ -287,7 +287,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched, showBo
     }
 
     movieCard.innerHTML = `
-        <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+        <img src="${posterUrl}" alt="${title}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
         
         <!-- Reactions Overlay -->
         <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
@@ -390,7 +390,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched, showBo
     }
 
     movieCard.addEventListener('click', (e) => {
-        console.log('Movie card clicked:', title); // DEBUG
+        // console.log('Movie card clicked:', title); // DEBUG
         openMovieModal(tmdbId, type);
     });
     grid.appendChild(movieCard);
@@ -571,7 +571,7 @@ function renderCarousel(containerId, mediaItems) {
         }
 
         card.innerHTML = `
-            <img src="${posterUrl}" alt="${title}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+            <img src="${posterUrl}" alt="${title}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
             <!-- Removed gradient overlay as per request -->
             
             <!-- Reactions Overlay -->
@@ -669,7 +669,7 @@ async function openMovieModal(tmdbId, type) {
     // Check if we have a tracked item in our preloaded data or allMedia
     const trackedItem = allMedia.find(i => i.tmdb_id == tmdbId);
     const isItemTracked = isTracked(trackedItem);
-    console.log('OpenModal - TMDB ID:', tmdbId, 'Tracked Item:', trackedItem, 'Is Tracked:', isItemTracked); // DEBUG
+    // console.log('OpenModal - TMDB ID:', tmdbId, 'Tracked Item:', trackedItem, 'Is Tracked:', isItemTracked); // DEBUG
 
     if (type === 'tv' || type === 'series') {
         tvProgressSection.classList.remove('hidden');
@@ -875,7 +875,7 @@ async function openMovieModal(tmdbId, type) {
             const cleanNote2 = trackedItem.erick_notes?.replace(/<[^>]*>/g, '').trim() || '';
             const hasNotes = cleanNote1.length > 0 || cleanNote2.length > 0;
 
-            console.log('Summary check:', { hasRatings, hasNotes, trackedItem }); // Debug
+            // console.log('Summary check:', { hasRatings, hasNotes, trackedItem }); // Debug
 
             if (!hasRatings && !hasNotes) {
                 // No ratings or notes - use pre-defined message (saves tokens!)
@@ -909,7 +909,7 @@ async function openMovieModal(tmdbId, type) {
                             if (error) {
                                 console.error('Failed to save summary:', error);
                             } else {
-                                console.log('Summary saved successfully!');
+                                // console.log('Summary saved successfully!');
                                 trackedItem.ai_summary = summary; // Update local copy
                             }
                         } catch (error) {
@@ -941,7 +941,7 @@ async function openMovieModal(tmdbId, type) {
                         if (error) {
                             console.error('Failed to save regenerated summary:', error);
                         } else {
-                            console.log('Regenerated summary saved successfully!');
+                            // console.log('Regenerated summary saved successfully!');
                             trackedItem.ai_summary = summary; // Update local copy
                         }
                     } catch (error) {
@@ -1615,7 +1615,7 @@ async function renderTVProgress(tmdbId, seasons) {
 
         if (mediaError) {
             // Plan 2: Media not in database yet - Fetch from TMDB and save it!
-            console.log('Media not in DB. Executing Plan 2: Fetch and Save.');
+            // console.log('Media not in DB. Executing Plan 2: Fetch and Save.');
 
             try {
                 // Fetch details from TMDB to get necessary info for DB
@@ -1652,7 +1652,7 @@ async function renderTVProgress(tmdbId, seasons) {
                 if (insertError) throw insertError;
 
                 currentInternalMediaId = newItem.id;
-                console.log('Plan 2 Successful: Media saved to DB with ID:', currentInternalMediaId);
+                // console.log('Plan 2 Successful: Media saved to DB with ID:', currentInternalMediaId);
 
             } catch (err) {
                 console.error('Plan 2 Failed:', err);
@@ -2070,7 +2070,7 @@ async function markAllEpisodesWatched(tmdbId) {
             if (error) {
                 console.error('Error marking all episodes watched:', error);
             } else {
-                console.log('All episodes marked as watched successfully.');
+                // console.log('All episodes marked as watched successfully.');
                 // Re-fetch and re-render TV progress to update UI
                 await renderTVProgress(tmdbId, seriesDetails.seasons);
             }
@@ -2249,7 +2249,7 @@ async function saveRatingsAndNotes() {
             .single();
     } else {
         // Don't auto-insert new items - user must explicitly add to watchlist first
-        console.log('Ratings and notes not saved: item not in database. Add to watchlist first.');
+        // console.log('Ratings and notes not saved: item not in database. Add to watchlist first.');
         return;
     }
 
@@ -2306,7 +2306,7 @@ function setupFeelingLuckyButton() {
         luckyButton.addEventListener('click', () => {
             if (filteredMedia.length === 0) {
                 // Optionally, provide feedback to the user
-                console.log("No movies to choose from!");
+                // console.log("No movies to choose from!");
                 return;
             }
             const randomItem = filteredMedia[Math.floor(Math.random() * filteredMedia.length)];
@@ -2424,7 +2424,7 @@ async function logActivity(actionType, userId, mediaItem, details = {}) {
         if (error) {
             console.error('Error logging activity:', error);
         } else {
-            console.log(`Activity logged: ${actionType} by ${userId}`);
+            // console.log(`Activity logged: ${actionType} by ${userId}`);
         }
     } catch (err) {
         console.error('Unexpected error logging activity:', err);
@@ -2892,7 +2892,7 @@ function setupViewControls() {
 async function initializeApp() {
     try {
         // --- 1. Load Flairs FIRST ---
-        console.log('App Initializing... v2.1'); // DEBUG
+        // console.log('App Initializing... v2.1'); // DEBUG
         // Load flairs
         allFlairs = await fetchAllFlairs();
 
@@ -3017,7 +3017,7 @@ async function initializeApp() {
 
         // Use both 'input' and 'keyup' events for better compatibility
         const handleSearch = async (e) => {
-            console.log('Search input event:', e.target.value); // DEBUG
+            // console.log('Search input event:', e.target.value); // DEBUG
             try {
                 const searchTerm = e.target.value.trim();
                 if (searchTerm === '') {
@@ -3032,7 +3032,7 @@ async function initializeApp() {
                     const watchedItemsHeader = document.getElementById('watched-items-header');
                     if (watchedItemsHeader) watchedItemsHeader.classList.add('hidden');
 
-                    console.log('Executing search for:', searchTerm); // DEBUG
+                    // console.log('Executing search for:', searchTerm); // DEBUG
                     const searchResults = await searchTMDB(searchTerm);
                     currentMedia = searchResults;
                     currentSort = 'popularity';
@@ -3400,7 +3400,7 @@ async function saveReaction(tmdbId, user, mood) {
         alert('Failed to save reaction. Please try again.');
         // Revert optimistic update if needed (omitted for brevity)
     } else {
-        console.log('Reaction saved successfully to DB for TMDB ID:', tmdbId);
+        // console.log('Reaction saved successfully to DB for TMDB ID:', tmdbId);
 
         // LOG ACTIVITY
         const userLogName = (user === 'user1' || user === 'juainny') ? 'juainny' : 'erick';
@@ -3708,7 +3708,7 @@ window.toggleWillowChat = function () {
         // Initialize chat session when opening (with current context!)
         if (!willowChatSession) {
             willowChatSession = startWillowChat(allMedia);
-            console.log('Chat session started with context');
+            // console.log('Chat session started with context');
         }
     } else {
         // Animate out: scale down and fade out

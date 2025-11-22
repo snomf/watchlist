@@ -1,1 +1,1 @@
-console.log("stats.js loaded");
+// console.log("stats.js loaded");

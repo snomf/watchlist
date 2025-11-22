@@ -118,24 +118,24 @@ Titles: ${JSON.stringify(titles)}
  */
 export async function chatWithWillow(chat, query) {
     try {
-        console.log('Sending message to chat:', query);
+        // console.log('Sending message to chat:', query);
 
         // Send message to chat session
         const result = await chat.sendMessage(query);
 
-        console.log('Full result object:', result);
-        console.log('Response object:', result.response);
-        console.log('Response candidates:', result.response.candidates);
-        console.log('Prompt feedback:', result.response.promptFeedback);
+        // console.log('Full result object:', result);
+        // console.log('Response object:', result.response);
+        // console.log('Response candidates:', result.response.candidates);
+        // console.log('Prompt feedback:', result.response.promptFeedback);
 
         const responseText = result.response.text();
 
-        console.log('Response text length:', responseText.length);
-        console.log('Response text:', responseText);
+        // console.log('Response text length:', responseText.length);
+        // console.log('Response text:', responseText);
 
         // Check if response is blocked
         if (!responseText || responseText.trim().length === 0) {
-            console.warn('Empty response detected! Checking for blocks...');
+            // console.warn('Empty response detected! Checking for blocks...');
 
             if (result.response.promptFeedback?.blockReason) {
                 console.error('Response blocked:', result.response.promptFeedback.blockReason);
