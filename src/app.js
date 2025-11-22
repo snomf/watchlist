@@ -317,7 +317,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched, showBo
             <!-- Title removed as per user request -->
         </div>
         ${showBookmark ? `
-        <button class="bookmark-icon absolute bottom-2 right-2 text-white text-2xl transition-opacity">
+        <button class="bookmark-icon absolute bottom-2 right-2 text-white text-2xl transition-all duration-200" style="transform: scale(1);">
             <i class="fas fa-bookmark"></i>
         </button>
         ` : ''}
@@ -341,6 +341,13 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched, showBo
     if (showBookmark) {
         const bookmarkBtn = movieCard.querySelector('.bookmark-icon');
         if (bookmarkBtn) {
+            // Check if item is already bookmarked and set initial state
+            const existingItem = allMedia.find(item => item.tmdb_id == tmdbId);
+            if (existingItem?.want_to_watch) {
+                bookmarkBtn.classList.add('text-yellow-400');
+                bookmarkBtn.classList.remove('text-white');
+            }
+
             bookmarkBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const posterPath = posterUrl.includes('image.tmdb.org') ? posterUrl.replace('https://image.tmdb.org/t/p/w500', '') : null;
@@ -363,8 +370,20 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched, showBo
                 if (error) {
                     console.error('Error updating bookmark from grid:', error);
                 } else {
-                    // Visually update the icon
-                    bookmarkBtn.classList.toggle('text-accent-primary', newWantToWatch);
+                    // Visual feedback with animation and color change
+                    bookmarkBtn.style.transform = 'scale(1.3)';
+                    setTimeout(() => {
+                        bookmarkBtn.style.transform = 'scale(1)';
+                    }, 200);
+
+                    // Toggle color: yellow when bookmarked, white when not
+                    if (newWantToWatch) {
+                        bookmarkBtn.classList.remove('text-white');
+                        bookmarkBtn.classList.add('text-yellow-400');
+                    } else {
+                        bookmarkBtn.classList.remove('text-yellow-400');
+                        bookmarkBtn.classList.add('text-white');
+                    }
                 }
             });
         }

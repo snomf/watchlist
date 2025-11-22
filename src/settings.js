@@ -263,10 +263,10 @@ export async function loadAndApplySettings() {
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');
     if (wallpaper_url) {
         document.body.style.backgroundImage = `url('${wallpaper_url}')`;
-        // Use 'contain' on mobile for better fit, 'cover' on desktop
+        document.body.style.backgroundSize = 'cover';
+        // Use better positioning for mobile
         const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        document.body.style.backgroundSize = isMobile ? 'contain' : 'cover';
-        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundPosition = isMobile ? 'center top' : 'center';
         document.body.style.backgroundRepeat = 'no-repeat';
         document.body.style.backgroundAttachment = 'fixed';
         // Hide overlay for Smiling Friends theme, show for others
