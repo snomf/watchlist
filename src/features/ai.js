@@ -122,9 +122,42 @@ export async function chatWithWillow(chat, query) {
 
         // Send message to chat session
         const result = await chat.sendMessage(query);
+
+        console.log('Full result object:', result);
+        console.log('Response object:', result.response);
+        console.log('Response candidates:', result.response.candidates);
+        console.log('Prompt feedback:', result.response.promptFeedback);
+
         const responseText = result.response.text();
 
-        console.log('Received response:', responseText.substring(0, 100));
+        console.log('Response text length:', responseText.length);
+        console.log('Response text:', responseText);
+
+        // Check if response is blocked
+        if (!responseText || responseText.trim().length === 0) {
+            console.warn('Empty response detected! Checking for blocks...');
+
+            if (result.response.promptFeedback?.blockReason) {
+                console.error('Response blocked:', result.response.promptFeedback.blockReason);
+                return {
+                    route: 'ERROR',
+                    text: `Response blocked: ${result.response.promptFeedback.blockReason}`
+                };
+            }
+
+            if (result.response.candidates && result.response.candidates[0]?.finishReason) {
+                console.error('Finish reason:', result.response.candidates[0].finishReason);
+                return {
+                    route: 'ERROR',
+                    text: `Generation stopped: ${result.response.candidates[0].finishReason}`
+                };
+            }
+
+            return {
+                route: 'ERROR',
+                text: 'Received empty response. Please try again.'
+            };
+        }
 
         // Detect route based on response content or keywords (for badge display)
         let route = 'CHAT';
