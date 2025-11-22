@@ -53,7 +53,7 @@ Rules:
  * @param {string} userName - The name of the user chatting ('juainny' or 'erick')
  * @returns {Object} - Chat session object
  */
-export function startWillowChat(allMedia, userName = null) {
+export function startAiChat(allMedia, userName = null) {
     const today = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -83,7 +83,7 @@ export function startWillowChat(allMedia, userName = null) {
 
     const systemContext = `Today: ${today}
 
-You are Willow, an AI assistant for Juainny and Erick's watchlist app.${userContext}
+You are Mr. W, an AI assistant for Juainny and Erick's watchlist app.${userContext}
 
 **Database Context:**
 Stats: ${JSON.stringify(stats)}
@@ -97,6 +97,7 @@ Titles (Sample): ${JSON.stringify(titles.slice(0, 50))}... (Use search_media too
 - **ALWAYS** use \`get_media_flairs\` if the user asks about flairs for a specific item.
 - **ALWAYS** use \`get_tv_progress\` if the user asks about episode/season progress.
 - **ALWAYS** use \`get_media_notes\` when asked about notes or ratings for a specific title.
+- **ALWAYS** use \`get_media_by_status\` if the user asks "What am I watching?" (status='currently_watching') or "What do I want to watch?" (status='want_to_watch').
 - Use \`add_to_watchlist\`, \`rate_media\`, \`update_media_notes\`, or \`mark_watched\` when explicitly asked to perform these actions.
 - **IMPORTANT:** If asked to update notes, ALWAYS confirm the content with the user before saving.
 - Maintain conversation context across messages.
@@ -136,7 +137,7 @@ Titles (Sample): ${JSON.stringify(titles.slice(0, 50))}... (Use search_media too
  * @param {string} query - The user's message
  * @returns {Promise<{ route: string, text: string }>} - The AI's response with route
  */
-export async function chatWithWillow(chat, query) {
+export async function chatWithAi(chat, query) {
     try {
         // console.log('Sending message to chat:', query);
 

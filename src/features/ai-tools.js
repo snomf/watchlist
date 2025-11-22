@@ -162,6 +162,25 @@ export const tools = [
             },
             required: ["tmdb_id"]
         }
+    },
+    {
+        name: "get_media_by_status",
+        description: "Fetches media items based on their status (watched, want_to_watch, currently_watching).",
+        parameters: {
+            type: "object",
+            properties: {
+                status: {
+                    type: "string",
+                    description: "The status to filter by: 'watched', 'want_to_watch', or 'currently_watching'.",
+                    enum: ["watched", "want_to_watch", "currently_watching"]
+                },
+                limit: {
+                    type: "number",
+                    description: "The maximum number of items to return (default 10)."
+                }
+            },
+            required: ["status"]
+        }
     }
 ];
 
@@ -361,5 +380,25 @@ export const toolImplementations = {
 
         if (error) return `Error marking media as watched: ${error.message}`;
         return `Marked '${existing.title}' as watched.`;
+    },
+
+    async get_media_by_status({ status, limit = 10 }) {
+        const validStatuses = ['watched', 'want_to_watch', 'currently_watching'];
+        if (!validStatuses.includes(status)) {
+            return `Invalid status. Must be one of: ${validStatuses.join(', ')}`;
+        }
+
+        const safeLimit = Math.min(Math.max(limit, 1), 50);
+        const { data, error } = await supabase
+            .from('media')
+            .select('title, type, release_year')
+            .eq(status, true)
+            .order('updated_at', { ascending: false }) // Assuming updated_at exists, otherwise created_at
+            .limit(safeLimit);
+
+        if (error) return `Error fetching media by status: ${error.message}`;
+        if (!data || data.length === 0) return `No media found with status '${status}'.`;
+
+        return JSON.stringify(data);
     }
 };

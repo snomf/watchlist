@@ -4,7 +4,7 @@ import { seedDatabaseFromLocal } from './seeder.js';
 import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './settings.js';
 import { initializeStarRating } from './features/ratings.js';
 import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, removeFlairFromMedia, renderFlairBadge } from './features/flairs.js';
-import { generateMediaSummary, chatWithWillow, startWillowChat } from './features/ai.js';
+import { generateMediaSummary, chatWithAi, startAiChat } from './features/ai.js';
 import { setupAllenEasterEgg } from './features/easter-eggs.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -886,11 +886,11 @@ async function openMovieModal(tmdbId, type) {
 
                 // Check if we already have a cached summary for THIS specific item
                 if (trackedItem.ai_summary) {
-                    summaryText.innerHTML = renderMarkdown(trackedItem.ai_summary);
+                    aiSummaryText.innerHTML = renderMarkdown(trackedItem.ai_summary);
                 } else {
                     // No cached summary, generate and save
                     const generateAndCache = async () => {
-                        summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
+                        aiSummaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mr. W is thinking...';
 
                         const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.juainny_rating;
                         const user1Notes = document.getElementById('juainny-notes').innerText;
@@ -902,7 +902,7 @@ async function openMovieModal(tmdbId, type) {
 
                         try {
                             const summary = await generateMediaSummary(trackedItem, ratings, notes);
-                            summaryText.innerHTML = renderMarkdown(summary);
+                            aiSummaryText.innerHTML = renderMarkdown(summary);
 
                             // Save to database
                             const { error } = await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
@@ -914,7 +914,7 @@ async function openMovieModal(tmdbId, type) {
                             }
                         } catch (error) {
                             console.error('Summary generation error:', error);
-                            summaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
+                            aiSummaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
                         }
                     };
                     generateAndCache();
@@ -922,7 +922,7 @@ async function openMovieModal(tmdbId, type) {
 
                 // Regenerate button - creates new summary and saves it to database
                 regenerateBtn.onclick = async () => {
-                    summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
+                    aiSummaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mr. W is thinking...';
 
                     const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.juainny_rating;
                     const user1Notes = document.getElementById('juainny-notes').innerText;
@@ -934,7 +934,7 @@ async function openMovieModal(tmdbId, type) {
 
                     try {
                         const summary = await generateMediaSummary(trackedItem, ratings, notes);
-                        summaryText.innerHTML = renderMarkdown(summary);
+                        aiSummaryText.innerHTML = renderMarkdown(summary);
 
                         // Save new summary to database
                         const { error } = await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
@@ -946,13 +946,13 @@ async function openMovieModal(tmdbId, type) {
                         }
                     } catch (error) {
                         console.error('Summary regeneration error:', error);
-                        summaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
+                        aiSummaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
                     }
                 };
             }
 
         } else {
-            document.getElementById('willow-summary-section').classList.add('hidden');
+            document.getElementById('ai-summary-section').classList.add('hidden');
         }
 
         // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
@@ -3681,20 +3681,19 @@ function showConfirmationModal(title, message) {
         };
     });
 }
-// --- Willow Chat Logic ---
+// --- AI Chat Logic ---
 
-const willowFab = document.getElementById('willow-fab');
-const willowChatModal = document.getElementById('willow-chat-modal');
-const willowChatContainer = document.getElementById('willow-chat-container');
-const willowChatForm = document.getElementById('willow-chat-form');
-const willowChatInput = document.getElementById('willow-chat-input');
-const willowChatMessages = document.getElementById('willow-chat-messages');
-const willowUserSelection = document.getElementById('willow-user-selection');
+const aiFab = document.getElementById('ai-fab');
+const aiChatModal = document.getElementById('ai-modal');
+const aiChatForm = document.getElementById('ai-chat-form');
+const aiChatInput = document.getElementById('ai-chat-input');
+const aiChatMessages = document.getElementById('ai-chat-messages');
+const aiUserSelection = document.getElementById('ai-user-selection');
 const selectJuainnyBtn = document.getElementById('select-juainny-btn');
 const selectErickBtn = document.getElementById('select-erick-btn');
 
 // Chat session storage
-let willowChatSession = null;
+let aiChatSession = null;
 let currentChatUser = null; // Track which user is chatting
 
 // User selection handlers
@@ -3714,52 +3713,56 @@ function initializeChatWithUser(userName) {
     currentChatUser = userName;
 
     // Hide user selection UI
-    if (willowUserSelection) {
-        willowUserSelection.classList.add('hidden');
+    if (aiUserSelection) {
+        aiUserSelection.classList.add('hidden');
     }
 
     // Initialize chat session with user context
-    willowChatSession = startWillowChat(allMedia, userName);
+    aiChatSession = startAiChat(allMedia, userName);
 
     // Enable and focus input
-    if (willowChatInput) {
-        willowChatInput.disabled = false;
-        willowChatInput.focus();
+    if (aiChatInput) {
+        aiChatInput.disabled = false;
+        aiChatInput.focus();
     }
 }
 
-window.toggleWillowChat = function () {
-    const isHidden = willowChatModal.classList.contains('hidden');
+window.toggleAiChat = function () {
+    const isHidden = aiChatModal.classList.contains('hidden');
     if (isHidden) {
         // Show modal
-        willowChatModal.classList.remove('hidden');
+        aiChatModal.classList.remove('hidden');
         // Animate in: scale up and fade in
         setTimeout(() => {
-            willowChatContainer.style.opacity = '1';
-            willowChatContainer.style.transform = 'scale(1)';
+            aiChatContainer.style.opacity = '1';
+            aiChatContainer.style.transform = 'scale(1)';
         }, 10);
 
         // Show user selection if no user selected yet
         if (!currentChatUser) {
-            if (willowUserSelection) {
-                willowUserSelection.classList.remove('hidden');
+            if (aiUserSelection) {
+                aiUserSelection.classList.remove('hidden');
             }
-            if (willowChatInput) {
-                willowChatInput.disabled = true;
+            if (aiChatInput) {
+                aiChatInput.disabled = true;
             }
         } else {
-            setTimeout(() => willowChatInput.focus(), 350);
+            // If user already selected, ensure selection UI is hidden
+            if (aiUserSelection) {
+                aiUserSelection.classList.add('hidden');
+            }
+            setTimeout(() => aiChatInput.focus(), 350);
         }
 
         // Don't initialize chat session here - wait for user selection
     } else {
         // Animate out: scale down and fade out
-        willowChatContainer.style.opacity = '0';
-        willowChatContainer.style.transform = 'scale(0.95)';
+        aiChatContainer.style.opacity = '0';
+        aiChatContainer.style.transform = 'scale(0.95)';
         setTimeout(() => {
-            willowChatModal.classList.add('hidden');
+            aiChatModal.classList.add('hidden');
             // Reset transform
-            willowChatContainer.style.transform = 'scale(0.95)';
+            aiChatContainer.style.transform = 'scale(0.95)';
         }, 300);
 
         // Keep session alive - don't reset to maintain conversation history!
@@ -3767,39 +3770,39 @@ window.toggleWillowChat = function () {
     }
 };
 
-if (willowFab) {
-    willowFab.addEventListener('click', window.toggleWillowChat);
+if (aiFab) {
+    aiFab.addEventListener('click', window.toggleAiChat);
 }
 
-if (willowChatForm) {
-    willowChatForm.addEventListener('submit', async (e) => {
+if (aiChatForm) {
+    aiChatForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const query = willowChatInput.value.trim();
+        const query = aiChatInput.value.trim();
         if (!query) return;
 
         // Add User Message
         addChatMessage(query, 'user');
-        willowChatInput.value = '';
-        willowChatInput.disabled = true;
+        aiChatInput.value = '';
+        aiChatInput.disabled = true;
 
         // Show Typing Indicator
         const typingId = addTypingIndicator();
 
         // Ensure we have a chat session (should never happen after user selection)
-        if (!willowChatSession) {
-            willowChatSession = startWillowChat(allMedia, currentChatUser);
+        if (!aiChatSession) {
+            aiChatSession = startAiChat(allMedia, currentChatUser);
         }
 
         // Call AI with chat session (maintains history!)
-        const response = await chatWithWillow(willowChatSession, query);
+        const response = await chatWithAi(aiChatSession, query);
 
         // Remove Typing Indicator
         removeChatMessage(typingId);
 
         // Add AI Message with route indicator
         addChatMessage(response.text, 'ai', response.route);
-        willowChatInput.disabled = false;
-        willowChatInput.focus();
+        aiChatInput.disabled = false;
+        aiChatInput.focus();
     });
 }
 
@@ -3818,7 +3821,7 @@ function addChatMessage(text, sender, route = null) {
     div.className = `flex items-start gap-2 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
 
     const avatar = sender === 'ai'
-        ? `<div class="w-10 h-10 flex-shrink-0 flex items-center justify-center overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-contain"></div>`
+        ? `<div class="w-10 h-10 flex-shrink-0 flex items-center justify-center overflow-hidden rounded-full bg-accent-primary/20"><i class="fas fa-robot text-accent-primary"></i></div>`
         : ''; // No user avatar
 
     const bubbleClass = sender === 'ai'
@@ -3846,8 +3849,8 @@ function addChatMessage(text, sender, route = null) {
         </div>
     `;
 
-    willowChatMessages.appendChild(div);
-    willowChatMessages.scrollTop = willowChatMessages.scrollHeight;
+    aiChatMessages.appendChild(div);
+    aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
     return div.id = 'msg-' + Date.now();
 }
 
@@ -3856,7 +3859,7 @@ function addTypingIndicator() {
     div.id = 'typing-' + Date.now();
     div.className = 'flex items-start gap-2';
     div.innerHTML = `
-        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center overflow-hidden"><img src="/willow-logo.png" class="w-full h-full object-contain"></div>
+        <div class="w-10 h-10 flex-shrink-0 flex items-center justify-center overflow-hidden rounded-full bg-accent-primary/20"><i class="fas fa-robot text-accent-primary"></i></div>
         <div class="bg-bg-tertiary p-3 rounded-2xl rounded-tl-none text-text-primary text-sm shadow-sm">
             <div class="flex space-x-1">
                 <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -3865,8 +3868,8 @@ function addTypingIndicator() {
             </div>
         </div>
     `;
-    willowChatMessages.appendChild(div);
-    willowChatMessages.scrollTop = willowChatMessages.scrollHeight;
+    aiChatMessages.appendChild(div);
+    aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
     return div.id;
 }
 

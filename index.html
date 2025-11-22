@@ -465,88 +465,122 @@
     </button>
 
     <!-- Willow Chat Modal - REDESIGNED -->
-    <div id="willow-chat-modal" class="fixed inset-0 z-[60] hidden pointer-events-none">
-        <!-- Semi-transparent backdrop -->
-        <div class="modal-backdrop fixed inset-0 bg-black/30 pointer-events-auto backdrop-blur-sm"
-            onclick="toggleWillowChat()"></div>
-
-        <!-- Chat container - bottom-right, expands upward -->
-        <div class="fixed bottom-4 right-4 flex flex-col pointer-events-auto transform transition-all duration-300 origin-bottom-right"
-            id="willow-chat-container"
-            style="max-height: min(600px, calc(100vh - 100px)); width: min(400px, calc(100vw - 2rem));">
-
-            <!-- Chat Card with rounded corners -->
-            <div
-                class="bg-bg-secondary rounded-2xl shadow-2xl border border-white/10 flex flex-col h-full overflow-hidden">
-                <!-- Compact Header -->
-                <div
-                    class="bg-gradient-to-r from-teal-600/90 to-emerald-600/90 backdrop-blur-md p-3 flex justify-between items-center border-b border-white/20">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 flex items-center justify-center overflow-hidden">
-                            <img src="/willow-logo.png" alt="Willow" class="w-full h-full object-contain">
-                        </div>
-                        <div>
-                            <h3 class="text-white font-bold text-sm">Willow</h3>
-                            <p class="text-teal-100 text-xs">AI Assistant</p>
-                        </div>
+    <!-- AI Chat Modal -->
+    <div id="ai-modal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div
+            class="bg-bg-secondary w-full max-w-lg h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-white/10">
+            <!-- Header -->
+            <div class="p-4 border-b border-white/5 flex justify-between items-center bg-bg-tertiary">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-accent-primary/20 flex items-center justify-center">
+                        <i class="fas fa-robot text-accent-primary"></i>
                     </div>
-                    <button onclick="toggleWillowChat()"
-                        class="text-white/80 hover:text-white transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
+                    <div>
+                        <h3 class="font-bold text-text-primary">Mr. W</h3>
+                        <p class="text-xs text-text-muted">Your Watchlist Assistant</p>
+                    </div>
                 </div>
+                <button onclick="toggleAiChat()" class="text-text-muted hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
 
-                <!-- Chat Messages - Scrollable -->
-                <div id="willow-chat-messages"
-                    class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-bg-primary/50"
-                    style="min-height: 300px;">
-                    <!-- Welcome Message -->
-                    <div class="flex items-start gap-2">
-                        <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden">
-                            <img src="/willow-logo.png" alt="Willow" class="w-full h-full object-contain">
-                        </div>
-                        <div
-                            class="bg-bg-tertiary p-3 rounded-2xl rounded-tl-none text-text-primary text-sm shadow-sm max-w-[85%]">
-                            Hi! I'm Willow. I can help you find something to watch or answer questions. What's on your
-                            mind?
-                        </div>
+            <!-- Chat Messages - Scrollable -->
+            <div id="ai-chat-messages" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-bg-primary/50">
+                <!-- Welcome Message -->
+                <div class="flex items-start gap-2">
+                    <div
+                        class="w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-full bg-accent-primary/20">
+                        <i class="fas fa-robot text-accent-primary text-lg"></i>
                     </div>
-
-                    <!-- User Selection (shown initially, hidden after selection) -->
-                    <div id="willow-user-selection" class="flex flex-col items-center gap-3 py-4">
-                        <p class="text-text-muted text-sm">Who will I be chatting with?</p>
-                        <div class="flex gap-3">
-                            <button id="select-juainny-btn"
-                                class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
-                                Juainny
-                            </button>
-                            <button id="select-erick-btn"
-                                class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
-                                Erick
-                            </button>
-                        </div>
+                    <div
+                        class="bg-bg-tertiary p-3 rounded-2xl rounded-tl-none text-text-primary text-sm shadow-sm max-w-[85%]">
+                        Hi! I'm Mr. W. I can help you find something to watch or answer questions. What's on your mind?
                     </div>
                 </div>
 
-                <!-- Input Area - Fixed at bottom with rounded pill -->
-                <div class="p-3 bg-bg-secondary border-t border-white/10">
-                    <form id="willow-chat-form" class="flex gap-2">
-                        <input type="text" id="willow-chat-input" placeholder="Ask Willow anything..."
-                            class="flex-1 px-4 py-2.5 rounded-full bg-bg-tertiary text-text-primary placeholder-text-muted border border-white/10 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm transition">
-                        <button type="submit"
-                            class="w-10 h-10 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white flex items-center justify-center hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                            </svg>
+                <!-- User Selection (shown initially, hidden after selection) -->
+                <div id="ai-user-selection" class="flex flex-col items-center gap-3 py-4">
+                    <p class="text-text-muted text-sm">Who will I be chatting with?</p>
+                    <div class="flex gap-3">
+                        <button id="select-juainny-btn"
+                            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+                            Juainny
                         </button>
-                    </form>
+                        <button id="select-erick-btn"
+                            class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+                            Erick
+                        </button>
+                    </div>
                 </div>
             </div>
+
+            <!-- Input Area - Fixed at bottom with rounded pill -->
+            <div class="p-3 bg-bg-secondary border-t border-white/10">
+                <form id="ai-chat-form" class="flex gap-2">
+                    <input type="text" id="ai-chat-input" placeholder="Ask Mr. W anything..."
+                        class="flex-1 px-4 py-2.5 rounded-full bg-bg-tertiary text-text-primary placeholder-text-muted border border-white/10 focus:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/50 text-sm transition">
+                    <button type="submit"
+                        class="w-10 h-10 rounded-full bg-accent-primary text-white flex items-center justify-center hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+            </div>
+
+            <!-- Chat Messages - Scrollable -->
+            <div id="willow-chat-messages"
+                class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-bg-primary/50"
+                style="min-height: 300px;">
+                <!-- Welcome Message -->
+                <div class="flex items-start gap-2">
+                    <div class="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                        <img src="/willow-logo.png" alt="Willow" class="w-full h-full object-contain">
+                    </div>
+                    <div
+                        class="bg-bg-tertiary p-3 rounded-2xl rounded-tl-none text-text-primary text-sm shadow-sm max-w-[85%]">
+                        Hi! I'm Willow. I can help you find something to watch or answer questions. What's on your
+                        mind?
+                    </div>
+                </div>
+
+                <!-- User Selection (shown initially, hidden after selection) -->
+                <div id="willow-user-selection" class="flex flex-col items-center gap-3 py-4">
+                    <p class="text-text-muted text-sm">Who will I be chatting with?</p>
+                    <div class="flex gap-3">
+                        <button id="select-juainny-btn"
+                            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+                            Juainny
+                        </button>
+                        <button id="select-erick-btn"
+                            class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+                            Erick
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area - Fixed at bottom with rounded pill -->
+            <div class="p-3 bg-bg-secondary border-t border-white/10">
+                <form id="willow-chat-form" class="flex gap-2">
+                    <input type="text" id="willow-chat-input" placeholder="Ask Willow anything..."
+                        class="flex-1 px-4 py-2.5 rounded-full bg-bg-tertiary text-text-primary placeholder-text-muted border border-white/10 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm transition">
+                    <button type="submit"
+                        class="w-10 h-10 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white flex items-center justify-center hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+                </form>
+            </div>
         </div>
+    </div>
     </div>
 
     <div id="mood-modal-container"></div>
