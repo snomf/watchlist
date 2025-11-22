@@ -1,4 +1,5 @@
 import { model } from '../firebase-client.js';
+import { tools, toolImplementations } from './ai-tools.js';
 
 /**
  * Generates a summary for a media item based on user notes and ratings.
@@ -67,6 +68,8 @@ export function startWillowChat(allMedia) {
         favorited: allMedia.filter(i => i.favorited_by?.length > 0).length
     };
 
+    // We can reduce the titles context since we have search tools now, 
+    // but keeping a lightweight list helps with quick context.
     const titles = allMedia.map(i => ({
         t: i.title || i.name,
         w: i.watched ? 1 : 0,
@@ -79,17 +82,22 @@ You are Willow, an AI assistant for Juainny and Erick's watchlist app.
 
 **Database Context:**
 Stats: ${JSON.stringify(stats)}
-Titles: ${JSON.stringify(titles)}
+Titles (Sample): ${JSON.stringify(titles.slice(0, 50))}... (Use search_media tool for more)
 
 **Important:**
-- You can access database (stats/titles above), web search, or general knowledge
-- Choose the best source based on the question
-- Maintain conversation context across messages
-- Ratings are out of 10
-- Use **markdown** formatting
-- Be conversational and helpful`;
+- You have access to tools to query the database and perform actions.
+- **ALWAYS** use the \`search_media\` tool if the user asks about a specific movie/show that isn't in your immediate context.
+- **ALWAYS** use \`get_activity_log\` if the user asks about recent activity.
+- **ALWAYS** use \`get_user_settings\` if the user asks about themes, bios, or avatars.
+- **ALWAYS** use \`get_media_flairs\` if the user asks about flairs for a specific item.
+- **ALWAYS** use \`get_tv_progress\` if the user asks about episode/season progress.
+- Use \`add_to_watchlist\`, \`rate_media\`, or \`mark_watched\` when explicitly asked to perform these actions.
+- Maintain conversation context across messages.
+- Ratings are out of 10.
+- Use **markdown** formatting.
+- Be conversational and helpful.`;
 
-    // Start chat session with system context
+    // Start chat session with system context and tools
     const chat = model.startChat({
         history: [
             {
@@ -98,13 +106,18 @@ Titles: ${JSON.stringify(titles)}
             },
             {
                 role: "model",
-                parts: [{ text: "Hello! I'm Willow, your watchlist assistant. I have access to your watchlist database, web search, and general knowledge. How can I help you today?" }]
+                parts: [{ text: "Hello! I'm Willow. I can help you manage your watchlist, check your activity, and more. How can I help you today?" }]
             }
         ],
         generationConfig: {
-            maxOutputTokens: 500,
-            temperature: 0.9
-        }
+            maxOutputTokens: 1000, // Increased for tool use
+            temperature: 0.7
+        },
+        tools: [
+            {
+                functionDeclarations: tools
+            }
+        ]
     });
 
     return chat;
@@ -121,38 +134,86 @@ export async function chatWithWillow(chat, query) {
         // console.log('Sending message to chat:', query);
 
         // Send message to chat session
-        const result = await chat.sendMessage(query);
+        let result = await chat.sendMessage(query);
+        let response = await result.response;
+        let text = response.text();
 
-        // console.log('Full result object:', result);
-        // console.log('Response object:', result.response);
-        // console.log('Response candidates:', result.response.candidates);
-        // console.log('Prompt feedback:', result.response.promptFeedback);
+        // Handle function calls loop
+        // The model might want to call multiple functions or call functions and then reply.
+        // We need to check for function calls in the candidates.
 
-        const responseText = result.response.text();
+        // Note: The Firebase JS SDK for Gemini handles function calling slightly differently than the REST API.
+        // We need to check `functionCalls()` on the response.
 
-        // console.log('Response text length:', responseText.length);
-        // console.log('Response text:', responseText);
+        let functionCalls = response.functionCalls();
+
+        while (functionCalls && functionCalls.length > 0) {
+            // console.log('Function calls detected:', functionCalls);
+
+            const functionResponses = [];
+
+            for (const call of functionCalls) {
+                const name = call.name;
+                const args = call.args;
+
+                // console.log(`Executing tool: ${name} with args:`, args);
+
+                if (toolImplementations[name]) {
+                    try {
+                        const functionResult = await toolImplementations[name](args);
+                        // console.log(`Tool result for ${name}:`, functionResult);
+
+                        functionResponses.push({
+                            functionResponse: {
+                                name: name,
+                                response: {
+                                    name: name,
+                                    content: functionResult
+                                }
+                            }
+                        });
+                    } catch (err) {
+                        console.error(`Error executing tool ${name}:`, err);
+                        functionResponses.push({
+                            functionResponse: {
+                                name: name,
+                                response: {
+                                    name: name,
+                                    content: `Error executing tool: ${err.message}`
+                                }
+                            }
+                        });
+                    }
+                } else {
+                    console.error(`Tool ${name} not found.`);
+                    functionResponses.push({
+                        functionResponse: {
+                            name: name,
+                            response: {
+                                name: name,
+                                content: `Error: Tool ${name} not found.`
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Send function responses back to the model
+            // console.log('Sending function responses back to model:', functionResponses);
+            result = await chat.sendMessage(functionResponses);
+            response = await result.response;
+            text = response.text();
+            functionCalls = response.functionCalls();
+        }
 
         // Check if response is blocked
-        if (!responseText || responseText.trim().length === 0) {
-            // console.warn('Empty response detected! Checking for blocks...');
-
-            if (result.response.promptFeedback?.blockReason) {
-                console.error('Response blocked:', result.response.promptFeedback.blockReason);
+        if (!text || text.trim().length === 0) {
+            if (response.promptFeedback?.blockReason) {
                 return {
                     route: 'ERROR',
-                    text: `Response blocked: ${result.response.promptFeedback.blockReason}`
+                    text: `Response blocked: ${response.promptFeedback.blockReason}`
                 };
             }
-
-            if (result.response.candidates && result.response.candidates[0]?.finishReason) {
-                console.error('Finish reason:', result.response.candidates[0].finishReason);
-                return {
-                    route: 'ERROR',
-                    text: `Generation stopped: ${result.response.candidates[0].finishReason}`
-                };
-            }
-
             return {
                 route: 'ERROR',
                 text: 'Received empty response. Please try again.'
@@ -161,19 +222,15 @@ export async function chatWithWillow(chat, query) {
 
         // Detect route based on response content or keywords (for badge display)
         let route = 'CHAT';
-        if (/database|watchlist|stats|titles/i.test(responseText)) {
+        if (/database|watchlist|stats|titles/i.test(text)) {
             route = 'DATABASE';
-        } else if (/search|web|google|found|according to/i.test(responseText)) {
+        } else if (/search|web|google|found|according to/i.test(text)) {
             route = 'WEB';
         }
 
-        return { route, text: responseText };
+        return { route, text: text };
     } catch (error) {
         console.error("Chat error details:", error);
-        console.error("Error name:", error.name);
-        console.error("Error message:", error.message);
-        console.error("Full error:", JSON.stringify(error, null, 2));
-
         return {
             route: 'ERROR',
             text: `Error: ${error.message || 'Unknown error occurred'}. Try refreshing the page.`
