@@ -50,9 +50,10 @@ Rules:
 /**
  * Starts a new chat session with Willow
  * @param {Array} allMedia - The entire array of media items for context
+ * @param {string} userName - The name of the user chatting ('juainny' or 'erick')
  * @returns {Object} - Chat session object
  */
-export function startWillowChat(allMedia) {
+export function startWillowChat(allMedia, userName = null) {
     const today = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -76,9 +77,13 @@ export function startWillowChat(allMedia) {
         cw: i.currently_watching ? 1 : 0
     }));
 
+    const userContext = userName
+        ? `\n**Current User:** You are chatting with ${userName.charAt(0).toUpperCase() + userName.slice(1)}. When they say "my notes" or "my rating", they mean ${userName}'s notes/rating. Personalize your responses accordingly.`
+        : '';
+
     const systemContext = `Today: ${today}
 
-You are Willow, an AI assistant for Juainny and Erick's watchlist app.
+You are Willow, an AI assistant for Juainny and Erick's watchlist app.${userContext}
 
 **Database Context:**
 Stats: ${JSON.stringify(stats)}

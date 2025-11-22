@@ -3689,9 +3689,44 @@ const willowChatContainer = document.getElementById('willow-chat-container');
 const willowChatForm = document.getElementById('willow-chat-form');
 const willowChatInput = document.getElementById('willow-chat-input');
 const willowChatMessages = document.getElementById('willow-chat-messages');
+const willowUserSelection = document.getElementById('willow-user-selection');
+const selectJuainnyBtn = document.getElementById('select-juainny-btn');
+const selectErickBtn = document.getElementById('select-erick-btn');
 
 // Chat session storage
 let willowChatSession = null;
+let currentChatUser = null; // Track which user is chatting
+
+// User selection handlers
+if (selectJuainnyBtn) {
+    selectJuainnyBtn.addEventListener('click', () => {
+        initializeChatWithUser('juainny');
+    });
+}
+
+if (selectErickBtn) {
+    selectErickBtn.addEventListener('click', () => {
+        initializeChatWithUser('erick');
+    });
+}
+
+function initializeChatWithUser(userName) {
+    currentChatUser = userName;
+
+    // Hide user selection UI
+    if (willowUserSelection) {
+        willowUserSelection.classList.add('hidden');
+    }
+
+    // Initialize chat session with user context
+    willowChatSession = startWillowChat(allMedia, userName);
+
+    // Enable and focus input
+    if (willowChatInput) {
+        willowChatInput.disabled = false;
+        willowChatInput.focus();
+    }
+}
 
 window.toggleWillowChat = function () {
     const isHidden = willowChatModal.classList.contains('hidden');
@@ -3703,13 +3738,20 @@ window.toggleWillowChat = function () {
             willowChatContainer.style.opacity = '1';
             willowChatContainer.style.transform = 'scale(1)';
         }, 10);
-        setTimeout(() => willowChatInput.focus(), 350);
 
-        // Initialize chat session when opening (with current context!)
-        if (!willowChatSession) {
-            willowChatSession = startWillowChat(allMedia);
-            // console.log('Chat session started with context');
+        // Show user selection if no user selected yet
+        if (!currentChatUser) {
+            if (willowUserSelection) {
+                willowUserSelection.classList.remove('hidden');
+            }
+            if (willowChatInput) {
+                willowChatInput.disabled = true;
+            }
+        } else {
+            setTimeout(() => willowChatInput.focus(), 350);
         }
+
+        // Don't initialize chat session here - wait for user selection
     } else {
         // Animate out: scale down and fade out
         willowChatContainer.style.opacity = '0';
@@ -3743,9 +3785,9 @@ if (willowChatForm) {
         // Show Typing Indicator
         const typingId = addTypingIndicator();
 
-        // Ensure we have a chat session
+        // Ensure we have a chat session (should never happen after user selection)
         if (!willowChatSession) {
-            willowChatSession = startWillowChat(allMedia);
+            willowChatSession = startWillowChat(allMedia, currentChatUser);
         }
 
         // Call AI with chat session (maintains history!)
