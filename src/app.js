@@ -477,7 +477,7 @@ function renderCarousel(containerId, mediaItems) {
 
     const leftBtn = document.createElement('button');
     leftBtn.type = 'button';
-    leftBtn.className = 'bg-black/50 hover:bg-black/80 text-white p-2 rounded-full cursor-pointer transition-colors';
+    leftBtn.className = 'bg-accent-primary hover:bg-accent-secondary text-white p-2 rounded-full cursor-pointer transition-colors';
     leftBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
     leftBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -496,7 +496,7 @@ function renderCarousel(containerId, mediaItems) {
 
     const rightBtn = document.createElement('button');
     rightBtn.type = 'button';
-    rightBtn.className = 'bg-black/50 hover:bg-black/80 text-white p-2 rounded-full cursor-pointer transition-colors';
+    rightBtn.className = 'bg-accent-primary hover:bg-accent-secondary text-white p-2 rounded-full cursor-pointer transition-colors';
     rightBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
     rightBtn.addEventListener('click', (e) => {
         e.preventDefault();
