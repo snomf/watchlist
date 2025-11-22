@@ -118,9 +118,13 @@ Titles: ${JSON.stringify(titles)}
  */
 export async function chatWithWillow(chat, query) {
     try {
+        console.log('Sending message to chat:', query);
+
         // Send message to chat session
         const result = await chat.sendMessage(query);
         const responseText = result.response.text();
+
+        console.log('Received response:', responseText.substring(0, 100));
 
         // Detect route based on response content or keywords (for badge display)
         let route = 'CHAT';
@@ -132,7 +136,14 @@ export async function chatWithWillow(chat, query) {
 
         return { route, text: responseText };
     } catch (error) {
-        console.error("Chat error:", error);
-        return { route: 'ERROR', text: "I'm having trouble responding. Can you try again?" };
+        console.error("Chat error details:", error);
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Full error:", JSON.stringify(error, null, 2));
+
+        return {
+            route: 'ERROR',
+            text: `Error: ${error.message || 'Unknown error occurred'}. Try refreshing the page.`
+        };
     }
 }
