@@ -10,7 +10,7 @@
         content="Watchlist lets you and your friends track your progress through your favorite movies and shows together, syncing your watched status and ratings across devices in real time. The site automatically fetches movie and show details, displays posters, and updates your stats as you watch, making it easy to organize a group marathon from start to finish.">
     <meta property="og:title" content="Watchlist">
     <meta property="og:description" content="Journey through the MCU">
-    <meta property="og:image" content="banner.png">
+    <meta property="og:image" content="welcome-banner.png">
     <meta property="og:url" content="https://marvelmarathon.netlify.app/">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -674,6 +674,103 @@
     </div>
     </div>
     </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(8px); background-color: rgba(0,0,0,0.6);">
+        <div
+            class="bg-bg-secondary rounded-2xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden relative border border-border-primary flex flex-col max-h-[90vh]">
+            <!-- Banner -->
+            <div class="h-32 sm:h-40 w-full relative flex-shrink-0">
+                <img src="/welcome-banner.png" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-bg-secondary to-transparent"></div>
+                <button id="close-welcome-btn"
+                    class="absolute top-4 right-4 text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition backdrop-blur-sm w-8 h-8 flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <h2 class="text-2xl font-bold text-text-primary mb-2 text-center">Welcome to Watchlist!</h2>
+                <p class="text-text-muted text-center text-sm mb-6">A little upgrade for us ❤️</p>
+
+                <div class="space-y-4 text-text-secondary text-sm leading-relaxed">
+                    <p>
+                        Little backstory, I created the <span class="text-accent-primary font-semibold">Marvels
+                            Marathon</span> which you (let's refer to Erick in the second person) did not use a lot 😅.
+                        I see our notes app as a great way to keep track of what we do, but it is time to elevate it.
+                    </p>
+
+                    <p>
+                        Fear not, I still believe that the notes app <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_Notes_icon.svg/1200px-Apple_Notes_icon.svg.png"
+                            class="inline-block w-5 h-5 align-text-bottom mx-1" style="vertical-align: middle;"> will be
+                        used which is why I've made it nice and easy to look at our media in a familiar list view.
+                    </p>
+
+                    <div class="bg-bg-tertiary p-4 rounded-xl border border-border-primary space-y-3">
+                        <p class="font-semibold text-text-primary">Just like our other website you can:</p>
+                        <ul class="space-y-2">
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary">
+                                    <img src="/moods/happy.png" class="w-5 h-5 object-contain">
+                                </div>
+                                <span>Use reactions</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary text-blue-400">
+                                    <i class="fas fa-comment"></i>
+                                </div>
+                                <span>Leave comments</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary text-yellow-400">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <span>Rate movies & shows</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary text-accent-primary">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                <span>Add flairs</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary">
+                                    <img src="/willow-logo.png" class="w-5 h-5 object-contain">
+                                </div>
+                                <span>Use our handy AI that is actually useful</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <p class="italic text-center mt-4 text-lg">
+                        I hope you enjoy it! I love you!
+                    </p>
+
+                    <!-- Signature -->
+                    <div class="flex items-center justify-center gap-3 mt-4">
+                        <div id="welcome-signature-avatar" class="w-10 h-10"></div>
+                        <span class="text-xl text-text-primary font-bold" style="font-family: cursive;">- Juainny</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-border-primary bg-bg-tertiary flex justify-center flex-shrink-0">
+                <button id="dismiss-welcome-btn"
+                    class="bg-accent-primary hover:bg-accent-secondary text-white font-bold py-3 px-8 rounded-full transition shadow-lg w-full sm:w-auto transform hover:scale-105">
+                    Let's Go! 🚀
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Reaction Tooltip -->

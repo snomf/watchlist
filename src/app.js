@@ -2949,6 +2949,9 @@ async function initializeApp() {
         // Hide the loading spinner
         if (loadingSpinner) loadingSpinner.style.display = 'none';
 
+        // Check for welcome modal
+        checkWelcomeModal();
+
         // Setup search bar
         const searchBar = document.getElementById('search-bar');
         // Prevent extensions from interfering
@@ -3798,4 +3801,42 @@ function addTypingIndicator() {
 function removeChatMessage(id) {
     const el = document.getElementById(id);
     if (el) el.remove();
+}
+
+/**
+ * Checks if the welcome modal should be displayed.
+ */
+function checkWelcomeModal() {
+    const hasSeenWelcome = localStorage.getItem('welcome_modal_seen');
+    if (hasSeenWelcome) return;
+
+    const modal = document.getElementById('welcome-modal');
+    const closeBtn = document.getElementById('close-welcome-btn');
+    const dismissBtn = document.getElementById('dismiss-welcome-btn');
+    const signatureAvatar = document.getElementById('welcome-signature-avatar');
+
+    if (!modal) return;
+
+    // Show modal
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    // Render Juainny's Avatar
+    if (signatureAvatar) {
+        signatureAvatar.innerHTML = getAvatarHTML('juainny', 'w-full h-full');
+    }
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        localStorage.setItem('welcome_modal_seen', 'true');
+    };
+
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (dismissBtn) dismissBtn.addEventListener('click', closeModal);
+
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
 }
