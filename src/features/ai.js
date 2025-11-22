@@ -8,7 +8,23 @@ import { model } from '../firebase-client.js';
  * @returns {Promise<string>} - The generated summary.
  */
 export async function generateMediaSummary(mediaItem, userRatings, userNotes) {
-    const prompt = `Summarize opinions on "${mediaItem.title || mediaItem.name}":
+    // Build comprehensive context from the full database row
+    const mediaContext = {
+        title: mediaItem.title || mediaItem.name,
+        type: mediaItem.type, // movie, tv, song, etc.
+        year: mediaItem.release_year,
+        rating: mediaItem.content_rating,
+        runtime: mediaItem.runtime,
+        overview: mediaItem.overview,
+        genres: mediaItem.genres
+    };
+
+    const prompt = `Summarize opinions on this ${mediaContext.type || 'media'}:
+
+**Title:** ${mediaContext.title}
+**Type:** ${mediaContext.type || 'Unknown'}
+${mediaContext.year ? `**Year:** ${mediaContext.year}` : ''}
+${mediaContext.overview ? `**Overview:** ${mediaContext.overview.substring(0, 200)}...` : ''}
 
 **Juainny:** ${userRatings.user1 || 'Not rated'}/10 - ${userNotes.user1 || 'No notes'}
 **Erick:** ${userRatings.user2 || 'Not rated'}/10 - ${userNotes.user2 || 'No notes'}
@@ -17,7 +33,8 @@ Rules:
 - Use **markdown** (bold, italic, lists)
 - Max 60 words
 - Highlight agreement/disagreement
-- No greetings`;
+- No greetings
+- Be accurate about the media type`;
 
     try {
         const result = await model.generateContent(prompt);
@@ -25,115 +42,97 @@ Rules:
         return response.text();
     } catch (error) {
         console.error("Error generating summary:", error);
-        return "Willow is having trouble thinking right now. check back later!";
+        return "Unable to generate summary at this time.";
     }
 }
 
 /**
- * Handles a chat query using the full media database as context.
- * @param {string} query - The user's question.
- * @param {Array} allMedia - The entire array of media items.
- * @returns {Promise<{ route: string, text: string }>} - The AI's response, including the determined route.
+ * Starts a new chat session with Willow
+ * @param {Array} allMedia - The entire array of media items for context
+ * @returns {Object} - Chat session object
  */
-export async function chatWithWillow(query, allMedia) {
-    // Today's date for context
+export function startWillowChat(allMedia) {
     const today = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
     });
 
-    // Step 1: AI decides which method to use (~100 tokens)
-    const routingPrompt = `Today: ${today}
-Query: "${query}"
+    // Build context for the session
+    const stats = {
+        total: allMedia.length,
+        watched: allMedia.filter(i => i.watched).length,
+        want_to_watch: allMedia.filter(i => i.want_to_watch).length,
+        currently_watching: allMedia.filter(i => i.currently_watching).length,
+        favorited: allMedia.filter(i => i.favorited_by?.length > 0).length
+    };
 
-Choose ONE:
-A) DATABASE - if asking about Juainny/Erick's watchlist, ratings, or what they've watched
-B) WEB - if asking about releases, cast, new content, or current info
-C) CHAT - if general question or recommendation
+    const titles = allMedia.map(i => ({
+        t: i.title || i.name,
+        w: i.watched ? 1 : 0,
+        cw: i.currently_watching ? 1 : 0
+    }));
 
-Reply with ONLY: A, B, or C`;
+    const systemContext = `Today: ${today}
 
-    let route;
-    try {
-        const decision = await model.generateContent(routingPrompt);
-        const response = await decision.response.text().trim();
-        route = response.includes('A') ? 'DATABASE' :
-            response.includes('B') ? 'WEB' : 'CHAT';
-    } catch (error) {
-        console.error("Routing error:", error);
-        route = 'CHAT'; // Fallback
-    }
+You are Willow, an AI assistant for Juainny and Erick's watchlist app.
 
-    // Step 2: Execute based on route
-    if (route === 'DATABASE') {
-        const stats = {
-            total: allMedia.length,
-            watched: allMedia.filter(i => i.watched).length,
-            want_to_watch: allMedia.filter(i => i.want_to_watch).length,
-            currently_watching: allMedia.filter(i => i.currently_watching).length,
-            favorited: allMedia.filter(i => i.favorited_by?.length > 0).length
-        };
-
-        const titles = allMedia.map(i => ({
-            t: i.title || i.name,
-            w: i.watched ? 1 : 0,
-            cw: i.currently_watching ? 1 : 0
-        }));
-
-        const prompt = `Today: ${today}
+**Database Context:**
 Stats: ${JSON.stringify(stats)}
 Titles: ${JSON.stringify(titles)}
 
-Q: ${query}
+**Important:**
+- You can access database (stats/titles above), web search, or general knowledge
+- Choose the best source based on the question
+- Maintain conversation context across messages
+- Ratings are out of 10
+- Use **markdown** formatting
+- Be conversational and helpful`;
 
-Rules: Ratings are /10. Use **markdown**. Brief.`;
-
-        try {
-            const result = await model.generateContent(prompt);
-            return { route: 'DATABASE', text: result.response.text() };
-        } catch (error) {
-            console.error("Database error:", error);
-            return { route: 'ERROR', text: "Database error!" };
-        }
-
-    } else if (route === 'WEB') {
-        const prompt = `Today: ${today}
-
-${query}
-
-Use Google Search. Be concise. Use **markdown**.`;
-
-        try {
-            // Use Firebase Gemini Developer API grounding syntax
-            const result = await model.generateContent({
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                tools: [{ googleSearch: {} }]  // ✅ Correct Firebase syntax
-            });
-            return { route: 'WEB', text: result.response.text() };
-        } catch (error) {
-            console.error("Web error:", error);
-            try {
-                const fallback = await model.generateContent(prompt);
-                return { route: 'KNOWLEDGE', text: fallback.response.text() };
-            } catch (err) {
-                return { route: 'ERROR', text: "Web error!" };
+    // Start chat session with system context
+    const chat = model.startChat({
+        history: [
+            {
+                role: "user",
+                parts: [{ text: systemContext }]
+            },
+            {
+                role: "model",
+                parts: [{ text: "Hello! I'm Willow, your watchlist assistant. I have access to your watchlist database, web search, and general knowledge. How can I help you today?" }]
             }
+        ],
+        generationConfig: {
+            maxOutputTokens: 500,
+            temperature: 0.9
+        }
+    });
+
+    return chat;
+}
+
+/**
+ * Send a message in an existing chat session
+ * @param {Object} chat - The chat session
+ * @param {string} query - The user's message
+ * @returns {Promise<{ route: string, text: string }>} - The AI's response with route
+ */
+export async function chatWithWillow(chat, query) {
+    try {
+        // Send message to chat session
+        const result = await chat.sendMessage(query);
+        const responseText = result.response.text();
+
+        // Detect route based on response content or keywords (for badge display)
+        let route = 'CHAT';
+        if (/database|watchlist|stats|titles/i.test(responseText)) {
+            route = 'DATABASE';
+        } else if (/search|web|google|found|according to/i.test(responseText)) {
+            route = 'WEB';
         }
 
-    } else {
-        const prompt = `Today: ${today}
-
-${query}
-
-Conversational, brief, **markdown**. Max 100 words.`;
-
-        try {
-            const result = await model.generateContent(prompt);
-            return { route: 'CHAT', text: result.response.text() };
-        } catch (error) {
-            console.error("Chat error:", error);
-            return { route: 'ERROR', text: "Error!" };
-        }
+        return { route, text: responseText };
+    } catch (error) {
+        console.error("Chat error:", error);
+        return { route: 'ERROR', text: "I'm having trouble responding. Can you try again?" };
     }
 }

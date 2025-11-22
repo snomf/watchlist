@@ -4,7 +4,7 @@ import { seedDatabaseFromLocal } from './seeder.js';
 import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './settings.js';
 import { initializeStarRating } from './features/ratings.js';
 import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, removeFlairFromMedia, renderFlairBadge } from './features/flairs.js';
-import { generateMediaSummary, chatWithWillow } from './features/ai.js';
+import { generateMediaSummary, chatWithWillow, startWillowChat } from './features/ai.js';
 import { setupAllenEasterEgg } from './features/easter-eggs.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -3586,6 +3586,9 @@ const willowChatForm = document.getElementById('willow-chat-form');
 const willowChatInput = document.getElementById('willow-chat-input');
 const willowChatMessages = document.getElementById('willow-chat-messages');
 
+// Chat session storage
+let willowChatSession = null;
+
 window.toggleWillowChat = function () {
     const isHidden = willowChatModal.classList.contains('hidden');
     if (isHidden) {
@@ -3597,6 +3600,12 @@ window.toggleWillowChat = function () {
             willowChatContainer.style.transform = 'scale(1)';
         }, 10);
         setTimeout(() => willowChatInput.focus(), 350);
+
+        // Initialize chat session when opening (with current context!)
+        if (!willowChatSession) {
+            willowChatSession = startWillowChat(allMedia);
+            console.log('Chat session started with context');
+        }
     } else {
         // Animate out: scale down and fade out
         willowChatContainer.style.opacity = '0';
@@ -3606,6 +3615,9 @@ window.toggleWillowChat = function () {
             // Reset transform
             willowChatContainer.style.transform = 'scale(0.95)';
         }, 300);
+
+        // Keep session alive - don't reset to maintain conversation history!
+        // User can manually reset by refreshing page
     }
 };
 
@@ -3627,8 +3639,13 @@ if (willowChatForm) {
         // Show Typing Indicator
         const typingId = addTypingIndicator();
 
-        // Call AI (now returns { route, text })
-        const response = await chatWithWillow(query, allMedia);
+        // Ensure we have a chat session
+        if (!willowChatSession) {
+            willowChatSession = startWillowChat(allMedia);
+        }
+
+        // Call AI with chat session (maintains history!)
+        const response = await chatWithWillow(willowChatSession, query);
 
         // Remove Typing Indicator
         removeChatMessage(typingId);
