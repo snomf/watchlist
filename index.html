@@ -743,42 +743,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Result Overlay -->
-                <div id="wheel-result-overlay"
-                    class="absolute inset-0 bg-bg-primary/90 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-6 text-center hidden opacity-0 transition-all duration-500">
-                    <h3 class="text-3xl md:text-5xl font-black text-accent-primary mb-6 animate-bounce tracking-tight">
-                        WINNER!</h3>
-
-                    <div id="wheel-winner-card"
-                        class="bg-bg-tertiary border border-border-primary p-4 rounded-2xl shadow-2xl max-w-xs transform transition hover:scale-105 cursor-pointer mb-8 group">
-                        <div class="relative overflow-hidden rounded-xl mb-4 aspect-[2/3]">
-                            <img id="wheel-winner-image" src=""
-                                class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                            <div
-                                class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                                <span class="text-white font-bold text-sm">Click to view details</span>
-                            </div>
-                        </div>
-                        <h4 id="wheel-winner-title" class="text-xl font-bold text-text-primary truncate px-2">Movie
-                            Title</h4>
-                    </div>
-
-                    <div class="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-                        <button id="wheel-open-winner-btn"
-                            class="flex-1 bg-accent-primary hover:bg-accent-secondary text-white font-bold py-3 px-6 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
-                            <i class="fas fa-external-link-alt"></i> Open Details
-                        </button>
-                        <button id="wheel-remove-winner-btn"
-                            class="flex-1 bg-bg-tertiary hover:bg-bg-secondary text-text-primary font-bold py-3 px-6 rounded-xl transition border border-border-primary flex items-center justify-center gap-2">
-                            <i class="fas fa-trash-alt"></i> Remove & Spin
-                        </button>
-                    </div>
-                    <button id="wheel-close-result-btn"
-                        class="mt-6 text-text-muted hover:text-text-primary transition text-sm font-medium">
-                        Close Overlay
-                    </button>
-                </div>
             </div>
 
             <!-- Controls Sidebar (Bottom on Mobile, Left on Desktop) -->
@@ -881,6 +845,46 @@
                 </div>
             </div>
         </div>
+
+        <!-- Result Overlay (Moved to Root of Modal Content) -->
+        <div id="wheel-result-overlay"
+            class="absolute inset-0 bg-bg-primary/95 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6 text-center hidden opacity-0 transition-all duration-500 overflow-y-auto">
+            <div class="w-full max-w-md flex flex-col items-center">
+                <h3
+                    class="text-3xl md:text-5xl font-black text-accent-primary mb-4 md:mb-6 animate-bounce tracking-tight">
+                    WINNER!</h3>
+
+                <div id="wheel-winner-card"
+                    class="bg-bg-tertiary border border-border-primary p-3 md:p-4 rounded-2xl shadow-2xl w-48 md:w-64 transform transition hover:scale-105 cursor-pointer mb-6 md:mb-8 group">
+                    <div class="relative overflow-hidden rounded-xl mb-3 md:mb-4 aspect-[2/3]">
+                        <img id="wheel-winner-image" src=""
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                            <span class="text-white font-bold text-sm">Click to view details</span>
+                        </div>
+                    </div>
+                    <h4 id="wheel-winner-title" class="text-lg md:text-xl font-bold text-text-primary truncate px-2">
+                        Movie Title</h4>
+                </div>
+
+                <div class="flex flex-col gap-3 w-full">
+                    <button id="wheel-open-winner-btn"
+                        class="w-full bg-accent-primary hover:bg-accent-secondary text-white font-bold py-3 px-6 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-external-link-alt"></i> Open Details
+                    </button>
+                    <button id="wheel-remove-winner-btn"
+                        class="w-full bg-bg-tertiary hover:bg-bg-secondary text-text-primary font-bold py-3 px-6 rounded-xl transition border border-border-primary flex items-center justify-center gap-2">
+                        <i class="fas fa-trash-alt"></i> Remove & Spin
+                    </button>
+                </div>
+                <button id="wheel-close-result-btn"
+                    class="mt-6 text-text-muted hover:text-text-primary transition text-sm font-medium">
+                    Close Overlay
+                </button>
+            </div>
+        </div>
+    </div>
     </div>
 
     <!-- Welcome Modal -->

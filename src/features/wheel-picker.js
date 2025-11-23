@@ -89,6 +89,16 @@ export class WheelPicker {
             this.hideResult();
         });
 
+        // Add listener for the card itself
+        if (this.winnerCard) {
+            this.winnerCard.addEventListener('click', () => {
+                if (this.currentWinner) {
+                    this.openModalCallback(this.currentWinner.tmdb_id, this.currentWinner.type || this.currentWinner.media_type);
+                    this.close();
+                }
+            });
+        }
+
         // Populate Rating Filters
         this.populateRatingFilters();
 
