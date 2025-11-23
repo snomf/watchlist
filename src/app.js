@@ -6,6 +6,7 @@ import { initializeStarRating } from './features/ratings.js';
 import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, removeFlairFromMedia, renderFlairBadge } from './features/flairs.js';
 import { generateMediaSummary, chatWithWillow, startWillowChat } from './features/ai.js';
 import { setupAllenEasterEgg } from './features/easter-eggs.js';
+import { initWheelPicker } from './features/wheel-picker.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -2298,21 +2299,14 @@ function setupRatingAndNotesListeners() {
     // The onRatingChange callback in initializeStarRating will trigger the debounced save
 }
 
-// --- EVENT LISTENERS ---
 
-function setupFeelingLuckyButton() {
-    const luckyButton = document.getElementById('random-movie-btn');
-    if (luckyButton) {
-        luckyButton.addEventListener('click', () => {
-            if (filteredMedia.length === 0) {
-                // Optionally, provide feedback to the user
-                // console.log("No movies to choose from!");
-                return;
-            }
-            const randomItem = filteredMedia[Math.floor(Math.random() * filteredMedia.length)];
-            const tmdbId = randomItem.tmdb_id || randomItem.id;
-            const type = randomItem.type || randomItem.media_type;
-            openMovieModal(tmdbId, type);
+function setupWheelPickerButton() {
+    const btn = document.getElementById('wheel-picker-btn');
+    if (btn) {
+        btn.addEventListener('click', () => {
+            // Pass allMedia to the wheel picker. It handles its own filtering.
+            const wheel = initWheelPicker(allMedia, openMovieModal);
+            wheel.open();
         });
     }
 }
@@ -3062,9 +3056,8 @@ async function initializeApp() {
         setupModalCloseButton();
         setupRatingAndNotesListeners();
         setupFilterControls();
+        setupWheelPickerButton();
         setupViewControls();
-        setupFeelingLuckyButton();
-        setupTooltips();
         setupFavoriteButton();
         setupWatchedButtons();
         setupSortControls();

@@ -31,6 +31,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/src/theme.css?v=2">
     <link rel="stylesheet" href="/output.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 
 <body class="font-sans text-text-primary bg-bg-primary">
@@ -184,9 +185,9 @@
             </div>
             <!-- Random and View Controls -->
             <div class="flex items-center gap-2 justify-between sm:justify-end md:justify-start">
-                <button id="random-movie-btn"
-                    class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
-                    <i class="fas fa-dice"></i> <span class="hidden sm:inline">Feeling Lucky?</span>
+                <button id="wheel-picker-btn"
+                    class="bg-purple-600 hover:bg-purple-700 text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
+                    <i class="fas fa-dharmachakra"></i> <span class="hidden sm:inline">Spin Wheel</span>
                 </button>
                 <div id="view-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
                     <button data-view="grid" class="view-btn btn-active px-4 py-2 rounded-full transition"><i
@@ -701,6 +702,151 @@
     </div>
     </div>
     </div>
+    </div>
+    </div>
+    </div>
+
+    <!-- Wheel Picker Modal -->
+    <div id="wheel-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(8px); background-color: rgba(0,0,0,0.8);">
+        <div
+            class="bg-bg-secondary rounded-2xl shadow-2xl w-full max-w-4xl mx-auto flex flex-col max-h-[95vh] relative border border-border-primary">
+            <!-- Close Button -->
+            <button id="close-wheel-modal-btn"
+                class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition z-50 bg-black/20 rounded-full p-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <div class="flex flex-col md:flex-row h-full overflow-hidden">
+                <!-- Controls Sidebar -->
+                <div
+                    class="w-full md:w-1/3 p-6 bg-bg-tertiary border-r border-border-primary overflow-y-auto custom-scrollbar">
+                    <h2
+                        class="text-2xl font-bold mb-6 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600">
+                        Wheel of Watchlist
+                    </h2>
+
+                    <div class="space-y-6">
+                        <!-- Filters -->
+                        <div>
+                            <h3 class="text-sm font-bold text-text-muted uppercase tracking-wider mb-3">Filters</h3>
+
+                            <!-- Type Filter -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-text-secondary mb-2">Type</label>
+                                <div class="flex gap-2">
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="wheel-filter-movie" checked
+                                            class="form-checkbox text-accent-primary rounded bg-bg-primary border-border-primary">
+                                        <span class="text-sm">Movies</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 cursor-pointer">
+                                        <input type="checkbox" id="wheel-filter-tv" checked
+                                            class="form-checkbox text-accent-primary rounded bg-bg-primary border-border-primary">
+                                        <span class="text-sm">TV Shows</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Rating Filter -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-text-secondary mb-2">Content Rating</label>
+                                <div class="grid grid-cols-2 gap-2" id="wheel-rating-filters">
+                                    <!-- Dynamically populated -->
+                                </div>
+                            </div>
+
+                            <!-- Runtime Filter -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-text-secondary mb-2">Max Runtime
+                                    (mins)</label>
+                                <div class="flex items-center gap-3">
+                                    <input type="range" id="wheel-filter-runtime" min="0" max="240" step="10"
+                                        value="240"
+                                        class="w-full h-2 bg-bg-primary rounded-lg appearance-none cursor-pointer">
+                                    <span id="wheel-runtime-value" class="text-sm font-mono w-12">All</span>
+                                </div>
+                            </div>
+
+                            <!-- List Source -->
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-text-secondary mb-2">Source List</label>
+                                <select id="wheel-source-select"
+                                    class="w-full bg-bg-primary text-text-primary rounded-lg px-3 py-2 border border-border-primary focus:outline-none focus:border-accent-primary">
+                                    <option value="all">All Items</option>
+                                    <option value="want-to-watch" selected>Want to Watch</option>
+                                    <option value="currently-watching">Currently Watching</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="pt-4 border-t border-border-primary">
+                            <button id="wheel-spin-btn"
+                                class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 flex items-center justify-center gap-2">
+                                <i class="fas fa-play"></i> SPIN!
+                            </button>
+                            <div class="mt-4 flex justify-between text-xs text-text-muted">
+                                <span id="wheel-item-count">0 items</span>
+                                <button id="wheel-shuffle-btn" class="hover:text-accent-primary transition"><i
+                                        class="fas fa-random"></i> Shuffle</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wheel Area -->
+                <div
+                    class="w-full md:w-2/3 p-4 flex flex-col items-center justify-center bg-bg-secondary relative overflow-hidden">
+                    <div class="relative w-full max-w-[500px] aspect-square">
+                        <!-- The Wheel Canvas -->
+                        <canvas id="wheel-canvas" class="w-full h-full"></canvas>
+
+                        <!-- Pointer -->
+                        <div
+                            class="absolute top-1/2 right-[-20px] transform -translate-y-1/2 -translate-x-full z-10 pointer-events-none">
+                            <div
+                                class="w-0 h-0 border-t-[15px] border-t-transparent border-b-[15px] border-b-transparent border-r-[30px] border-r-white drop-shadow-lg">
+                            </div>
+                        </div>
+
+                        <!-- Center Hub -->
+                        <div
+                            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-white rounded-full shadow-xl flex items-center justify-center z-10 border-4 border-purple-600">
+                            <img src="/icon.png" class="w-10 h-10 object-contain">
+                        </div>
+                    </div>
+
+                    <!-- Result Display -->
+                    <div id="wheel-result-overlay"
+                        class="absolute inset-0 bg-black/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-8 text-center hidden opacity-0 transition-opacity duration-300">
+                        <h3 class="text-3xl font-bold text-white mb-2 animate-bounce">WE HAVE A WINNER!</h3>
+                        <div id="wheel-winner-card"
+                            class="bg-bg-tertiary p-4 rounded-xl shadow-2xl border border-accent-primary max-w-xs transform transition hover:scale-105 cursor-pointer mb-6">
+                            <img id="wheel-winner-image" src="" class="w-full h-48 object-cover rounded-lg mb-3">
+                            <h4 id="wheel-winner-title" class="text-xl font-bold text-text-primary truncate">Movie Title
+                            </h4>
+                        </div>
+                        <div class="flex gap-4">
+                            <button id="wheel-open-winner-btn"
+                                class="bg-accent-primary hover:bg-accent-secondary text-white font-bold py-2 px-6 rounded-full transition">
+                                Open Details
+                            </button>
+                            <button id="wheel-remove-winner-btn"
+                                class="bg-danger hover:bg-red-700 text-white font-bold py-2 px-6 rounded-full transition">
+                                Remove & Spin Again
+                            </button>
+                        </div>
+                        <button id="wheel-close-result-btn" class="mt-8 text-text-muted hover:text-white underline">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Welcome Modal -->
