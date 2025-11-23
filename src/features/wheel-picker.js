@@ -68,7 +68,10 @@ export class WheelPicker {
             this.filterRuntimeValue.textContent = val >= 240 ? 'All' : `< ${val}m`;
             this.applyFilters();
         });
-        this.sourceSelect.addEventListener('change', () => this.applyFilters());
+        this.sourceSelect.addEventListener('change', () => {
+            this.updateSourceIndicator();
+            this.applyFilters();
+        });
 
         // Result Listeners
         this.closeResultBtn.addEventListener('click', () => this.hideResult());
@@ -90,6 +93,7 @@ export class WheelPicker {
         this.populateRatingFilters();
 
         // Initial Filter Apply
+        this.updateSourceIndicator();
         this.applyFilters();
     }
 
@@ -110,14 +114,16 @@ export class WheelPicker {
         // Clear container
         this.ratingFiltersContainer.innerHTML = '';
 
-        // Create "All" checkbox? Or just list them all checked by default
+        // Create styled checkboxes
         Array.from(ratings).sort().forEach(rating => {
             if (!rating) return;
             const label = document.createElement('label');
-            label.className = 'flex items-center space-x-2 cursor-pointer';
+            label.className = 'cursor-pointer group';
             label.innerHTML = `
-                <input type="checkbox" value="${rating}" checked class="form-checkbox text-accent-primary rounded bg-bg-primary border-border-primary wheel-rating-checkbox">
-                <span class="text-sm text-text-secondary">${rating}</span>
+                <input type="checkbox" value="${rating}" checked class="peer hidden wheel-rating-checkbox">
+                <div class="h-8 rounded-lg bg-black/20 border border-white/5 peer-checked:border-purple-500/50 peer-checked:bg-purple-500/10 flex items-center justify-center transition-all">
+                    <span class="text-xs font-medium text-white/60 peer-checked:text-purple-400 group-hover:text-white">${rating}</span>
+                </div>
             `;
             label.querySelector('input').addEventListener('change', () => this.applyFilters());
             this.ratingFiltersContainer.appendChild(label);
@@ -165,6 +171,20 @@ export class WheelPicker {
 
         this.itemCountLabel.textContent = `${this.filteredItems.length} items`;
         this.drawWheel();
+    }
+
+    updateSourceIndicator() {
+        const indicator = document.getElementById('source-indicator');
+        if (!indicator) return;
+
+        const value = this.sourceSelect.value;
+        if (value === 'all') {
+            indicator.style.transform = 'translateX(0)';
+        } else if (value === 'want-to-watch') {
+            indicator.style.transform = 'translateX(100%)';
+        } else if (value === 'currently-watching') {
+            indicator.style.transform = 'translateX(200%)';
+        }
     }
 
     resizeCanvas() {
