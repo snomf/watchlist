@@ -121,8 +121,8 @@ export class WheelPicker {
             label.className = 'cursor-pointer group';
             label.innerHTML = `
                 <input type="checkbox" value="${rating}" checked class="peer hidden wheel-rating-checkbox">
-                <div class="h-8 rounded-lg bg-black/20 border border-white/5 peer-checked:border-purple-500/50 peer-checked:bg-purple-500/10 flex items-center justify-center transition-all">
-                    <span class="text-xs font-medium text-white/60 peer-checked:text-purple-400 group-hover:text-white">${rating}</span>
+                <div class="h-8 rounded-lg bg-bg-tertiary border border-border-primary peer-checked:border-accent-primary peer-checked:bg-accent-primary/10 flex items-center justify-center transition-all">
+                    <span class="text-xs font-medium text-text-secondary peer-checked:text-accent-primary group-hover:text-text-primary">${rating}</span>
                 </div>
             `;
             label.querySelector('input').addEventListener('change', () => this.applyFilters());
@@ -285,7 +285,7 @@ export class WheelPicker {
         this.spinVelocity *= this.spinFriction; // Decelerate
 
         // Stop condition
-        if (this.spinVelocity < 0.002) {
+        if (this.spinVelocity < 0.001) { // Stricter stop condition
             this.isSpinning = false;
             this.spinVelocity = 0;
             this.spinBtn.disabled = false;
@@ -304,26 +304,20 @@ export class WheelPicker {
         // Normalize angle
         let normalizedAngle = this.currentAngle % (Math.PI * 2);
 
-        // The pointer is at 0 degrees (right side) in canvas, but we rotated the context.
-        // Actually, in my draw code:
-        // Pointer is at right side (0 radians).
-        // Canvas rotates by currentAngle.
-        // So the segment at 0 radians is the one that overlaps with the pointer?
-        // Wait, if I rotate the canvas by +angle, the items move clockwise.
-        // The pointer is static at 0 (3 o'clock).
-        // So we need to find which segment is at 0.
-
-        // If currentAngle is 0, segment 0 is at [0, step].
-        // If currentAngle is -step, segment 1 is at [0, step].
-        // We need to calculate the effective angle of the pointer relative to the wheel.
-
-        // Effective Pointer Angle = (2PI - (currentAngle % 2PI)) % 2PI
-        // This gives the angle on the wheel that is currently aligning with the static 0 angle of the canvas.
-
+        // Calculate pointer angle (0 radians / 3 o'clock) relative to wheel
         const pointerAngle = (Math.PI * 2 - (normalizedAngle % (Math.PI * 2))) % (Math.PI * 2);
         const winnerIndex = Math.floor(pointerAngle / anglePerSegment);
 
         this.currentWinner = this.filteredItems[winnerIndex];
+
+        // SNAP TO CENTER
+        // Calculate the angle that would center this segment at 0
+        // We want pointerAngle to be (winnerIndex + 0.5) * anglePerSegment
+        // Since pointerAngle = -currentAngle (roughly), currentAngle = -pointerAngle
+        const targetPointerAngle = (winnerIndex + 0.5) * anglePerSegment;
+        this.currentAngle = -targetPointerAngle;
+        this.drawWheel(); // Redraw snapped
+
         this.showResult(this.currentWinner);
     }
 
