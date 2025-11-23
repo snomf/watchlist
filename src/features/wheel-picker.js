@@ -374,3 +374,8 @@ export class WheelPicker {
         this.modal.classList.remove('flex');
     }
 }
+
+// Export function to initialize wheel picker
+export function initWheelPicker(mediaItems, openModalCallback) {
+    return new WheelPicker(mediaItems, openModalCallback);
+}
