@@ -1133,8 +1133,16 @@ async function openMovieModal(tmdbId, type) {
         const moodControls = document.getElementById('mood-controls');
 
         if (isMarvelMovie) {
-            if (marvelDisplay) marvelDisplay.classList.remove('hidden');
-            if (marvelDisplay) marvelDisplay.classList.add('flex');
+            if (marvelDisplay) {
+                marvelDisplay.classList.remove('hidden');
+                marvelDisplay.classList.add('flex');
+                // Update link with TMDB ID
+                const mmLink = document.getElementById('marvel-marathon-link');
+                if (mmLink) {
+                    mmLink.href = `https://mm.juainny.com/?tmdb_id=${tmdbId}`;
+                    mmLink.textContent = 'Open in Marvel Marathon';
+                }
+            }
             if (normalContent) normalContent.classList.add('hidden');
             if (moodControls) moodControls.classList.add('hidden');
         } else {
@@ -1142,6 +1150,59 @@ async function openMovieModal(tmdbId, type) {
             if (marvelDisplay) marvelDisplay.classList.remove('flex');
             if (normalContent) normalContent.classList.remove('hidden');
             if (moodControls) moodControls.classList.remove('hidden');
+        }
+
+        // --- Share Button ---
+        const shareBtn = document.getElementById('share-modal-btn');
+        if (shareBtn) {
+            // Remove old listener to prevent duplicates (cloning is a simple way)
+            const newShareBtn = shareBtn.cloneNode(true);
+            shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+
+            newShareBtn.onclick = async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const shareUrl = `${window.location.origin}/?tmdb_id=${tmdbId}`;
+                const shareData = {
+                    title: `Check out ${data.title || data.name}`,
+                    text: `Check out ${data.title || data.name} on Watchlist!`,
+                    url: shareUrl
+                };
+
+                // Mobile/Android native share
+                if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+                    try {
+                        await navigator.share(shareData);
+                    } catch (err) {
+                        console.error('Error sharing:', err);
+                    }
+                } else {
+                    // Desktop fallback
+                    try {
+                        await navigator.clipboard.writeText(shareUrl);
+                        // Show "Copied!" popup (reusing the one from title double-click if available, or alert for now)
+                        // Assuming showCopiedPopup exists or we create a simple one
+                        const tooltip = document.getElementById('tooltip');
+                        if (tooltip) {
+                            tooltip.textContent = 'Link copied to clipboard!';
+                            tooltip.style.display = 'block';
+                            // Position near the button
+                            const rect = newShareBtn.getBoundingClientRect();
+                            tooltip.style.left = `${rect.left - 100}px`; // Adjust as needed
+                            tooltip.style.top = `${rect.bottom + 10}px`;
+                            tooltip.classList.remove('hidden');
+
+                            setTimeout(() => {
+                                tooltip.classList.add('hidden');
+                            }, 2000);
+                        } else {
+                            alert('Link copied to clipboard!');
+                        }
+                    } catch (err) {
+                        console.error('Failed to copy:', err);
+                    }
+                }
+            };
         }
 
         // --- Show Modal ---
@@ -2973,6 +3034,33 @@ async function initializeApp() {
 
         // Check for welcome modal
         checkWelcomeModal();
+
+        // Check for shared URL
+        const sharedTmdbId = urlParams.get('tmdb_id');
+        if (sharedTmdbId) {
+            const item = allMedia.find(i => i.tmdb_id == sharedTmdbId);
+            if (item) {
+                openMovieModal(item.tmdb_id, item.type || item.media_type);
+            } else {
+                // Try to determine type if not in DB
+                try {
+                    const movieResp = await fetch(`https://api.themoviedb.org/3/movie/${sharedTmdbId}?api_key=${TMDB_API_KEY}`);
+                    if (movieResp.ok) {
+                        openMovieModal(sharedTmdbId, 'movie');
+                    } else {
+                        const tvResp = await fetch(`https://api.themoviedb.org/3/tv/${sharedTmdbId}?api_key=${TMDB_API_KEY}`);
+                        if (tvResp.ok) {
+                            openMovieModal(sharedTmdbId, 'tv');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error finding shared item type:', e);
+                }
+            }
+            // Clean URL
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({ path: newUrl }, '', newUrl);
+        }
 
         // Setup search bar
         const searchBar = document.getElementById('search-bar');
