@@ -52,8 +52,7 @@ export class WheelPicker {
     init() {
         if (!this.canvas) return;
 
-        // Resize canvas
-        this.resizeCanvas();
+        // Setup resize listener
         window.addEventListener('resize', () => this.resizeCanvas());
 
         // Event Listeners
@@ -170,9 +169,15 @@ export class WheelPicker {
 
     resizeCanvas() {
         const parent = this.canvas.parentElement;
-        this.canvas.width = parent.clientWidth;
-        this.canvas.height = parent.clientHeight;
-        this.drawWheel();
+        const width = parent.clientWidth;
+        const height = parent.clientHeight;
+
+        // Only resize if we have valid dimensions
+        if (width > 0 && height > 0) {
+            this.canvas.width = width;
+            this.canvas.height = height;
+            this.drawWheel();
+        }
     }
 
     drawWheel() {
@@ -181,6 +186,11 @@ export class WheelPicker {
         const centerX = width / 2;
         const centerY = height / 2;
         const radius = Math.min(width, height) / 2 - 10;
+
+        // Guard against invalid dimensions
+        if (radius <= 0 || !isFinite(radius)) {
+            return;
+        }
 
         this.ctx.clearRect(0, 0, width, height);
 
@@ -365,8 +375,11 @@ export class WheelPicker {
     open() {
         this.modal.classList.remove('hidden');
         this.modal.classList.add('flex');
-        this.resizeCanvas();
-        this.applyFilters();
+        // Resize and draw after modal is visible to ensure proper dimensions
+        setTimeout(() => {
+            this.resizeCanvas();
+            this.applyFilters();
+        }, 10);
     }
 
     close() {
