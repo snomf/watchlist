@@ -5,7 +5,7 @@ import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './setti
 import { initializeStarRating } from './features/ratings.js';
 import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, removeFlairFromMedia, renderFlairBadge } from './features/flairs.js';
 import { generateMediaSummary, chatWithWillow, startWillowChat } from './features/ai.js';
-import { setupAllenEasterEgg } from './features/easter-eggs.js';
+import { setupEasterEggs } from './features/easter-eggs.js';
 import { initWheelPicker } from './features/wheel-picker.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;

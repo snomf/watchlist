@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js';
-import { setupAllenEasterEgg } from './features/easter-eggs.js';
+import { setupEasterEggs } from './features/easter-eggs.js';
 
 let allMediaForWallpapers = [];
 
@@ -287,8 +287,8 @@ export async function loadAndApplySettings() {
     }
 
     // Trigger Easter Egg check
-    if (typeof setupAllenEasterEgg === 'function') {
-        setupAllenEasterEgg();
+    if (typeof setupEasterEggs === 'function') {
+        setupEasterEggs();
     }
 
     // Set the selected option in the dropdown

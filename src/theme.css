@@ -63,6 +63,24 @@
     /* Orange-500 */
 }
 
+[data-theme="it"] {
+    --color-bg-primary: #000000;
+    --color-bg-secondary: #1a1a1a;
+    --color-bg-tertiary: #2a0a0a;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: #d1d5db;
+    --color-text-muted: #9ca3af;
+    --color-accent-primary: #ef4444;
+    /* Red-500 */
+    --color-accent-secondary: #b91c1c;
+    /* Red-700 */
+    --color-border-primary: #ef4444;
+    --color-success: #22c55e;
+    --color-danger: #ef4444;
+    --color-text-on-accent: #ffffff;
+    --color-star-filled: #ef4444;
+}
+
 .nav-pill {
     background-color: rgba(128, 128, 128, 0.2);
     border-radius: 9999px;
