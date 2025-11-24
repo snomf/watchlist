@@ -28,12 +28,16 @@ export function setupEasterEggs() {
         const maxTime = 90000;
         const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
 
+        console.log(`🟡 Smiling Friends Easter Egg: Allen will appear in ${(randomTime / 1000).toFixed(1)}s`);
+
         easterEggTimeout = setTimeout(() => {
+            console.log('🟡 Allen has appeared!');
             allen.classList.remove('hidden');
             allen.style.transform = 'scale(1)';
         }, randomTime);
 
         allen.onclick = () => {
+            console.log('🟡 Allen was clicked! Restarting interval...');
             allen.style.transform = 'scale(0)';
             setTimeout(() => {
                 allen.classList.add('hidden');
@@ -44,20 +48,36 @@ export function setupEasterEggs() {
 
     // --- IT (Balloon) ---
     else if (currentTheme === 'it' && balloon) {
-        // Random time between 10s and 45s (faster for testing/scare factor)
-        const minTime = 10000;
-        const maxTime = 45000;
+        // Random time between 15s and 23s
+        const minTime = 15000;
+        const maxTime = 23000;
         const randomTime = Math.floor(Math.random() * (maxTime - minTime + 1)) + minTime;
 
+        console.log(`🎈 IT Easter Egg: Balloon will appear in ${(randomTime / 1000).toFixed(1)}s`);
+
         easterEggTimeout = setTimeout(() => {
+            console.log('🎈 Balloon has appeared and is floating up!');
             balloon.classList.remove('hidden');
             balloon.style.transition = 'bottom 10s linear'; // Slow float up
             // Force reflow
             void balloon.offsetWidth;
             balloon.style.bottom = '110vh'; // Float off screen
+
+            // Restart interval when balloon finishes floating off screen
+            const handleTransitionEnd = (e) => {
+                if (e.propertyName === 'bottom') {
+                    console.log('🎈 Balloon floated off screen! Restarting interval...');
+                    balloon.removeEventListener('transitionend', handleTransitionEnd);
+                    balloon.classList.add('hidden');
+                    balloon.style.bottom = '-150px'; // Reset position
+                    setupEasterEggs(); // Restart timer
+                }
+            };
+            balloon.addEventListener('transitionend', handleTransitionEnd);
         }, randomTime);
 
         balloon.onclick = () => {
+            console.log('🎈 Balloon was clicked! Restarting interval...');
             // Pop effect? Just disappear for now as requested
             balloon.style.transition = 'transform 0.2s ease-out';
             balloon.style.transform = 'translateX(-50%) scale(0)';
