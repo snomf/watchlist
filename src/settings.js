@@ -172,19 +172,23 @@ let selectedWallpaper = null;
 /**
  * Saves the selected theme and wallpaper to Supabase.
  */
-async function saveSettings() {
+/**
+ * Saves the selected theme and wallpaper to Supabase.
+ * @param {boolean} closeModal - Whether to close the settings modal after saving. Default true.
+ */
+async function saveSettings(closeModal = true) {
     // Get selected theme from the button that has the border class
-    // Note: The click listener we added above handles the class toggling visually, 
-    // but we need to ensure we grab the right one.
-    // If no button has the class (initial load), we might need a fallback or check the current attribute.
-    // Actually, the existing code relied on `border-accent-primary` being present. 
-    // We need to make sure `loadAndApplySettings` sets this class on open.
-
     const selectedThemeBtn = document.querySelector('.theme-btn.border-accent-primary');
     const selectedTheme = selectedThemeBtn ? selectedThemeBtn.dataset.theme : 'night';
 
     // Get wallpaper URL from selectedWallpaper (set by modal selection)
-    const wallpaperUrl = selectedWallpaper || null;
+    // IMPORTANT: If selectedWallpaper is null, it might mean "no change" or "remove".
+    // But here we want to persist whatever is currently active if selectedWallpaper hasn't been explicitly set to something new.
+    // However, selectedWallpaper is our "staging" variable.
+    // If it's null, we should probably check if we want to keep the existing one?
+    // Actually, let's make sure selectedWallpaper is initialized with the current value on load.
+
+    const wallpaperUrl = selectedWallpaper;
 
     // Device Name
     const deviceNameInput = document.getElementById('device-name-input');
@@ -207,7 +211,9 @@ async function saveSettings() {
         console.error('Error saving settings:', error);
     } else {
         await loadAndApplySettings(); // Re-apply settings after saving
-        closeSettingsModal();
+        if (closeModal) {
+            closeSettingsModal();
+        }
     }
 }
 
@@ -231,6 +237,11 @@ export async function loadAndApplySettings() {
     // Apply Theme
     const { theme, wallpaper_url, hide_search_results_without_images, juainny_avatar, erick_avatar } = data;
     document.documentElement.setAttribute('data-theme', theme || 'night');
+
+    // Initialize selectedWallpaper with current DB value so we don't lose it on save
+    if (selectedWallpaper === null) {
+        selectedWallpaper = wallpaper_url;
+    }
 
     // Update Avatar Cache
     if (juainny_avatar) userAvatars['juainny'] = juainny_avatar;
@@ -353,17 +364,70 @@ export function initializeSettings() {
         btn.addEventListener('click', () => {
             const selectedTheme = btn.dataset.theme;
 
-            // Immediately apply the theme
+            // Immediately apply the theme visually
             document.documentElement.setAttribute('data-theme', selectedTheme);
 
             // Update the UI to show the active theme
             document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('border-accent-primary'));
             btn.classList.add('border-accent-primary');
 
-            // Trigger save
-            saveSettings();
+            // Show the Theme Change Modal instead of saving immediately
+            const themeChangeModal = document.getElementById('theme-change-modal');
+            if (themeChangeModal) {
+                themeChangeModal.classList.remove('hidden');
+                themeChangeModal.classList.add('flex');
+            } else {
+                // Fallback if modal is missing
+                saveSettings(false);
+            }
         });
     });
+
+    // Theme Change Modal Listeners
+    const themeChangeNewBtn = document.getElementById('theme-change-new-wallpaper-btn');
+    const themeChangeNoBtn = document.getElementById('theme-change-no-wallpaper-btn');
+    const themeChangeCancelBtn = document.getElementById('theme-change-cancel-btn');
+    const themeChangeModal = document.getElementById('theme-change-modal');
+
+    if (themeChangeNewBtn) {
+        themeChangeNewBtn.addEventListener('click', async () => {
+            // Close theme modal
+            themeChangeModal.classList.add('hidden');
+            themeChangeModal.classList.remove('flex');
+
+            // Save theme first (keep settings open)
+            await saveSettings(false);
+
+            // Open wallpaper picker
+            const wallpaperBtn = document.getElementById('wallpaper-btn');
+            if (wallpaperBtn) wallpaperBtn.click();
+        });
+    }
+
+    if (themeChangeNoBtn) {
+        themeChangeNoBtn.addEventListener('click', async () => {
+            // Remove wallpaper
+            selectedWallpaper = null;
+
+            // Close theme modal
+            themeChangeModal.classList.add('hidden');
+            themeChangeModal.classList.remove('flex');
+
+            // Save settings (theme + no wallpaper) and keep settings open
+            await saveSettings(false);
+        });
+    }
+
+    if (themeChangeCancelBtn) {
+        themeChangeCancelBtn.addEventListener('click', async () => {
+            // Close theme modal
+            themeChangeModal.classList.add('hidden');
+            themeChangeModal.classList.remove('flex');
+
+            // Save theme only (keep existing wallpaper) and keep settings open
+            await saveSettings(false);
+        });
+    }
 
     // Setup Wallpaper Modal
     setupWallpaperModal();

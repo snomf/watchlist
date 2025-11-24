@@ -618,6 +618,30 @@
         </div>
     </div>
 
+    <!-- Theme Change Modal -->
+    <div id="theme-change-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
+        <div class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6 border border-border-primary">
+            <h3 class="text-xl font-bold mb-4 text-text-primary">Theme Changed!</h3>
+            <p class="text-text-secondary mb-6">Would you like to update the wallpaper to match your new theme?</p>
+
+            <div class="flex flex-col gap-3">
+                <button id="theme-change-new-wallpaper-btn"
+                    class="bg-accent-primary hover:bg-accent-secondary text-white font-bold py-3 px-6 rounded-lg transition shadow-lg">
+                    Choose New Wallpaper
+                </button>
+                <button id="theme-change-no-wallpaper-btn"
+                    class="bg-bg-tertiary hover:bg-bg-primary text-text-primary font-semibold py-2 px-4 rounded-lg transition text-sm border border-border-primary">
+                    Leave Blank
+                </button>
+                <button id="theme-change-cancel-btn"
+                    class="bg-transparent hover:bg-white/10 text-text-muted hover:text-white font-semibold py-2 px-4 rounded-lg transition text-sm">
+                    Keep Current Wallpaper
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
     <script type="module" src="/src/supabase-client.js"></script>
