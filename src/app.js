@@ -288,7 +288,7 @@ function createMovieCard(grid, title, type, tmdbId, posterUrl, isWatched, showBo
     }
 
     movieCard.innerHTML = `
-        <img src="${posterUrl}" alt="${title}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
+        <img src="${posterUrl}" alt="${title}" loading="lazy" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" crossorigin="anonymous">
         
         <!-- Reactions Overlay -->
         <div class="absolute top-2 left-2 flex flex-col gap-1 z-10">
@@ -635,293 +635,298 @@ let currentMediaItem = null; // To store the full media item for the open modal
 async function openMovieModal(tmdbId, type) {
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
+    try {
 
-    // Declare manageFlairsBtn at function scope to avoid redeclaration
-    let manageFlairsBtn;
+        // Declare manageFlairsBtn at function scope to avoid redeclaration
+        let manageFlairsBtn;
 
-    // Prevent background scrolling
-    document.body.style.overflow = 'hidden';
+        // Prevent background scrolling
+        document.body.style.overflow = 'hidden';
 
-    // Hide footer
-    const footer = document.querySelector('footer');
-    if (footer) footer.classList.add('hidden');
+        // Hide footer
+        const footer = document.querySelector('footer');
+        if (footer) footer.classList.add('hidden');
 
-    // Setup Profile Links
-    const juainnyLink = document.getElementById('juainny-profile-link');
-    const erickLink = document.getElementById('erick-profile-link');
+        // Setup Profile Links
+        const juainnyLink = document.getElementById('juainny-profile-link');
+        const erickLink = document.getElementById('erick-profile-link');
 
-    if (juainnyLink) {
-        juainnyLink.onclick = () => window.location.href = '/profile?user=juainny';
-    }
-    if (erickLink) {
-        erickLink.onclick = () => window.location.href = '/profile?user=erick';
-    }
+        if (juainnyLink) {
+            juainnyLink.onclick = () => window.location.href = '/profile?user=juainny';
+        }
+        if (erickLink) {
+            erickLink.onclick = () => window.location.href = '/profile?user=erick';
+        }
 
-    // --- TV Progress ---
-    const tvProgressSection = document.getElementById('tv-progress-section');
-    const tvWarningSection = document.getElementById('tv-warning-section'); // New warning section
+        // --- TV Progress ---
+        const tvProgressSection = document.getElementById('tv-progress-section');
+        const tvWarningSection = document.getElementById('tv-warning-section'); // New warning section
 
-    // Helper to check if media is tracked
-    const isTracked = (item) => {
-        if (!item) return false;
-        return item.watched || item.currently_watching || item.want_to_watch;
-    };
+        // Helper to check if media is tracked
+        const isTracked = (item) => {
+            if (!item) return false;
+            return item.watched || item.currently_watching || item.want_to_watch;
+        };
 
-    // Check if we have a tracked item in our preloaded data or allMedia
-    const trackedItem = allMedia.find(i => i.tmdb_id == tmdbId);
-    const isItemTracked = isTracked(trackedItem);
-    // console.log('OpenModal - TMDB ID:', tmdbId, 'Tracked Item:', trackedItem, 'Is Tracked:', isItemTracked); // DEBUG
+        // Check if we have a tracked item in our preloaded data or allMedia
+        const trackedItem = allMedia.find(i => i.tmdb_id == tmdbId);
+        const isItemTracked = isTracked(trackedItem);
+        // console.log('OpenModal - TMDB ID:', tmdbId, 'Tracked Item:', trackedItem, 'Is Tracked:', isItemTracked); // DEBUG
 
-    if (type === 'tv' || type === 'series') {
-        tvProgressSection.classList.remove('hidden');
+        if (type === 'tv' || type === 'series') {
+            tvProgressSection.classList.remove('hidden');
 
-        // Create warning section if it doesn't exist
-        if (!tvWarningSection) {
-            const warningDiv = document.createElement('div');
-            warningDiv.id = 'tv-warning-section';
-            warningDiv.className = 'hidden text-center py-8 px-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20 my-4';
-            warningDiv.innerHTML = `
+            // Create warning section if it doesn't exist
+            if (!tvWarningSection) {
+                const warningDiv = document.createElement('div');
+                warningDiv.id = 'tv-warning-section';
+                warningDiv.className = 'hidden text-center py-8 px-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20 my-4';
+                warningDiv.innerHTML = `
                 <i class="fas fa-lock text-yellow-500 text-3xl mb-3"></i>
                 <p class="text-text-primary font-semibold">Episode Guide Locked</p>
                 <p class="text-text-muted text-sm mt-2">You can't see the episode carousel until you add this as "Watched", "Watching", or "Want to Watch".</p>
              `;
-            // Insert after progress section
-            tvProgressSection.parentNode.insertBefore(warningDiv, tvProgressSection.nextSibling);
-        }
+                // Insert after progress section
+                tvProgressSection.parentNode.insertBefore(warningDiv, tvProgressSection.nextSibling);
+            }
 
-        if (isItemTracked) {
-            // Show progress, hide warning
-            tvProgressSection.classList.remove('hidden');
-            const existingWarning = document.getElementById('tv-warning-section');
-            if (existingWarning) existingWarning.classList.add('hidden');
+            if (isItemTracked) {
+                // Show progress, hide warning
+                tvProgressSection.classList.remove('hidden');
+                const existingWarning = document.getElementById('tv-warning-section');
+                if (existingWarning) existingWarning.classList.add('hidden');
 
-            const endpoint = type === 'movie' ? 'movie' : 'tv';
-            const appendToResponse = 'credits,images,videos,release_dates,external_ids';
-            const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
-            const response = await fetch(tmdbUrl);
-            const data = await response.json();
-            await renderTVProgress(tmdbId, data.seasons);
+                const endpoint = type === 'movie' ? 'movie' : 'tv';
+                const appendToResponse = 'credits,images,videos,release_dates,external_ids';
+                const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
+                const response = await fetch(tmdbUrl);
+                const data = await response.json();
+                await renderTVProgress(tmdbId, data.seasons);
+            } else {
+                // Hide progress, show warning
+                tvProgressSection.classList.add('hidden');
+                const existingWarning = document.getElementById('tv-warning-section');
+                if (existingWarning) existingWarning.classList.remove('hidden');
+            }
         } else {
-            // Hide progress, show warning
             tvProgressSection.classList.add('hidden');
             const existingWarning = document.getElementById('tv-warning-section');
-            if (existingWarning) existingWarning.classList.remove('hidden');
+            if (existingWarning) existingWarning.classList.add('hidden');
         }
-    } else {
-        tvProgressSection.classList.add('hidden');
-        const existingWarning = document.getElementById('tv-warning-section');
-        if (existingWarning) existingWarning.classList.add('hidden');
-    }
 
-    // Store the tmdbId in the modal for later use
-    modal.dataset.tmdbId = tmdbId;
+        // Store the tmdbId in the modal for later use
+        modal.dataset.tmdbId = tmdbId;
 
-    // --- Optimistic Render (Performance) ---
-    // Try to find data in allMedia or currentMediaItem to render immediately
-    const preloadedData = allMedia.find(i => i.tmdb_id == tmdbId) || (currentMediaItem && currentMediaItem.tmdb_id == tmdbId ? currentMediaItem : null);
+        // --- Optimistic Render (Performance) ---
+        // Try to find data in allMedia or currentMediaItem to render immediately
+        const preloadedData = allMedia.find(i => i.tmdb_id == tmdbId) || (currentMediaItem && currentMediaItem.tmdb_id == tmdbId ? currentMediaItem : null);
 
-    if (preloadedData) {
-        document.getElementById('modal-overview').textContent = preloadedData.overview || 'Loading...';
-        document.getElementById('modal-title').textContent = preloadedData.title || preloadedData.name || 'Loading...';
-        const releaseDate = preloadedData.release_date || preloadedData.first_air_date || '';
-        document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
+        if (preloadedData) {
+            document.getElementById('modal-overview').textContent = preloadedData.overview || 'Loading...';
+            document.getElementById('modal-title').textContent = preloadedData.title || preloadedData.name || 'Loading...';
+            const releaseDate = preloadedData.release_date || preloadedData.first_air_date || '';
+            document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
 
-        // Show modal immediately with available data
-        modal.classList.remove('hidden');
-        modal.classList.remove('modal-hidden');
-        modal.classList.add('flex');
-    }
+            // Show modal immediately with available data
+            modal.classList.remove('hidden');
+            modal.classList.remove('modal-hidden');
+            modal.classList.add('flex');
+        }
 
-    const endpoint = type === 'movie' ? 'movie' : 'tv';
-    const appendToResponse = 'credits,images,videos,release_dates,external_ids,content_ratings'; // Added content_ratings explicitly
-    const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
+        const endpoint = type === 'movie' ? 'movie' : 'tv';
+        const appendToResponse = 'credits,images,videos,release_dates,external_ids,content_ratings'; // Added content_ratings explicitly
+        const tmdbUrl = `https://api.themoviedb.org/3/${endpoint}/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=${appendToResponse}`;
 
-    let data; // Declare data here to be accessible by the click handler
-    try {
-        const response = await fetch(tmdbUrl);
-        if (!response.ok) throw new Error('Failed to fetch modal data.');
+        let data; // Declare data here to be accessible by the click handler
+        try {
+            const response = await fetch(tmdbUrl);
+            if (!response.ok) throw new Error('Failed to fetch modal data.');
 
-        data = await response.json();
+            data = await response.json();
 
-        // Update currentMediaItem with fresh data (merging with existing if possible to keep DB fields)
-        // But wait, data is from TMDB, it doesn't have our DB fields (reactions, etc.)
-        // We should merge it carefully or just use it for display.
-        // Actually, let's just use it for display and keep currentMediaItem as the DB source of truth if possible.
-        // But we need to update the modal with the rich data.
+            // Update currentMediaItem with fresh data (merging with existing if possible to keep DB fields)
+            // But wait, data is from TMDB, it doesn't have our DB fields (reactions, etc.)
+            // We should merge it carefully or just use it for display.
+            // Actually, let's just use it for display and keep currentMediaItem as the DB source of truth if possible.
+            // But we need to update the modal with the rich data.
 
-        // --- Basic Info ---
-        document.getElementById('modal-overview').textContent = data.overview;
+            // --- Basic Info ---
+            document.getElementById('modal-overview').textContent = data.overview;
 
-        // --- Logo ---
-        const titleElement = document.getElementById('modal-title');
-        titleElement.innerHTML = ''; // Clear previous content
-        const bestLogo = data.images?.logos?.find(logo => logo.iso_639_1 === 'en' && !logo.file_path.endsWith('.svg')) || data.images?.logos?.[0];
-        const titleText = data.title || data.name;
+            // --- Logo ---
+            const titleElement = document.getElementById('modal-title');
+            titleElement.innerHTML = ''; // Clear previous content
+            const bestLogo = data.images?.logos?.find(logo => logo.iso_639_1 === 'en' && !logo.file_path.endsWith('.svg')) || data.images?.logos?.[0];
+            const titleText = data.title || data.name;
 
-        if (bestLogo) {
-            const logoUrl = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
-            // Using inline style for max-width to ensure it applies
-            titleElement.innerHTML = `<img src="${logoUrl}" alt="${titleText} Logo" class="max-h-20 object-contain cursor-pointer" style="max-width: 14.4rem;">`;
+            if (bestLogo) {
+                const logoUrl = `https://image.tmdb.org/t/p/w500${bestLogo.file_path}`;
+                // Using inline style for max-width to ensure it applies
+                titleElement.innerHTML = `<img src="${logoUrl}" alt="${titleText} Logo" class="max-h-20 object-contain cursor-pointer" style="max-width: 14.4rem;">`;
 
-            // Add double-click event to copy title
-            const logoImg = titleElement.querySelector('img');
-            if (logoImg) {
-                logoImg.addEventListener('dblclick', () => {
-                    // Copy title to clipboard
-                    navigator.clipboard.writeText(titleText).then(() => {
-                        // Show custom "Copied!" popup
-                        showCopiedPopup();
-                    }).catch(err => {
-                        console.error('Failed to copy text:', err);
+                // Add double-click event to copy title
+                const logoImg = titleElement.querySelector('img');
+                if (logoImg) {
+                    logoImg.addEventListener('dblclick', () => {
+                        // Copy title to clipboard
+                        navigator.clipboard.writeText(titleText).then(() => {
+                            // Show custom "Copied!" popup
+                            showCopiedPopup();
+                        }).catch(err => {
+                            console.error('Failed to copy text:', err);
+                        });
                     });
-                });
-            }
-        } else {
-            titleElement.textContent = titleText;
-        }
-
-        const releaseDate = data.release_date || data.first_air_date || '';
-        const releaseYear = preloadedData?.release_year || releaseDate.substring(0, 4);
-        document.getElementById('modal-release-year').textContent = releaseYear;
-
-        // Prefer DB runtime, fallback to TMDB
-        let runtime = preloadedData?.runtime || data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
-
-        // Fallback for TV runtime if still 0
-        if (type === 'tv' && !runtime) {
-            if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
-                runtime = data.last_episode_to_air.runtime;
-            } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
-                runtime = data.next_episode_to_air.runtime;
-            }
-        }
-
-        document.getElementById('modal-runtime').textContent = formatRuntime(runtime);
-
-        // --- End Time Calculator ---
-        updateEndTime(runtime);
-
-
-        // --- Content Rating ---
-        // Prefer DB content_rating, fallback to TMDB
-        let contentRating = preloadedData?.content_rating || 'N/A';
-
-        if (contentRating === 'N/A') {
-            if (type === 'movie' && data.release_dates) {
-                const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
-                if (usRelease) {
-                    const rating = usRelease.release_dates.find(rd => rd.certification !== '');
-                    if (rating) contentRating = rating.certification;
                 }
-            } else if (type === 'tv') {
-                // Check content_ratings from append_to_response
-                if (data.content_ratings && data.content_ratings.results) {
-                    const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
-                    if (usRating) {
-                        contentRating = usRating.rating;
-                    } else if (data.content_ratings.results.length > 0) {
-                        contentRating = data.content_ratings.results[0].rating;
+            } else {
+                titleElement.textContent = titleText;
+            }
+
+            const releaseDate = data.release_date || data.first_air_date || '';
+            const releaseYear = preloadedData?.release_year || releaseDate.substring(0, 4);
+            document.getElementById('modal-release-year').textContent = releaseYear;
+
+            // Prefer DB runtime, fallback to TMDB
+            let runtime = preloadedData?.runtime || data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
+
+            // Fallback for TV runtime if still 0
+            if (type === 'tv' && !runtime) {
+                if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
+                    runtime = data.last_episode_to_air.runtime;
+                } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
+                    runtime = data.next_episode_to_air.runtime;
+                }
+            }
+
+            document.getElementById('modal-runtime').textContent = formatRuntime(runtime);
+
+            // --- End Time Calculator ---
+            updateEndTime(runtime);
+
+
+            // --- Content Rating ---
+            // Prefer DB content_rating, fallback to TMDB
+            let contentRating = preloadedData?.content_rating || 'N/A';
+
+            if (contentRating === 'N/A') {
+                if (type === 'movie' && data.release_dates) {
+                    const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
+                    if (usRelease) {
+                        const rating = usRelease.release_dates.find(rd => rd.certification !== '');
+                        if (rating) contentRating = rating.certification;
+                    }
+                } else if (type === 'tv') {
+                    // Check content_ratings from append_to_response
+                    if (data.content_ratings && data.content_ratings.results) {
+                        const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                        if (usRating) {
+                            contentRating = usRating.rating;
+                        } else if (data.content_ratings.results.length > 0) {
+                            contentRating = data.content_ratings.results[0].rating;
+                        }
                     }
                 }
             }
-        }
 
-        document.getElementById('modal-content-rating').textContent = contentRating;
+            document.getElementById('modal-content-rating').textContent = contentRating;
 
-        // --- Title Tooltip ---
-        const tooltipIcon = document.getElementById('title-tooltip');
-        if (tooltipIcon) {
-            // Use DB title if available, otherwise API title
-            const displayTitle = preloadedData?.title || preloadedData?.name || data.title || data.name;
-            tooltipIcon.setAttribute('title', displayTitle);
+            // --- Title Tooltip ---
+            const tooltipIcon = document.getElementById('title-tooltip');
+            if (tooltipIcon) {
+                // Use DB title if available, otherwise API title
+                const displayTitle = preloadedData?.title || preloadedData?.name || data.title || data.name;
+                tooltipIcon.setAttribute('title', displayTitle);
 
-            // Also ensure the tooltip works with the browser's native behavior by setting title on the icon itself
-            // But user asked for "classic hover browser box", which is the 'title' attribute.
-        }
+                // Also ensure the tooltip works with the browser's native behavior by setting title on the icon itself
+                // But user asked for "classic hover browser box", which is the 'title' attribute.
+            }
 
-        // --- IMDb Score & Link ---
-        const imdbId = data.external_ids.imdb_id;
-        const imdbScore = data.vote_average ? data.vote_average.toFixed(1) : 'N/A';
-        document.getElementById('modal-score').textContent = imdbScore;
-        const imdbLink = document.getElementById('modal-imdb-link');
-        if (imdbId) {
-            imdbLink.href = `https://www.imdb.com/title/${imdbId}`;
-            imdbLink.style.display = 'flex';
-        } else {
-            imdbLink.style.display = 'none';
-        }
-
-        // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
-        // Only show summary for watched OR currently_watching (NOT want_to_watch)
-        if (isItemTracked && trackedItem && trackedItem.id && (trackedItem.watched || trackedItem.currently_watching)) {
-            const updates = {};
-
-            // --- Willow's Thoughts (AI Summary) ---
-            const summarySection = document.getElementById('willow-summary-section');
-            const summaryText = document.getElementById('willow-summary-text');
-            const regenerateBtn = document.getElementById('regenerate-summary-btn');
-
-            // Show section if tracked
-            summarySection.classList.remove('hidden');
-
-            // CRITICAL: Reset summary text for new modal (fixes persistence bug)
-            summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-
-            // Check if ratings/notes exist - FIXED: Use correct field names!
-            const hasRatings = (trackedItem.juainny_rating && trackedItem.juainny_rating > 0) ||
-                (trackedItem.erick_rating && trackedItem.erick_rating > 0);
-
-            // Strip HTML tags and check for actual text content
-            const cleanNote1 = trackedItem.juainny_notes?.replace(/<[^>]*>/g, '').trim() || '';
-            const cleanNote2 = trackedItem.erick_notes?.replace(/<[^>]*>/g, '').trim() || '';
-            const hasNotes = cleanNote1.length > 0 || cleanNote2.length > 0;
-
-            // console.log('Summary check:', { hasRatings, hasNotes, trackedItem }); // Debug
-
-            if (!hasRatings && !hasNotes) {
-                // No ratings or notes - use pre-defined message (saves tokens!)
-                summaryText.innerHTML = '<em class="text-text-muted">No ratings or notes yet. Willow will share thoughts once you add some!</em>';
-                regenerateBtn.style.display = 'none'; // Hide regenerate button
+            // --- IMDb Score & Link ---
+            const imdbId = data.external_ids.imdb_id;
+            const imdbScore = data.vote_average ? data.vote_average.toFixed(1) : 'N/A';
+            document.getElementById('modal-score').textContent = imdbScore;
+            const imdbLink = document.getElementById('modal-imdb-link');
+            if (imdbId) {
+                imdbLink.href = `https://www.imdb.com/title/${imdbId}`;
+                imdbLink.style.display = 'flex';
             } else {
-                regenerateBtn.style.display = ''; // Show regenerate button
+                imdbLink.style.display = 'none';
+            }
 
-                // Check if we already have a cached summary for THIS specific item
-                if (trackedItem.ai_summary) {
-                    summaryText.innerHTML = renderMarkdown(trackedItem.ai_summary);
+            // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
+            // Only show summary for watched OR currently_watching (NOT want_to_watch)
+            if (isItemTracked && trackedItem && trackedItem.id && (trackedItem.watched || trackedItem.currently_watching)) {
+                const updates = {};
+
+                // --- Willow's Thoughts (AI Summary) ---
+                const summarySection = document.getElementById('willow-summary-section');
+                const summaryText = document.getElementById('willow-summary-text');
+                const regenerateBtn = document.getElementById('regenerate-summary-btn');
+
+                // Show section if tracked
+                summarySection.classList.remove('hidden');
+
+                // CRITICAL: Reset summary text for new modal (fixes persistence bug)
+                summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+
+                // Check if ratings/notes exist - FIXED: Use correct field names!
+                const hasRatings = (trackedItem.juainny_rating && trackedItem.juainny_rating > 0) ||
+                    (trackedItem.erick_rating && trackedItem.erick_rating > 0);
+
+                // Strip HTML tags and check for actual text content
+                const cleanNote1 = trackedItem.juainny_notes?.replace(/<[^>]*>/g, '').trim() || '';
+                const cleanNote2 = trackedItem.erick_notes?.replace(/<[^>]*>/g, '').trim() || '';
+                const hasNotes = cleanNote1.length > 0 || cleanNote2.length > 0;
+
+                // console.log('Summary check:', { hasRatings, hasNotes, trackedItem }); // Debug
+
+                if (!hasRatings && !hasNotes) {
+                    // No ratings or notes - use pre-defined message (saves tokens!)
+                    summaryText.innerHTML = '<em class="text-text-muted">No ratings or notes yet. Willow will share thoughts once you add some!</em>';
+                    // regenerateBtn.style.display = 'none'; // REMOVED: Always show button
                 } else {
-                    // No cached summary, generate and save
-                    const generateAndCache = async () => {
-                        summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
+                    // regenerateBtn.style.display = ''; // REMOVED: Always show button
 
-                        const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.juainny_rating;
-                        const user1Notes = document.getElementById('juainny-notes').innerText;
-                        const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.erick_rating;
-                        const user2Notes = document.getElementById('erick-notes').innerText;
+                    // Check if we already have a cached summary for THIS specific item
+                    if (trackedItem.ai_summary) {
+                        summaryText.innerHTML = renderMarkdown(trackedItem.ai_summary);
+                    } else {
+                        // No cached summary, generate and save
+                        const generateAndCache = async () => {
+                            summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
 
-                        const ratings = { user1: user1Rating, user2: user2Rating };
-                        const notes = { user1: user1Notes, user2: user2Notes };
+                            const user1Rating = document.querySelector('#juainny-rating-container .stars')?.dataset.rating || trackedItem.juainny_rating;
+                            const user1Notes = document.getElementById('juainny-notes').innerText;
+                            const user2Rating = document.querySelector('#erick-rating-container .stars')?.dataset.rating || trackedItem.erick_rating;
+                            const user2Notes = document.getElementById('erick-notes').innerText;
 
-                        try {
-                            const summary = await generateMediaSummary(trackedItem, ratings, notes);
-                            summaryText.innerHTML = renderMarkdown(summary);
+                            const ratings = { user1: user1Rating, user2: user2Rating };
+                            const notes = { user1: user1Notes, user2: user2Notes };
 
-                            // Save to database
-                            const { error } = await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
-                            if (error) {
-                                console.error('Failed to save summary:', error);
-                            } else {
-                                // console.log('Summary saved successfully!');
-                                trackedItem.ai_summary = summary; // Update local copy
+                            try {
+                                const summary = await generateMediaSummary(trackedItem, ratings, notes);
+                                summaryText.innerHTML = renderMarkdown(summary);
+
+                                // Save to database
+                                const { error } = await supabase.from('media').update({ ai_summary: summary }).eq('tmdb_id', tmdbId);
+                                if (error) {
+                                    console.error('Failed to save summary:', error);
+                                } else {
+                                    // console.log('Summary saved successfully!');
+                                    trackedItem.ai_summary = summary; // Update local copy
+                                }
+                            } catch (error) {
+                                console.error('Summary generation error:', error);
+                                summaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
                             }
-                        } catch (error) {
-                            console.error('Summary generation error:', error);
-                            summaryText.innerHTML = '<em class="text-red-400">Failed to generate summary</em>';
-                        }
-                    };
-                    generateAndCache();
+                        };
+                        generateAndCache();
+                    }
+
                 }
 
                 // Regenerate button - creates new summary and saves it to database
+                // MOVED OUTSIDE if/else to ensure it's always attached
+                regenerateBtn.style.display = 'flex'; // Ensure visible
                 regenerateBtn.onclick = async () => {
                     summaryText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Willow is thinking...';
 
@@ -3173,7 +3178,7 @@ async function initializeApp() {
             });
         }
 
-        setupAllenEasterEgg();
+        setupEasterEggs();
 
         // Hide tooltip when clicking anywhere else on the page
         document.addEventListener('click', (e) => {
@@ -3877,8 +3882,8 @@ if (willowChatForm) {
         // Remove Typing Indicator
         removeChatMessage(typingId);
 
-        // Add AI Message with route indicator
-        addChatMessage(response.text, 'ai', response.route);
+        // Add AI Message with route indicator and action
+        addChatMessage(response.text, 'ai', response.route, response.action);
         willowChatInput.disabled = false;
         willowChatInput.focus();
     });
@@ -3894,7 +3899,7 @@ function renderMarkdown(text) {
         .replace(/\n/g, '<br>'); // Line breaks
 }
 
-function addChatMessage(text, sender, route = null) {
+function addChatMessage(text, sender, route = null, action = null) {
     const div = document.createElement('div');
     div.className = `flex items-start gap-2 ${sender === 'user' ? 'flex-row-reverse' : ''}`;
 
@@ -3927,9 +3932,73 @@ function addChatMessage(text, sender, route = null) {
         </div>
     `;
 
+    if (action && action.type === 'REQUEST_RATING') {
+        const ratingContainer = document.createElement('div');
+        const uniqueId = `chat-rating-${action.tmdbId}-${Date.now()}`;
+        ratingContainer.id = uniqueId;
+        ratingContainer.className = 'mt-3 p-3 bg-black/20 rounded-lg border border-white/10';
+
+        // Find the content div to append to
+        div.querySelector('.markdown-content').appendChild(ratingContainer);
+
+        // Initialize stars after a brief delay to ensure DOM is ready
+        setTimeout(() => {
+            initializeStarRating(uniqueId, 0, async () => {
+                const starsEl = ratingContainer.querySelector('.stars');
+                if (starsEl) {
+                    const rating = starsEl.dataset.rating;
+                    await handleChatRating(action.tmdbId, rating);
+
+                    // Visual feedback
+                    const feedback = document.createElement('div');
+                    feedback.className = 'text-xs text-green-400 mt-1';
+                    feedback.innerHTML = '<i class="fas fa-check"></i> Saved';
+                    ratingContainer.appendChild(feedback);
+                }
+            });
+        }, 50);
+    }
+
     willowChatMessages.appendChild(div);
     willowChatMessages.scrollTop = willowChatMessages.scrollHeight;
     return div.id = 'msg-' + Date.now();
+}
+
+async function handleChatRating(tmdbId, rating) {
+    if (!currentChatUser) return;
+
+    const userKey = currentChatUser === 'juainny' ? 'user1' : 'user2'; // Map to DB user key if needed, or just use name
+    // Actually, saveRatingsAndNotes uses 'juainny_rating' and 'erick_rating' columns.
+
+    const updates = {};
+    if (currentChatUser === 'juainny') updates.juainny_rating = parseFloat(rating);
+    if (currentChatUser === 'erick') updates.erick_rating = parseFloat(rating);
+
+    const { data, error } = await supabase
+        .from('media')
+        .update(updates)
+        .eq('tmdb_id', tmdbId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error saving chat rating:', error);
+    } else {
+        // Log activity
+        await logActivity('rate', currentChatUser, data, { rating: parseFloat(rating) });
+
+        // Update local state if this item is currently open or in list
+        const index = allMedia.findIndex(m => m.tmdb_id == tmdbId);
+        if (index > -1) {
+            allMedia[index] = data;
+        }
+        if (currentMediaItem && currentMediaItem.tmdb_id == tmdbId) {
+            currentMediaItem = data;
+            // Update modal UI if open
+            const containerId = currentChatUser === 'juainny' ? 'juainny-rating-container' : 'erick-rating-container';
+            // We might need to re-initialize or update the modal stars, but for now data sync is enough
+        }
+    }
 }
 
 function addTypingIndicator() {

@@ -346,6 +346,7 @@ export class WheelPicker {
         this.winnerTitle.textContent = item.title || item.name;
         const posterPath = item.poster_path;
         if (posterPath) {
+            this.winnerImage.crossOrigin = "anonymous";
             this.winnerImage.src = posterPath.startsWith('http') ? posterPath : `https://image.tmdb.org/t/p/w500${posterPath}`;
         } else {
             this.winnerImage.src = 'https://placehold.co/300x450?text=No+Image';

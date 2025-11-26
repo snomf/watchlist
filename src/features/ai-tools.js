@@ -195,6 +195,20 @@ export const tools = [
             },
             required: ["tmdb_id"]
         }
+    },
+    {
+        name: "request_user_rating",
+        description: "Ask the user to rate a movie or TV show. Use this when the user wants to rate something or you need their opinion. The UI will show a star rating input.",
+        parameters: {
+            type: "object",
+            properties: {
+                tmdb_id: {
+                    type: "integer",
+                    description: "The TMDB ID of the media to rate."
+                }
+            },
+            required: ["tmdb_id"]
+        }
     }
 ];
 
