@@ -956,364 +956,399 @@ async function openMovieModal(tmdbId, type) {
                     }
                 };
             }
-
-        } else {
-            document.getElementById('willow-summary-section').classList.add('hidden');
+        } catch (error) {
+            console.error('Error opening movie modal:', error);
         }
 
-        // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
-        // Only if we have a tracked item in the DB
-        if (isItemTracked && trackedItem && trackedItem.id) {
-            const updates = {};
-            if (!trackedItem.release_year && releaseYear) updates.release_year = parseInt(releaseYear);
-            if (!trackedItem.runtime && runtime) updates.runtime = runtime;
-            if ((!trackedItem.content_rating || trackedItem.content_rating === 'N/A') && contentRating !== 'N/A') updates.content_rating = contentRating;
-            if (!trackedItem.imdb_id && imdbId) updates.imdb_id = imdbId;
+    } else {
+        document.getElementById('willow-summary-section').classList.add('hidden');
+    }
 
-            if (Object.keys(updates).length > 0) {
-                supabase
-                    .from('media')
-                    .update(updates)
-                    .eq('tmdb_id', tmdbId)
-                    .then(({ error }) => {
-                        if (error) console.error('Error auto-saving metadata:', error);
-                    });
-            }
+    // --- Auto-Save Missing Metadata (Runtime, Year, Rating) ---
+    // Only if we have a tracked item in the DB
+    if (isItemTracked && trackedItem && trackedItem.id) {
+        const updates = {};
+        if (!trackedItem.release_year && releaseYear) updates.release_year = parseInt(releaseYear);
+        if (!trackedItem.runtime && runtime) updates.runtime = runtime;
+        if ((!trackedItem.content_rating || trackedItem.content_rating === 'N/A') && contentRating !== 'N/A') updates.content_rating = contentRating;
+        if (!trackedItem.imdb_id && imdbId) updates.imdb_id = imdbId;
+
+        if (Object.keys(updates).length > 0) {
+            supabase
+                .from('media')
+                .update(updates)
+                .eq('tmdb_id', tmdbId)
+                .then(({ error }) => {
+                    if (error) console.error('Error auto-saving metadata:', error);
+                });
+        }
+    }
+
+
+    // --- Backdrop Image ---
+    const backdropUrl = data.backdrop_path ? `https://image.tmdb.org/t/p/w780${data.backdrop_path}` : 'https://placehold.co/800x400?text=No+Image';
+    document.getElementById('modal-backdrop-image').src = backdropUrl;
+
+    // --- Fetch and Display User Ratings & Notes ---
+    const { data: mediaItem, error } = await supabase
+        .from('media')
+        .select('*')
+        .eq('tmdb_id', tmdbId)
+        .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = 'Not a single row was found'
+        console.error('Error fetching media item for ratings:', error);
+    }
+
+    currentMediaItem = mediaItem || {
+        tmdb_id: tmdbId,
+        type: type,
+        title: data.title || data.name,
+        poster_path: data.poster_path,
+        favorited_by: [],
+        watched: false,
+        juainny_rating: null,
+        erick_rating: null,
+        juainny_notes: null,
+        erick_notes: null,
+    };
+
+    // --- Initialize Star Ratings ---
+    await initializeStarRating('juainny-rating-container', currentMediaItem?.juainny_rating || 0, debouncedSave);
+    await initializeStarRating('erick-rating-container', currentMediaItem?.erick_rating || 0, debouncedSave);
+
+    // --- Update Avatars in Ratings Section ---
+    const updateRatingAvatar = (user, elementId) => {
+        const el = document.getElementById(elementId);
+        if (el) {
+            const newHTML = getAvatarHTML(user, 'w-10 h-10 mr-3');
+            // We need to preserve the ID
+            const temp = document.createElement('div');
+            temp.innerHTML = newHTML;
+            const newEl = temp.firstElementChild;
+            newEl.id = elementId;
+            el.replaceWith(newEl);
+        }
+    };
+    updateRatingAvatar('juainny', 'juainny-avatar');
+    updateRatingAvatar('erick', 'erick-avatar');
+
+    // --- Favorites ---
+    updateFavoriteGlow(currentMediaItem);
+
+    // --- Watched Status ---
+    updateWatchedButtonUI(currentMediaItem);
+
+    // --- Rich Text Toolbar for Notes ---
+    const setupNotesToolbar = (userId, notesId) => {
+        const notesInput = document.getElementById(notesId);
+        if (!notesInput) return;
+
+        // Remove existing toolbar if any
+        const existingToolbar = notesInput.previousElementSibling;
+        if (existingToolbar && existingToolbar.classList.contains('notes-toolbar')) {
+            existingToolbar.remove();
         }
 
-
-        // --- Backdrop Image ---
-        const backdropUrl = data.backdrop_path ? `https://image.tmdb.org/t/p/w780${data.backdrop_path}` : 'https://placehold.co/800x400?text=No+Image';
-        document.getElementById('modal-backdrop-image').src = backdropUrl;
-
-        // --- Fetch and Display User Ratings & Notes ---
-        const { data: mediaItem, error } = await supabase
-            .from('media')
-            .select('*')
-            .eq('tmdb_id', tmdbId)
-            .maybeSingle();
-
-        if (error && error.code !== 'PGRST116') { // PGRST116 = 'Not a single row was found'
-            console.error('Error fetching media item for ratings:', error);
-        }
-
-        currentMediaItem = mediaItem || {
-            tmdb_id: tmdbId,
-            type: type,
-            title: data.title || data.name,
-            poster_path: data.poster_path,
-            favorited_by: [],
-            watched: false,
-            juainny_rating: null,
-            erick_rating: null,
-            juainny_notes: null,
-            erick_notes: null,
-        };
-
-        // --- Initialize Star Ratings ---
-        await initializeStarRating('juainny-rating-container', currentMediaItem?.juainny_rating || 0, debouncedSave);
-        await initializeStarRating('erick-rating-container', currentMediaItem?.erick_rating || 0, debouncedSave);
-
-        // --- Update Avatars in Ratings Section ---
-        const updateRatingAvatar = (user, elementId) => {
-            const el = document.getElementById(elementId);
-            if (el) {
-                const newHTML = getAvatarHTML(user, 'w-10 h-10 mr-3');
-                // We need to preserve the ID
-                const temp = document.createElement('div');
-                temp.innerHTML = newHTML;
-                const newEl = temp.firstElementChild;
-                newEl.id = elementId;
-                el.replaceWith(newEl);
-            }
-        };
-        updateRatingAvatar('juainny', 'juainny-avatar');
-        updateRatingAvatar('erick', 'erick-avatar');
-
-        // --- Favorites ---
-        updateFavoriteGlow(currentMediaItem);
-
-        // --- Watched Status ---
-        updateWatchedButtonUI(currentMediaItem);
-
-        // --- Rich Text Toolbar for Notes ---
-        const setupNotesToolbar = (userId, notesId) => {
-            const notesInput = document.getElementById(notesId);
-            if (!notesInput) return;
-
-            // Remove existing toolbar if any
-            const existingToolbar = notesInput.previousElementSibling;
-            if (existingToolbar && existingToolbar.classList.contains('notes-toolbar')) {
-                existingToolbar.remove();
-            }
-
-            const toolbar = document.createElement('div');
-            toolbar.className = 'flex gap-2 mb-2 notes-toolbar';
-            toolbar.innerHTML = `
+        const toolbar = document.createElement('div');
+        toolbar.className = 'flex gap-2 mb-2 notes-toolbar';
+        toolbar.innerHTML = `
                 <button type="button" data-format="bold" class="p-2 hover:bg-gray-700 rounded text-white" style="font-weight: bold;">B</button>
                 <button type="button" data-format="italic" class="p-2 hover:bg-gray-700 rounded text-white" style="font-style: italic;">I</button>
                 <button type="button" data-format="underline" class="p-2 hover:bg-gray-700 rounded text-white" style="text-decoration: underline;">U</button>
             `;
 
-            notesInput.parentNode.insertBefore(toolbar, notesInput);
+        notesInput.parentNode.insertBefore(toolbar, notesInput);
 
-            toolbar.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const format = btn.dataset.format;
+        toolbar.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const format = btn.dataset.format;
 
-                    // Use document.execCommand for contenteditable
-                    if (format === 'bold') document.execCommand('bold', false, null);
-                    if (format === 'italic') document.execCommand('italic', false, null);
-                    if (format === 'underline') document.execCommand('underline', false, null);
+                // Use document.execCommand for contenteditable
+                if (format === 'bold') document.execCommand('bold', false, null);
+                if (format === 'italic') document.execCommand('italic', false, null);
+                if (format === 'underline') document.execCommand('underline', false, null);
 
-                    notesInput.focus();
-                });
+                notesInput.focus();
             });
+        });
 
-            // Load existing notes as HTML
-            const existingNotes = currentMediaItem?.[`${userId}_notes`] || '';
-            notesInput.innerHTML = existingNotes;
+        // Load existing notes as HTML
+        const existingNotes = currentMediaItem?.[`${userId}_notes`] || '';
+        notesInput.innerHTML = existingNotes;
+    };
+
+    setupNotesToolbar('juainny', 'juainny-notes');
+    setupNotesToolbar('erick', 'erick-notes');
+
+    // Show the notes section
+    document.getElementById('notes-section').classList.remove('hidden');
+
+    // --- Update Supabase with backdrop path ---
+    if (mediaItem && data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
+        const { error: updateError } = await supabase
+            .from('media')
+            .update({ backdrop_path: data.backdrop_path })
+            .eq('tmdb_id', tmdbId);
+        if (updateError) console.error('Error updating backdrop path:', updateError);
+    }
+
+    // --- Reactions Setup ---
+    updateModalReactionDisplay();
+
+    const addMoodBtn = document.getElementById('add-mood-btn');
+    if (addMoodBtn) {
+        addMoodBtn.onclick = (e) => {
+            e.preventDefault();
+            openReactionSelector(tmdbId);
+        };
+    }
+
+    // --- Render Flairs in Modal ---
+    const modalFlairsContainer = document.getElementById('modal-flairs-container');
+    if (modalFlairsContainer) {
+        const assignedFlairs = (mediaItem && mediaFlairsMap.get(mediaItem.id)) || [];
+        modalFlairsContainer.innerHTML = assignedFlairs.map(flair => renderFlairBadge(flair, 'text-xs px-2 py-1')).join('');
+    }
+
+    // --- Manage Flairs Button ---
+    manageFlairsBtn = document.getElementById('manage-flairs-btn');
+    if (manageFlairsBtn) {
+        // Hide flair button if item is not tracked (not watched, want_to_watch, or currently_watching)
+        if (isItemTracked) {
+            manageFlairsBtn.classList.remove('hidden');
+            manageFlairsBtn.onclick = async (e) => {
+                e.preventDefault();
+                // Ensure media exists first
+                const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+                if (mediaItem) {
+                    openFlairModal(mediaItem.id);
+                }
+            };
+        } else {
+            manageFlairsBtn.classList.add('hidden');
+        }
+
+        // --- Discuss with Mr. W Button ---
+        const discussBtn = document.getElementById('discuss-ai-btn');
+        if (discussBtn) {
+            discussBtn.onclick = (e) => {
+                e.preventDefault();
+                startDiscussion(currentMediaItem || { tmdb_id: tmdbId, title: data.title || data.name, poster_path: data.poster_path, release_date: data.release_date || data.first_air_date });
+            };
+        } else {
+            // If button doesn't exist in HTML, create it dynamically near the regenerate button or flairs
+            // For now, let's assume we might need to inject it if not present, or rely on it being in the HTML.
+            // Let's inject it into the 'willow-summary-section' if possible, or the action bar.
+            const actionContainer = document.querySelector('.modal-actions') || document.getElementById('willow-summary-section');
+            if (actionContainer) {
+                // Check if already added
+                if (!document.getElementById('discuss-ai-btn-dynamic')) {
+                    const btn = document.createElement('button');
+                    btn.id = 'discuss-ai-btn-dynamic';
+                    btn.className = 'mt-3 w-full py-2 px-4 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 rounded-lg transition flex items-center justify-center gap-2 text-sm font-medium';
+                    btn.innerHTML = '<i class="fas fa-comments"></i> Discuss with Mr. W';
+                    btn.onclick = () => startDiscussion(currentMediaItem || { tmdb_id: tmdbId, title: data.title || data.name, poster_path: data.poster_path, release_date: data.release_date || data.first_air_date });
+
+                    // Insert after the summary text or regenerate button
+                    const regenBtn = document.getElementById('regenerate-summary-btn');
+                    if (regenBtn && regenBtn.parentNode) {
+                        regenBtn.parentNode.insertBefore(btn, regenBtn.nextSibling);
+                    } else {
+                        actionContainer.appendChild(btn);
+                    }
+                }
+            }
+        }
+    }
+
+    // --- Marvel Marathon Logic ---
+    const marvelFlairId = '45991eb5-21e1-40ee-8bde-5beee11a7dff';
+    const assignedFlairs = (mediaItem && mediaFlairsMap.get(mediaItem.id)) || [];
+    const isMarvelMovie = assignedFlairs.some(f => f.id === marvelFlairId || f.name === 'MCU');
+
+    const marvelDisplay = document.getElementById('marvel-marathon-display');
+    const normalContent = document.getElementById('normal-modal-content');
+    const moodControls = document.getElementById('mood-controls');
+
+    if (isMarvelMovie) {
+        if (marvelDisplay) {
+            marvelDisplay.classList.remove('hidden');
+            marvelDisplay.classList.add('flex');
+            // Update link with TMDB ID
+            const mmLink = document.getElementById('marvel-marathon-link');
+            if (mmLink) {
+                mmLink.href = `https://mm.juainny.com/?tmdb_id=${tmdbId}`;
+                mmLink.textContent = 'Open in Marvel Marathon';
+            }
+        }
+        if (normalContent) normalContent.classList.add('hidden');
+        if (moodControls) moodControls.classList.add('hidden');
+    } else {
+        if (marvelDisplay) marvelDisplay.classList.add('hidden');
+        if (marvelDisplay) marvelDisplay.classList.remove('flex');
+        if (normalContent) normalContent.classList.remove('hidden');
+        if (moodControls) moodControls.classList.remove('hidden');
+    }
+
+    // --- Share Button ---
+    const shareBtn = document.getElementById('share-modal-btn');
+    if (shareBtn) {
+        // Remove old listener to prevent duplicates (cloning is a simple way)
+        const newShareBtn = shareBtn.cloneNode(true);
+        shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+
+        newShareBtn.onclick = async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const shareUrl = `${window.location.origin}/?tmdb_id=${tmdbId}`;
+            const shareData = {
+                title: `Check out ${data.title || data.name}`,
+                text: `Check out ${data.title || data.name} on Watchlist!`,
+                url: shareUrl
+            };
+
+            // Mobile/Android native share
+            if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
+                try {
+                    await navigator.share(shareData);
+                } catch (err) {
+                    console.error('Error sharing:', err);
+                }
+            } else {
+                // Desktop fallback
+                try {
+                    await navigator.clipboard.writeText(shareUrl);
+                    // Show "Copied!" popup (reusing the one from title double-click if available, or alert for now)
+                    // Assuming showCopiedPopup exists or we create a simple one
+                    const tooltip = document.getElementById('tooltip');
+                    if (tooltip) {
+                        tooltip.textContent = 'Link copied to clipboard!';
+                        tooltip.style.display = 'block';
+                        // Position near the button
+                        const rect = newShareBtn.getBoundingClientRect();
+                        tooltip.style.left = `${rect.left - 100}px`; // Adjust as needed
+                        tooltip.style.top = `${rect.bottom + 10}px`;
+                        tooltip.classList.remove('hidden');
+
+                        setTimeout(() => {
+                            tooltip.classList.add('hidden');
+                        }, 2000);
+                    } else {
+                        alert('Link copied to clipboard!');
+                    }
+                } catch (err) {
+                    console.error('Failed to copy:', err);
+                }
+            }
+        };
+    }
+
+    // --- Show Modal ---
+    modal.classList.remove('hidden');
+    modal.classList.remove('modal-hidden');
+    modal.classList.add('flex');
+
+    // --- Scroll Detection for Sticky Header Fade Animation ---
+    const modalScrollableContent = document.getElementById('movie-modal-scrollable-content');
+    // manageFlairsBtn already declared at function scope
+
+    if (modalScrollableContent && manageFlairsBtn) {
+        const handleScroll = () => {
+            if (modalScrollableContent.scrollTop > 20) {
+                // Scrolled down - fade out manage flairs button
+                manageFlairsBtn.style.opacity = '0';
+                manageFlairsBtn.style.pointerEvents = 'none';
+            } else {
+                // At top - fade in manage flairs button
+                manageFlairsBtn.style.opacity = '1';
+                manageFlairsBtn.style.pointerEvents = 'auto';
+            }
         };
 
-        setupNotesToolbar('juainny', 'juainny-notes');
-        setupNotesToolbar('erick', 'erick-notes');
-
-        // Show the notes section
-        document.getElementById('notes-section').classList.remove('hidden');
-
-        // --- Update Supabase with backdrop path ---
-        if (mediaItem && data.backdrop_path && mediaItem.backdrop_path !== data.backdrop_path) {
-            const { error: updateError } = await supabase
-                .from('media')
-                .update({ backdrop_path: data.backdrop_path })
-                .eq('tmdb_id', tmdbId);
-            if (updateError) console.error('Error updating backdrop path:', updateError);
-        }
-
-        // --- Reactions Setup ---
-        updateModalReactionDisplay();
-
-        const addMoodBtn = document.getElementById('add-mood-btn');
-        if (addMoodBtn) {
-            addMoodBtn.onclick = (e) => {
-                e.preventDefault();
-                openReactionSelector(tmdbId);
-            };
-        }
-
-        // --- Render Flairs in Modal ---
-        const modalFlairsContainer = document.getElementById('modal-flairs-container');
-        if (modalFlairsContainer) {
-            const assignedFlairs = (mediaItem && mediaFlairsMap.get(mediaItem.id)) || [];
-            modalFlairsContainer.innerHTML = assignedFlairs.map(flair => renderFlairBadge(flair, 'text-xs px-2 py-1')).join('');
-        }
-
-        // --- Manage Flairs Button ---
-        manageFlairsBtn = document.getElementById('manage-flairs-btn');
-        if (manageFlairsBtn) {
-            // Hide flair button if item is not tracked (not watched, want_to_watch, or currently_watching)
-            if (isItemTracked) {
-                manageFlairsBtn.classList.remove('hidden');
-                manageFlairsBtn.onclick = async (e) => {
-                    e.preventDefault();
-                    // Ensure media exists first
-                    const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
-                    if (mediaItem) {
-                        openFlairModal(mediaItem.id);
-                    }
-                };
-            } else {
-                manageFlairsBtn.classList.add('hidden');
-            }
-        }
-
-        // --- Marvel Marathon Logic ---
-        const marvelFlairId = '45991eb5-21e1-40ee-8bde-5beee11a7dff';
-        const assignedFlairs = (mediaItem && mediaFlairsMap.get(mediaItem.id)) || [];
-        const isMarvelMovie = assignedFlairs.some(f => f.id === marvelFlairId || f.name === 'MCU');
-
-        const marvelDisplay = document.getElementById('marvel-marathon-display');
-        const normalContent = document.getElementById('normal-modal-content');
-        const moodControls = document.getElementById('mood-controls');
-
-        if (isMarvelMovie) {
-            if (marvelDisplay) {
-                marvelDisplay.classList.remove('hidden');
-                marvelDisplay.classList.add('flex');
-                // Update link with TMDB ID
-                const mmLink = document.getElementById('marvel-marathon-link');
-                if (mmLink) {
-                    mmLink.href = `https://mm.juainny.com/?tmdb_id=${tmdbId}`;
-                    mmLink.textContent = 'Open in Marvel Marathon';
-                }
-            }
-            if (normalContent) normalContent.classList.add('hidden');
-            if (moodControls) moodControls.classList.add('hidden');
-        } else {
-            if (marvelDisplay) marvelDisplay.classList.add('hidden');
-            if (marvelDisplay) marvelDisplay.classList.remove('flex');
-            if (normalContent) normalContent.classList.remove('hidden');
-            if (moodControls) moodControls.classList.remove('hidden');
-        }
-
-        // --- Share Button ---
-        const shareBtn = document.getElementById('share-modal-btn');
-        if (shareBtn) {
-            // Remove old listener to prevent duplicates (cloning is a simple way)
-            const newShareBtn = shareBtn.cloneNode(true);
-            shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
-
-            newShareBtn.onclick = async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const shareUrl = `${window.location.origin}/?tmdb_id=${tmdbId}`;
-                const shareData = {
-                    title: `Check out ${data.title || data.name}`,
-                    text: `Check out ${data.title || data.name} on Watchlist!`,
-                    url: shareUrl
-                };
-
-                // Mobile/Android native share
-                if (navigator.share && /Mobi|Android/i.test(navigator.userAgent)) {
-                    try {
-                        await navigator.share(shareData);
-                    } catch (err) {
-                        console.error('Error sharing:', err);
-                    }
-                } else {
-                    // Desktop fallback
-                    try {
-                        await navigator.clipboard.writeText(shareUrl);
-                        // Show "Copied!" popup (reusing the one from title double-click if available, or alert for now)
-                        // Assuming showCopiedPopup exists or we create a simple one
-                        const tooltip = document.getElementById('tooltip');
-                        if (tooltip) {
-                            tooltip.textContent = 'Link copied to clipboard!';
-                            tooltip.style.display = 'block';
-                            // Position near the button
-                            const rect = newShareBtn.getBoundingClientRect();
-                            tooltip.style.left = `${rect.left - 100}px`; // Adjust as needed
-                            tooltip.style.top = `${rect.bottom + 10}px`;
-                            tooltip.classList.remove('hidden');
-
-                            setTimeout(() => {
-                                tooltip.classList.add('hidden');
-                            }, 2000);
-                        } else {
-                            alert('Link copied to clipboard!');
-                        }
-                    } catch (err) {
-                        console.error('Failed to copy:', err);
-                    }
-                }
-            };
-        }
-
-        // --- Show Modal ---
-        modal.classList.remove('hidden');
-        modal.classList.remove('modal-hidden');
-        modal.classList.add('flex');
-
-        // --- Scroll Detection for Sticky Header Fade Animation ---
-        const modalScrollableContent = document.getElementById('movie-modal-scrollable-content');
-        // manageFlairsBtn already declared at function scope
-
-        if (modalScrollableContent && manageFlairsBtn) {
-            const handleScroll = () => {
-                if (modalScrollableContent.scrollTop > 20) {
-                    // Scrolled down - fade out manage flairs button
-                    manageFlairsBtn.style.opacity = '0';
-                    manageFlairsBtn.style.pointerEvents = 'none';
-                } else {
-                    // At top - fade in manage flairs button
-                    manageFlairsBtn.style.opacity = '1';
-                    manageFlairsBtn.style.pointerEvents = 'auto';
-                }
-            };
-
-            // Remove any existing scroll listener first
-            modalScrollableContent.removeEventListener('scroll', handleScroll);
-            // Add scroll listener
-            modalScrollableContent.addEventListener('scroll', handleScroll);
-        }
-
-        // --- Triple Click Stats Update ---
-        const statsPill = document.getElementById('modal-stats-pill');
-        if (statsPill) {
-            let clickCount = 0;
-            let clickTimer = null;
-
-            statsPill.onclick = async () => {
-                clickCount++;
-                if (clickCount === 1) {
-                    clickTimer = setTimeout(() => {
-                        clickCount = 0;
-                    }, 500); // Reset after 500ms
-                } else if (clickCount === 3) {
-                    clearTimeout(clickTimer);
-                    clickCount = 0;
-
-                    // Trigger Update
-                    // Use the data object from the modal scope which contains the fresh API response
-
-                    // 1. Runtime Calculation
-                    let runtimeMinutes = data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
-                    if (type === 'tv' && !runtimeMinutes) {
-                        if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
-                            runtimeMinutes = data.last_episode_to_air.runtime;
-                        } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
-                            runtimeMinutes = data.next_episode_to_air.runtime;
-                        }
-                    }
-
-                    // 2. Year Calculation
-                    const releaseDateStr = data.release_date || data.first_air_date || '';
-                    const releaseYear = releaseDateStr ? parseInt(releaseDateStr.split('-')[0]) : null;
-
-                    // 3. Content Rating Calculation
-                    let contentRating = 'N/A';
-                    if (type === 'movie' && data.release_dates) {
-                        const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
-                        if (usRelease) {
-                            const rating = usRelease.release_dates.find(rd => rd.certification !== '');
-                            if (rating) contentRating = rating.certification;
-                        }
-                    } else if (type === 'tv') {
-                        if (data.content_ratings && data.content_ratings.results) {
-                            const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
-                            if (usRating) {
-                                contentRating = usRating.rating;
-                            } else if (data.content_ratings.results.length > 0) {
-                                contentRating = data.content_ratings.results[0].rating;
-                            }
-                        }
-                    }
-
-                    if (confirm(`Update database with:\nYear: ${releaseYear}\nRuntime: ${runtimeMinutes}m\nRating: ${contentRating}`)) {
-                        const { error } = await supabase
-                            .from('media')
-                            .update({
-                                release_year: releaseYear,
-                                runtime: runtimeMinutes,
-                                content_rating: contentRating
-                            })
-                            .eq('tmdb_id', tmdbId);
-
-                        if (error) {
-                            alert('Failed to update stats.');
-                            console.error(error);
-                        } else {
-                            alert('Updated database with runtime, year date, and rating.');
-                        }
-                    }
-                }
-            };
-        }
-
-    } catch (error) {
-        console.error('Error opening movie modal:', error);
+        // Remove any existing scroll listener first
+        modalScrollableContent.removeEventListener('scroll', handleScroll);
+        // Add scroll listener
+        modalScrollableContent.addEventListener('scroll', handleScroll);
     }
+
+    // --- Triple Click Stats Update ---
+    const statsPill = document.getElementById('modal-stats-pill');
+    if (statsPill) {
+        let clickCount = 0;
+        let clickTimer = null;
+
+        statsPill.onclick = async () => {
+            clickCount++;
+            if (clickCount === 1) {
+                clickTimer = setTimeout(() => {
+                    clickCount = 0;
+                }, 500); // Reset after 500ms
+            } else if (clickCount === 3) {
+                clearTimeout(clickTimer);
+                clickCount = 0;
+
+                // Trigger Update
+                // Use the data object from the modal scope which contains the fresh API response
+
+                // 1. Runtime Calculation
+                let runtimeMinutes = data.runtime || (data.episode_run_time && data.episode_run_time.length > 0 ? data.episode_run_time[0] : 0);
+                if (type === 'tv' && !runtimeMinutes) {
+                    if (data.last_episode_to_air && data.last_episode_to_air.runtime) {
+                        runtimeMinutes = data.last_episode_to_air.runtime;
+                    } else if (data.next_episode_to_air && data.next_episode_to_air.runtime) {
+                        runtimeMinutes = data.next_episode_to_air.runtime;
+                    }
+                }
+
+                // 2. Year Calculation
+                const releaseDateStr = data.release_date || data.first_air_date || '';
+                const releaseYear = releaseDateStr ? parseInt(releaseDateStr.split('-')[0]) : null;
+
+                // 3. Content Rating Calculation
+                let contentRating = 'N/A';
+                if (type === 'movie' && data.release_dates) {
+                    const usRelease = data.release_dates.results.find(r => r.iso_3166_1 === 'US');
+                    if (usRelease) {
+                        const rating = usRelease.release_dates.find(rd => rd.certification !== '');
+                        if (rating) contentRating = rating.certification;
+                    }
+                } else if (type === 'tv') {
+                    if (data.content_ratings && data.content_ratings.results) {
+                        const usRating = data.content_ratings.results.find(r => r.iso_3166_1 === 'US');
+                        if (usRating) {
+                            contentRating = usRating.rating;
+                        } else if (data.content_ratings.results.length > 0) {
+                            contentRating = data.content_ratings.results[0].rating;
+                        }
+                    }
+                }
+
+                if (confirm(`Update database with:\nYear: ${releaseYear}\nRuntime: ${runtimeMinutes}m\nRating: ${contentRating}`)) {
+                    const { error } = await supabase
+                        .from('media')
+                        .update({
+                            release_year: releaseYear,
+                            runtime: runtimeMinutes,
+                            content_rating: contentRating
+                        })
+                        .eq('tmdb_id', tmdbId);
+
+                    if (error) {
+                        alert('Failed to update stats.');
+                        console.error(error);
+                    } else {
+                        alert('Updated database with runtime, year date, and rating.');
+                    }
+                }
+            }
+        };
+    }
+
+} catch (error) {
+    console.error('Error opening movie modal:', error);
+}
 }
 
 // --- FLAIR MANAGEMENT ---
@@ -3853,6 +3888,56 @@ window.toggleWillowChat = function () {
     }
 };
 
+async function startDiscussion(mediaItem) {
+    // 1. Close Movie Modal
+    const movieModal = document.getElementById('movie-modal');
+    if (movieModal) {
+        movieModal.classList.add('hidden');
+        movieModal.classList.remove('flex');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+
+    // 2. Open Chat
+    if (willowChatModal.classList.contains('hidden')) {
+        window.toggleWillowChat();
+    }
+
+    // 3. Ensure Chat Session
+    if (!willowChatSession) {
+        // If no user selected, default to 'juainny' for now or wait for selection?
+        // Ideally we should check currentChatUser. If null, maybe prompt?
+        // For smoothness, let's init with 'juainny' if null, or handle in toggleWillowChat
+        if (!currentChatUser) {
+            initializeChatWithUser('juainny'); // Auto-select for flow
+        } else {
+            willowChatSession = startWillowChat(allMedia, currentChatUser);
+        }
+    }
+
+    // 4. Add Media Context Card to Chat (User side)
+    addChatMessage('', 'user', null, {
+        type: 'MEDIA_CONTEXT',
+        media: mediaItem
+    });
+
+    // 5. Send hidden prompt to AI
+    // We don't show this text to user, but we send it to AI
+    const prompt = `The user wants to discuss the movie/show "${mediaItem.title || mediaItem.name}" (TMDB ID: ${mediaItem.tmdb_id}). Start the conversation by asking what they thought about it. Be brief and engaging.`;
+
+    // Show typing indicator
+    const typingId = addTypingIndicator();
+
+    try {
+        const response = await chatWithWillow(willowChatSession, prompt);
+        removeChatMessage(typingId);
+        addChatMessage(response.text, 'ai', response.route, response.action);
+    } catch (err) {
+        console.error('Error starting discussion:', err);
+        removeChatMessage(typingId);
+        addChatMessage("I'm having trouble connecting right now, but I'd love to hear your thoughts!", 'ai');
+    }
+}
+
 if (willowFab) {
     willowFab.addEventListener('click', window.toggleWillowChat);
 }
@@ -3959,6 +4044,50 @@ function addChatMessage(text, sender, route = null, action = null) {
         }, 50);
     }
 
+    if (action && action.type === 'MEDIA_CONTEXT') {
+        const media = action.media;
+        const posterUrl = media.poster_path
+            ? (media.poster_path.startsWith('http') ? media.poster_path : `https://image.tmdb.org/t/p/w92${media.poster_path}`)
+            : 'https://placehold.co/92x138?text=No+Image';
+
+        const year = (media.release_date || media.first_air_date || '').split('-')[0];
+
+        div.innerHTML = `
+            <div class="w-full bg-bg-secondary border border-white/10 rounded-lg p-3 flex gap-3 items-center mb-4">
+                <img src="${posterUrl}" class="w-12 h-18 object-cover rounded shadow-sm" crossorigin="anonymous">
+                <div class="flex-grow min-w-0">
+                    <div class="text-xs text-text-muted uppercase tracking-wider mb-0.5">Let's talk about</div>
+                    <h4 class="font-bold text-text-primary truncate">${media.title || media.name}</h4>
+                    <div class="text-xs text-text-muted">${year}</div>
+                </div>
+                <button class="text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-full transition whitespace-nowrap" onclick="openMovieModal(${media.tmdb_id}, '${media.type || 'movie'}')">
+                    View Details
+                </button>
+            </div>
+        `;
+        // Override standard classes for this special message type
+        div.className = 'w-full max-w-md mx-auto my-2';
+    }
+
+    if (action && action.type === 'TRIVIA_GAME') {
+        const uniqueId = `trivia-${action.tmdbId}-${Date.now()}`;
+        const container = document.createElement('div');
+        container.id = uniqueId;
+        container.className = 'w-full max-w-md mx-auto my-2 bg-bg-secondary border border-purple-500/30 rounded-lg p-4 shadow-lg';
+
+        container.innerHTML = `
+            <div class="text-center">
+                <div class="text-purple-400 font-bold mb-2"><i class="fas fa-gamepad"></i> Trivia Challenge</div>
+                <div class="animate-pulse text-sm text-text-muted">Generating question...</div>
+            </div>
+        `;
+
+        div.appendChild(container); // Append to main div
+
+        // Trigger question generation
+        generateTriviaQuestion(action.tmdbId, uniqueId);
+    }
+
     willowChatMessages.appendChild(div);
     willowChatMessages.scrollTop = willowChatMessages.scrollHeight;
     return div.id = 'msg-' + Date.now();
@@ -4000,6 +4129,112 @@ async function handleChatRating(tmdbId, rating) {
         }
     }
 }
+
+async function generateTriviaQuestion(tmdbId, containerId) {
+    // We need to ask AI for a structured question
+    // We can't easily use the chat session for structured JSON without risking breaking the flow or showing raw JSON.
+    // But we can try.
+
+    const prompt = `Generate a trivia question for the movie/show with TMDB ID ${tmdbId}. 
+    Return ONLY a JSON object with this format:
+    {
+        "question": "The question text",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correctIndex": 0,
+        "explanation": "Why it is correct"
+    }`;
+
+    try {
+        // Use a separate model call or the same chat session? 
+        // Using same session keeps context but might mess up history with JSON.
+        // Let's use the chat session but try to hide the request/response from UI?
+        // Actually, chatWithWillow handles the UI. We want a direct call.
+        // We can use the existing 'model' from ai.js if we export it, or just use chatWithWillow and filter?
+        // Let's use chatWithWillow but we need to handle the response manually here.
+        // Wait, chatWithWillow updates UI automatically if we use the standard flow.
+        // Let's just use a direct fetch to our AI endpoint logic if possible.
+        // Since we don't have a direct "generateJson" exposed easily, let's use a trick:
+        // We'll manually call the model if we can import it.
+        // But we can't easily import 'model' from ai.js as it's not exported.
+
+        // Alternative: The 'start_trivia' tool could have returned the question!
+        // But the tool is executed by the AI. The AI *calls* the tool.
+        // The tool implementation in ai-tools.js could fetch a question?
+        // Or the AI could just output the question in the text.
+
+        // Let's stick to the UI-driven approach:
+        // We'll send a hidden message to the chat session asking for the JSON.
+        // But chatWithWillow appends to UI.
+
+        // Let's modify chatWithWillow to allow "hidden" requests? No, too complex.
+
+        // Let's just use a simple mock for now or a hardcoded fetch if we had a trivia API.
+        // Since we want AI generated, let's try to use the `chat` object from the session if accessible.
+        // It's not.
+
+        // OK, let's use a new one-off chat for trivia generation to avoid polluting history/UI.
+        // We need to import `model` from ai.js. Let's check ai.js exports.
+        // It exports `startWillowChat`.
+
+        const tempSession = startWillowChat(allMedia); // New session
+        const result = await tempSession.sendMessage(prompt);
+        const text = await result.response.text();
+
+        // Parse JSON
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            const data = JSON.parse(jsonMatch[0]);
+            renderTriviaCard(containerId, data);
+        } else {
+            throw new Error("No JSON found");
+        }
+
+    } catch (e) {
+        console.error("Trivia generation failed", e);
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = '<div class="text-red-400 text-sm">Failed to load trivia. Try again!</div>';
+    }
+}
+
+function renderTriviaCard(containerId, data) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="text-center mb-3">
+            <div class="text-purple-400 font-bold"><i class="fas fa-question-circle"></i> Trivia Time</div>
+        </div>
+        <div class="text-text-primary font-medium mb-4 text-lg">${data.question}</div>
+        <div class="grid grid-cols-1 gap-2">
+            ${data.options.map((opt, i) => `
+                <button class="trivia-option w-full text-left p-3 rounded bg-white/5 hover:bg-white/10 border border-white/10 transition text-sm" onclick="handleTriviaAnswer(this, ${i}, ${data.correctIndex}, '${data.explanation.replace(/'/g, "\\'")}')">
+                    ${opt}
+                </button>
+            `).join('')}
+        </div>
+        <div class="trivia-feedback mt-3 text-sm hidden"></div>
+    `;
+}
+
+window.handleTriviaAnswer = (btn, selectedIndex, correctIndex, explanation) => {
+    const container = btn.closest('.grid').parentNode;
+    const feedback = container.querySelector('.trivia-feedback');
+    const allBtns = container.querySelectorAll('.trivia-option');
+
+    // Disable all
+    allBtns.forEach(b => b.disabled = true);
+
+    if (selectedIndex === correctIndex) {
+        btn.classList.add('bg-green-500/20', 'border-green-500', 'text-green-300');
+        feedback.innerHTML = `<div class="text-green-400 font-bold"><i class="fas fa-check"></i> Correct!</div><div class="text-text-muted mt-1">${explanation}</div>`;
+    } else {
+        btn.classList.add('bg-red-500/20', 'border-red-500', 'text-red-300');
+        allBtns[correctIndex].classList.add('bg-green-500/20', 'border-green-500', 'text-green-300');
+        feedback.innerHTML = `<div class="text-red-400 font-bold"><i class="fas fa-times"></i> Wrong!</div><div class="text-text-muted mt-1">${explanation}</div>`;
+    }
+
+    feedback.classList.remove('hidden');
+};
 
 function addTypingIndicator() {
     const div = document.createElement('div');

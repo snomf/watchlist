@@ -183,6 +183,28 @@ export const tools = [
         }
     },
     {
+        name: "get_watched_media",
+        description: "Fetches all media items marked as 'watched' by a specific user. Supports filtering by media type and rating status.",
+        parameters: {
+            type: "object",
+            properties: {
+                user: {
+                    type: "string",
+                    description: "The user whose watchlist to fetch ('juainny' or 'erick')."
+                },
+                type: {
+                    type: "string",
+                    description: "Optional. Filter by media type: 'movie' or 'tv'."
+                },
+                unrated_only: {
+                    type: "boolean",
+                    description: "Optional. If true, only return items that the user hasn't rated yet."
+                }
+            },
+            required: ["user"]
+        }
+    },
+    {
         name: "mark_watched",
         description: "Marks a media item as watched.",
         parameters: {
@@ -208,6 +230,52 @@ export const tools = [
                 }
             },
             required: ["tmdb_id"]
+        }
+    },
+    {
+        name: "start_trivia",
+        description: "Start a trivia game about a specific movie or TV show. The UI will show a trivia card with a question and options.",
+        parameters: {
+            type: "object",
+            properties: {
+                tmdb_id: {
+                    type: "integer",
+                    description: "The TMDB ID of the media to quiz on."
+                }
+            },
+            required: ["tmdb_id"]
+        }
+    },
+    {
+        name: "analyze_taste",
+        description: "Analyze the user's recently watched/rated items and 'roast' or compliment their taste. Use this when the user asks to roast their taste or analyze their profile.",
+        parameters: {
+            type: "object",
+            properties: {
+                user_id: {
+                    type: "string",
+                    description: "The user ID to analyze (e.g., 'juainny' or 'erick')."
+                }
+            },
+            required: ["user_id"]
+        }
+    },
+    {
+        name: "recommend_by_vibe",
+        description: "Find a movie from the user's *existing* watchlist (or new ones) that matches a specific mood/vibe. Use this when the user says 'I want to cry', 'I want adrenaline', etc.",
+        parameters: {
+            type: "object",
+            properties: {
+                vibe: {
+                    type: "string",
+                    description: "The mood or vibe to match (e.g., 'sad', 'exciting', 'cozy')."
+                },
+                genre: {
+                    type: "string",
+                    description: "Optional genre filter."
+                }
+            },
+            required: ["vibe"]
         }
     }
 ];
@@ -382,6 +450,99 @@ export const toolImplementations = {
 
         if (error) return `Error rating media: ${error.message}`;
         return `Rated '${tmdb_id}' as ${rating}/10 for ${user}.`;
+    },
+
+    async analyze_taste({ user_id }) {
+        // Fetch recent activity for the user
+        const { data: history, error } = await supabase
+            .from('activity_log')
+            .select('*, media(*)')
+            .eq('user_id', user_id.toLowerCase())
+            .order('created_at', { ascending: false })
+            .limit(20);
+
+        if (error) throw new Error(`Failed to fetch history: ${error.message}`);
+        if (!history || history.length === 0) return "No recent history found to analyze.";
+
+        // Format for AI
+        const items = history.map(h => {
+            const title = h.media?.title || h.media?.name || 'Unknown Title';
+            const action = h.action_type;
+            const rating = h.details?.rating ? `rated ${h.details.rating} stars` : '';
+            return `- ${action} "${title}" ${rating}`;
+        }).join('\n');
+
+        return `Here is ${user_id}'s recent activity:\n${items}\n\nPlease analyze this taste profile. Be sassy, funny, and slightly judgmental (a "roast"). Point out patterns (e.g., "too many rom-coms", "pretentious sci-fi").`;
+    },
+
+    async get_watched_media({ user, type, unrated_only }) {
+        const { data, error } = await supabase
+            .from('media')
+            .select('*')
+            .eq('watched', true);
+
+        if (error) throw new Error(`Failed to fetch watched media: ${error.message}`);
+        if (!data || data.length === 0) return `${user} hasn't marked any items as watched yet.`;
+
+        let filteredData = data;
+
+        // Filter by media type if specified
+        if (type) {
+            filteredData = filteredData.filter(item => item.type === type);
+        }
+
+        // Filter by unrated status if specified
+        if (unrated_only) {
+            const ratingColumn = user.toLowerCase() === 'juainny' ? 'juainny_rating' : 'erick_rating';
+            filteredData = filteredData.filter(item => !item[ratingColumn] || item[ratingColumn] === 0);
+        }
+
+        if (filteredData.length === 0) {
+            return `No items found matching your criteria.`;
+        }
+
+        const items = filteredData.map(item => {
+            const title = item.title || item.name;
+            const year = item.release_year || '';
+            const mediaType = item.type === 'movie' ? '🎬' : '📺';
+            const ratingColumn = user.toLowerCase() === 'juainny' ? 'juainny_rating' : 'erick_rating';
+            const rating = item[ratingColumn] ? `⭐ ${item[ratingColumn]}/10` : '(unrated)';
+            return `${mediaType} ${title} ${year ? `(${year})` : ''} - ${rating}`;
+        }).slice(0, 50).join('\n');
+
+        const total = filteredData.length;
+        const showing = Math.min(50, total);
+        return `Here are ${user}'s watched items (showing ${showing} of ${total}):\n\n${items}${total > 50 ? '\n\n...and more. Let me know if you need a specific subset.' : ''}`;
+    },
+    async recommend_by_vibe({ vibe, genre }) {
+        // Fetch all media from database
+        const { data: allMedia, error } = await supabase
+            .from('media')
+            .select('*');
+
+        if (error) throw new Error(`Failed to fetch media: ${error.message}`);
+        if (!allMedia || allMedia.length === 0) return "No media found in database.";
+
+        // Filter by genre if provided (simple string match for now, ideally would use genre IDs)
+        // Since we don't have genre names easily, we'll skip genre filtering in DB and let AI do it if needed,
+        // or we can rely on the AI to pick from the list we send.
+
+        // We can't do semantic search here easily without embeddings.
+        // So we will send a random sample of unwatched items to the AI and ask IT to pick the best match.
+        // This is a "RAG-lite" approach.
+
+        const unwatched = allMedia.filter(m => !m.watched);
+        const sampleSize = 30;
+        const sample = unwatched.sort(() => 0.5 - Math.random()).slice(0, sampleSize);
+
+        const items = sample.map(m => `- ${m.title || m.name} (Overview: ${m.overview?.substring(0, 100)}...)`).join('\n');
+
+        return `The user wants a recommendation with this vibe: "${vibe}"${genre ? ` and genre: ${genre}` : ''}.
+        
+Here is a sample of items from their watchlist they haven't watched yet:
+${items}
+
+Please pick the BEST match from this list. Explain why it fits the vibe perfectly. If none fit well, say so.`;
     },
 
     async update_media_notes({ tmdb_id, note, user }) {
