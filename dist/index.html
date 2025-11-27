@@ -5,12 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="icon.png">
+
+    <!-- iOS Home Screen Icons -->
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icon.png">
+
+    <!-- iOS Web App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Watchlist">
+
     <title>Watchlist</title>
     <meta name="description"
         content="Watchlist lets you and your friends track your progress through your favorite movies and shows together, syncing your watched status and ratings across devices in real time. The site automatically fetches movie and show details, displays posters, and updates your stats as you watch, making it easy to organize a group marathon from start to finish.">
     <meta property="og:title" content="Watchlist">
     <meta property="og:description" content="Journey through the MCU">
-    <meta property="og:image" content="banner.png">
+    <meta property="og:image" content="welcome-banner.png">
     <meta property="og:url" content="https://marvelmarathon.netlify.app/">
     <meta name="twitter:card" content="summary_large_image">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -18,10 +30,11 @@
         crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/output.css?v=2">
-  <script type="module" crossorigin src="/assets/main-DwH6TIeS.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <script type="module" crossorigin src="/assets/main-BVzodhPH.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/assets/supabase-client-Dw9ZaCyq.js">
-  <link rel="stylesheet" crossorigin href="/assets/main-B_r3WhiE.css">
+  <link rel="stylesheet" crossorigin href="/assets/main-DQlquImP.css">
 </head>
 
 <body class="font-sans text-text-primary bg-bg-primary">
@@ -33,6 +46,11 @@
     <img id="allen-easter-egg" src="https://static.tvtropes.org/pmwiki/pub/images/alan_28sf29.png"
         class="fixed hidden transition-transform duration-500 cursor-pointer z-10"
         style="width: 150px; bottom: 0; right: 20%; transform-origin: bottom center;">
+
+    <!-- Balloon Easter Egg -->
+    <img id="balloon-easter-egg" src="balloon.png"
+        class="fixed hidden transition-transform duration-500 cursor-pointer z-10"
+        style="width: 100px; bottom: -150px; left: 50%; transform: translateX(-50%);">
 
     <div id="loading-spinner" class="fixed inset-0 bg-bg-primary flex flex-col justify-center items-center z-[60]">
         <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-accent-primary"></div>
@@ -175,9 +193,9 @@
             </div>
             <!-- Random and View Controls -->
             <div class="flex items-center gap-2 justify-between sm:justify-end md:justify-start">
-                <button id="random-movie-btn"
-                    class="bg-accent-secondary hover:bg-accent-primary text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
-                    <i class="fas fa-dice"></i> <span class="hidden sm:inline">Feeling Lucky?</span>
+                <button id="wheel-picker-btn"
+                    class="bg-purple-600 hover:bg-purple-700 text-text-primary font-semibold px-4 py-2 rounded-full transition flex items-center gap-2">
+                    <i class="fas fa-dharmachakra"></i> <span class="hidden sm:inline">Spin Wheel</span>
                 </button>
                 <div id="view-controls" class="flex items-center bg-bg-secondary rounded-full p-1">
                     <button data-view="grid" class="view-btn btn-active px-4 py-2 rounded-full transition"><i
@@ -202,14 +220,6 @@
                     <div id="currently-watching-carousel" class="flex overflow-x-auto gap-6 pb-4">
                         <!-- Carousel items will be dynamically inserted here -->
                     </div>
-                    <button
-                        class="carousel-nav left-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 hidden md:block">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <button
-                        class="carousel-nav right-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 hidden md:block">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
                 </div>
             </div>
 
@@ -226,14 +236,6 @@
                     <div id="want-to-watch-carousel" class="flex overflow-x-auto gap-6 pb-4">
                         <!-- Carousel items will be dynamically inserted here -->
                     </div>
-                    <button
-                        class="carousel-nav left-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 hidden md:block">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <button
-                        class="carousel-nav right-0 bg-bg-secondary p-2 rounded-full absolute top-1/2 -translate-y-1/2 hidden md:block">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
                 </div>
             </div>
             <h2 id="watched-items-header" class="text-2xl font-bold mb-4">Watched Items</h2>
@@ -288,6 +290,11 @@
                                 Reaction</button>
                         </div>
                         <div class="absolute top-6 right-16 flex items-center space-x-2">
+                            <button id="share-modal-btn"
+                                class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center z-30 transition-opacity duration-300 cursor-pointer"
+                                title="Share">
+                                <i class="fas fa-share-alt text-lg"></i>
+                            </button>
                             <button id="manage-flairs-btn"
                                 class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-30 transition-opacity duration-300 cursor-pointer"
                                 title="Manage Flairs">
@@ -310,9 +317,9 @@
                         <p class="text-text-secondary max-w-md mx-auto">
                             This movie can be found in Marvel Marathon and can be edited there.
                         </p>
-                        <a href="https://mm.juainny.com/" target="_blank"
+                        <a href="https://mm.juainny.com/" target="_blank" id="marvel-marathon-link"
                             class="inline-block mt-4 text-accent-primary hover:text-accent-secondary underline font-semibold transition">
-                            Visit Marvel Marathon
+                            Open in Marvel Marathon
                         </a>
                     </div>
                 </div>
@@ -385,11 +392,14 @@
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div class="bg-bg-tertiary p-4 rounded-lg">
-                                        <div class="flex items-center mb-2">
+                                        <div class="flex items-center mb-2 group cursor-pointer"
+                                            id="juainny-profile-link">
                                             <div id="juainny-avatar"
-                                                class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">
+                                                class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white transition-transform group-hover:scale-105">
                                                 J</div>
-                                            <h4 class="text-md font-semibold text-text-secondary">Juainny's Rating</h4>
+                                            <h4
+                                                class="text-md font-semibold text-text-secondary group-hover:text-accent-primary transition-colors">
+                                                Juainny's Rating</h4>
                                         </div>
                                         <div id="juainny-rating-container">
                                             <!-- Star rating component will be injected here -->
@@ -399,11 +409,14 @@
                                         </div>
                                     </div>
                                     <div class="bg-bg-tertiary p-4 rounded-lg">
-                                        <div class="flex items-center mb-2">
+                                        <div class="flex items-center mb-2 group cursor-pointer"
+                                            id="erick-profile-link">
                                             <div id="erick-avatar"
-                                                class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white">
+                                                class="w-10 h-10 rounded-full mr-3 flex items-center justify-center text-xl font-bold text-white transition-transform group-hover:scale-105">
                                                 E</div>
-                                            <h4 class="text-md font-semibold text-text-secondary">Erick's Rating</h4>
+                                            <h4
+                                                class="text-md font-semibold text-text-secondary group-hover:text-accent-primary transition-colors">
+                                                Erick's Rating</h4>
                                         </div>
                                         <div id="erick-rating-container">
                                             <!-- Star rating component will be injected here -->
@@ -422,11 +435,11 @@
                                             <img src="/willow-logo.png" alt="Willow"
                                                 class="w-full h-full object-contain">
                                         </div>
-                                        <h3 class="text-lg font-bold text-teal-400">Willow's Thoughts</h3>
+                                        <h3 class="text-lg font-bold text-teal-400">Mr. W's Thoughts</h3>
                                     </div>
                                     <p id="willow-summary-text"
                                         class="text-text-secondary text-sm leading-relaxed italic">
-                                        Willow is analyzing your thoughts...
+                                        Mr. W is analyzing your thoughts...
                                     </p>
                                     <button id="regenerate-summary-btn"
                                         class="absolute top-4 right-4 text-teal-400 hover:text-teal-300 transition"
@@ -473,7 +486,7 @@
             class="w-full h-full object-contain drop-shadow-2xl filter hover:brightness-110">
         <div
             class="absolute bottom-full right-0 mb-2 w-max bg-black/80 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-            Ask Willow
+            Ask Mr. W
         </div>
     </button>
 
@@ -499,7 +512,7 @@
                             <img src="/willow-logo.png" alt="Willow" class="w-full h-full object-contain">
                         </div>
                         <div>
-                            <h3 class="text-white font-bold text-sm">Willow</h3>
+                            <h3 class="text-white font-bold text-sm">Mr. W</h3>
                             <p class="text-teal-100 text-xs">AI Assistant</p>
                         </div>
                     </div>
@@ -523,8 +536,23 @@
                         </div>
                         <div
                             class="bg-bg-tertiary p-3 rounded-2xl rounded-tl-none text-text-primary text-sm shadow-sm max-w-[85%]">
-                            Hi! I'm Willow. I can help you find something to watch or answer questions. What's on your
+                            Hi! I'm Mr. W. I can help you find something to watch or answer questions. What's on your
                             mind?
+                        </div>
+                    </div>
+
+                    <!-- User Selection (shown initially, hidden after selection) -->
+                    <div id="willow-user-selection" class="flex flex-col items-center gap-3 py-4">
+                        <p class="text-text-muted text-sm">Who will I be chatting with?</p>
+                        <div class="flex gap-3">
+                            <button id="select-juainny-btn"
+                                class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+                                Juainny
+                            </button>
+                            <button id="select-erick-btn"
+                                class="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-3 px-6 rounded-full transition shadow-lg transform hover:scale-105">
+                                Erick
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -532,7 +560,7 @@
                 <!-- Input Area - Fixed at bottom with rounded pill -->
                 <div class="p-3 bg-bg-secondary border-t border-white/10">
                     <form id="willow-chat-form" class="flex gap-2">
-                        <input type="text" id="willow-chat-input" placeholder="Ask Willow anything..."
+                        <input type="text" id="willow-chat-input" placeholder="Ask Mr. W anything..."
                             class="flex-1 px-4 py-2.5 rounded-full bg-bg-tertiary text-text-primary placeholder-text-muted border border-white/10 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/50 text-sm transition">
                         <button type="submit"
                             class="w-10 h-10 rounded-full bg-gradient-to-r from-teal-600 to-emerald-600 text-white flex items-center justify-center hover:shadow-lg hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
@@ -590,6 +618,30 @@
                 class="w-full bg-transparent hover:bg-white/10 text-text-muted hover:text-white font-semibold py-2 px-4 rounded-lg transition">
                 Cancel
             </button>
+        </div>
+    </div>
+
+    <!-- Theme Change Modal -->
+    <div id="theme-change-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.7);">
+        <div class="bg-bg-secondary rounded-lg shadow-xl w-full max-w-md p-6 border border-border-primary">
+            <h3 class="text-xl font-bold mb-4 text-text-primary">Theme Changed!</h3>
+            <p class="text-text-secondary mb-6">Would you like to update the wallpaper to match your new theme?</p>
+
+            <div class="flex flex-col gap-3">
+                <button id="theme-change-new-wallpaper-btn"
+                    class="bg-accent-primary hover:bg-accent-secondary text-white font-bold py-3 px-6 rounded-lg transition shadow-lg">
+                    Choose New Wallpaper
+                </button>
+                <button id="theme-change-no-wallpaper-btn"
+                    class="bg-bg-tertiary hover:bg-bg-primary text-text-primary font-semibold py-2 px-4 rounded-lg transition text-sm border border-border-primary">
+                    Leave Blank
+                </button>
+                <button id="theme-change-cancel-btn"
+                    class="bg-transparent hover:bg-white/10 text-text-muted hover:text-white font-semibold py-2 px-4 rounded-lg transition text-sm">
+                    Keep Current Wallpaper
+                </button>
+            </div>
         </div>
     </div>
 
@@ -684,6 +736,297 @@
     </div>
     </div>
     </div>
+    </div>
+    </div>
+
+    <!-- Wheel Picker Modal -->
+    <div id="wheel-modal" class="fixed inset-0 z-[80] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.6);">
+        <div
+            class="bg-bg-secondary rounded-2xl shadow-2xl w-full max-w-5xl mx-auto flex flex-col md:flex-row h-[90vh] md:h-[85vh] relative border border-border-primary overflow-hidden">
+            <!-- Close Button -->
+            <button id="close-wheel-modal-btn"
+                class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition z-50 bg-bg-tertiary rounded-full p-2 border border-border-primary">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <!-- Wheel Area (Top on Mobile, Right on Desktop) -->
+            <div
+                class="w-full md:w-2/3 h-[55%] md:h-full order-1 md:order-2 p-4 flex flex-col items-center justify-center relative overflow-hidden bg-bg-primary">
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <!-- The Wheel Canvas Container -->
+                    <div class="relative w-full max-w-[400px] md:max-w-[500px] aspect-square">
+                        <canvas id="wheel-canvas" class="w-full h-full drop-shadow-2xl"></canvas>
+
+                        <!-- Pointer -->
+                        <div
+                            class="absolute top-1/2 right-[-15px] md:right-[-20px] transform -translate-y-1/2 -translate-x-full z-10 pointer-events-none filter drop-shadow-lg">
+                            <div
+                                class="w-0 h-0 border-t-[12px] border-t-transparent border-b-[12px] border-b-transparent border-r-[24px] border-r-white">
+                            </div>
+                        </div>
+
+                        <!-- Center Hub -->
+                        <div
+                            class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-14 h-14 md:w-20 md:h-20 bg-bg-secondary rounded-full shadow-lg flex items-center justify-center z-10 border-4 border-accent-primary">
+                            <img src="/icon.png" class="w-8 h-8 md:w-12 md:h-12 object-contain">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls Sidebar (Bottom on Mobile, Left on Desktop) -->
+            <div
+                class="w-full md:w-1/3 h-[45%] md:h-full order-2 md:order-1 bg-bg-secondary border-t md:border-t-0 md:border-r border-border-primary flex flex-col z-10">
+                <!-- Header / Drag Handle for Mobile -->
+                <div class="p-4 md:p-6 border-b border-border-primary flex-shrink-0">
+                    <div class="w-12 h-1.5 bg-border-primary rounded-full mx-auto mb-4 md:hidden"></div>
+                    <h2 class="text-2xl font-bold text-accent-primary text-center md:text-left">
+                        Wheel of Watchlist
+                    </h2>
+                </div>
+
+                <!-- Scrollable Filters -->
+                <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
+                    <!-- Source List -->
+                    <div class="bg-bg-tertiary rounded-xl p-1 flex relative">
+                        <div class="absolute inset-y-1 left-1 w-[calc(33.33%-0.5rem)] bg-accent-primary rounded-lg transition-all duration-300"
+                            id="source-indicator"></div>
+                        <button
+                            class="flex-1 relative z-10 py-2 text-xs md:text-sm font-medium text-text-secondary hover:text-text-primary transition text-center"
+                            onclick="document.getElementById('wheel-source-select').value='all'; document.getElementById('wheel-source-select').dispatchEvent(new Event('change'));">All</button>
+                        <button
+                            class="flex-1 relative z-10 py-2 text-xs md:text-sm font-medium text-text-secondary hover:text-text-primary transition text-center"
+                            onclick="document.getElementById('wheel-source-select').value='want-to-watch'; document.getElementById('wheel-source-select').dispatchEvent(new Event('change'));">Want</button>
+                        <button
+                            class="flex-1 relative z-10 py-2 text-xs md:text-sm font-medium text-text-secondary hover:text-text-primary transition text-center"
+                            onclick="document.getElementById('wheel-source-select').value='currently-watching'; document.getElementById('wheel-source-select').dispatchEvent(new Event('change'));">Current</button>
+
+                        <!-- Hidden select for logic compatibility -->
+                        <select id="wheel-source-select" class="hidden">
+                            <option value="all">All Items</option>
+                            <option value="want-to-watch" selected>Want to Watch</option>
+                            <option value="currently-watching">Currently Watching</option>
+                        </select>
+                    </div>
+
+                    <!-- Collapsible Filters Section -->
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-sm font-bold text-text-muted uppercase tracking-wider">Filters</h3>
+                            <span id="wheel-item-count"
+                                class="text-xs font-mono text-accent-primary bg-accent-primary/10 px-2 py-1 rounded-md">0
+                                items</span>
+                        </div>
+
+                        <!-- Type -->
+                        <div class="flex gap-3">
+                            <label class="flex-1 cursor-pointer group">
+                                <input type="checkbox" id="wheel-filter-movie" checked class="peer hidden">
+                                <div
+                                    class="h-10 rounded-xl bg-bg-tertiary border border-border-primary peer-checked:border-accent-primary peer-checked:bg-accent-primary/10 flex items-center justify-center transition-all">
+                                    <span
+                                        class="text-sm font-medium text-text-secondary peer-checked:text-accent-primary group-hover:text-text-primary">Movies</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 cursor-pointer group">
+                                <input type="checkbox" id="wheel-filter-tv" checked class="peer hidden">
+                                <div
+                                    class="h-10 rounded-xl bg-bg-tertiary border border-border-primary peer-checked:border-accent-primary peer-checked:bg-accent-primary/10 flex items-center justify-center transition-all">
+                                    <span
+                                        class="text-sm font-medium text-text-secondary peer-checked:text-accent-primary group-hover:text-text-primary">TV
+                                        Shows</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Runtime -->
+                        <div class="bg-bg-tertiary rounded-xl p-4 border border-border-primary">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-xs text-text-secondary">Max Runtime</span>
+                                <span id="wheel-runtime-value" class="text-xs font-mono text-text-primary">All</span>
+                            </div>
+                            <input type="range" id="wheel-filter-runtime" min="0" max="240" step="10" value="240"
+                                class="w-full h-1.5 bg-bg-primary rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-accent-primary [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md">
+                        </div>
+
+                        <!-- Ratings -->
+                        <div>
+                            <span class="text-xs text-text-secondary mb-2 block">Ratings</span>
+                            <div class="grid grid-cols-4 gap-2" id="wheel-rating-filters">
+                                <!-- Dynamically populated -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="p-4 md:p-6 border-t border-border-primary bg-bg-secondary">
+                    <div class="flex gap-3">
+                        <button id="wheel-shuffle-btn"
+                            class="w-12 h-12 flex items-center justify-center rounded-xl bg-bg-tertiary hover:bg-bg-primary text-text-secondary hover:text-text-primary transition border border-border-primary">
+                            <i class="fas fa-random"></i>
+                        </button>
+                        <button id="wheel-spin-btn"
+                            class="flex-1 bg-accent-primary hover:bg-accent-secondary text-white font-bold rounded-xl shadow-lg transform transition hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 text-lg tracking-wide">
+                            <i class="fas fa-play text-sm"></i> SPIN
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Overlay (Moved to Root of Modal Content) -->
+        <div id="wheel-result-overlay"
+            class="absolute inset-0 bg-bg-primary/95 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6 text-center hidden opacity-0 transition-all duration-500 overflow-y-auto">
+            <div class="w-full max-w-md flex flex-col items-center">
+                <h3
+                    class="text-3xl md:text-5xl font-black text-accent-primary mb-4 md:mb-6 animate-bounce tracking-tight">
+                    WINNER!</h3>
+
+                <div id="wheel-winner-card"
+                    class="bg-bg-tertiary border border-border-primary p-3 md:p-4 rounded-2xl shadow-2xl w-48 md:w-64 transform transition hover:scale-105 cursor-pointer mb-6 md:mb-8 group">
+                    <div class="relative overflow-hidden rounded-xl mb-3 md:mb-4 aspect-[2/3]">
+                        <img id="wheel-winner-image" src=""
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                            <span class="text-white font-bold text-sm">Click to view details</span>
+                        </div>
+                    </div>
+                    <h4 id="wheel-winner-title" class="text-lg md:text-xl font-bold text-text-primary truncate px-2">
+                        Movie Title</h4>
+                </div>
+
+                <div class="flex flex-col gap-3 w-full">
+                    <button id="wheel-open-winner-btn"
+                        class="w-full bg-accent-primary hover:bg-accent-secondary text-white font-bold py-3 px-6 rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                        <i class="fas fa-external-link-alt"></i> Open Details
+                    </button>
+                    <button id="wheel-remove-winner-btn"
+                        class="w-full bg-bg-tertiary hover:bg-bg-secondary text-text-primary font-bold py-3 px-6 rounded-xl transition border border-border-primary flex items-center justify-center gap-2">
+                        <i class="fas fa-trash-alt"></i> Remove & Spin
+                    </button>
+                </div>
+                <button id="wheel-close-result-btn"
+                    class="mt-6 text-text-muted hover:text-text-primary transition text-sm font-medium">
+                    Close Overlay
+                </button>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="fixed inset-0 z-[70] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(8px); background-color: rgba(0,0,0,0.6);">
+        <div
+            class="bg-bg-secondary rounded-2xl shadow-2xl w-full max-w-lg mx-auto overflow-hidden relative border border-border-primary flex flex-col max-h-[90vh]">
+            <!-- Banner -->
+            <div class="h-32 sm:h-40 w-full relative flex-shrink-0">
+                <img src="/welcome-banner.png" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-bg-secondary to-transparent"></div>
+                <button id="close-welcome-btn"
+                    class="absolute top-4 right-4 text-white bg-black/30 hover:bg-black/50 rounded-full p-2 transition backdrop-blur-sm w-8 h-8 flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1">
+                <h2 class="text-2xl font-bold text-text-primary mb-2 text-center">Welcome to Watchlist!</h2>
+                <p class="text-text-muted text-center text-sm mb-6">A BIGGG upgrade for us ❤️</p>
+
+                <div class="space-y-4 text-text-secondary text-sm leading-relaxed">
+                    <p>
+                        I created the <span class="text-accent-primary font-semibold">Marvel
+                            Marathon</span> which you used a lot at first (you might you the same to this), same with
+                        our notes, das not tea...
+                        I see our notes app as a great way to keep track of what we watch, but it is time to elevate it,
+                        with Watchlist.
+                    </p>
+
+                    <p>
+                        Don't worry doe, I think believe that the notes app <img
+                            src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/Apple_Notes_icon.svg/1200px-Apple_Notes_icon.svg.png"
+                            class="inline-block w-5 h-5 align-text-bottom mx-1" style="vertical-align: middle;"> will be
+                        used as a back up which is why I've made it nice and easy to look at our media in a familiar
+                        list view, and copy a movie title by double clicking its logo and pasting in notes.
+                    </p>
+
+                    <div class="bg-bg-tertiary p-4 rounded-xl border border-border-primary space-y-3">
+                        <p class="font-semibold text-text-primary">Just like our other website (but more) you can:</p>
+                        <ul class="space-y-2">
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary">
+                                    <img src="/moods/happy.png" class="w-5 h-5 object-contain">
+                                </div>
+                                <span>Use reactions</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary text-blue-400">
+                                    <i class="fas fa-comment"></i>
+                                </div>
+                                <span>Leave comments</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary text-yellow-400">
+                                    <i class="fas fa-star"></i>
+                                </div>
+                                <span>Rate movies & shows</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary text-accent-primary">
+                                    <i class="fas fa-tag"></i>
+                                </div>
+                                <span>Add flairs</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary text-purple-400">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <span>View profiles with activity feeds and custom banners</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div
+                                    class="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-bg-primary rounded-full border border-border-primary">
+                                    <img src="/willow-logo.png" class="w-5 h-5 object-contain">
+                                </div>
+                                <span>Use our handy AI that is actually useful (It can also edit notes for you, change
+                                    ratings and so much more!) </span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <p class="italic text-center mt-4 text-lg">
+                        I hope you enjoy it BEB, I love you!
+                    </p>
+
+                    <!-- Signature -->
+                    <div class="flex items-center justify-center gap-3 mt-4">
+                        <div id="welcome-signature-avatar" class="w-10 h-10"></div>
+                        <span class="text-xl text-text-primary font-bold" style="font-family: cursive;">- Juainny</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-4 border-t border-border-primary bg-bg-tertiary flex justify-center flex-shrink-0">
+                <button id="dismiss-welcome-btn"
+                    class="bg-accent-primary hover:bg-accent-secondary text-white font-bold py-3 px-8 rounded-full transition shadow-lg w-full sm:w-auto transform hover:scale-105">
+                    Let's See! 🚀
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Reaction Tooltip -->
     <div id="reaction-tooltip" class="fixed hidden z-[9999] pointer-events-none">
@@ -696,7 +1039,7 @@
     <footer class="relative z-0 text-center py-4 text-text-muted">
         <p>
             <a href="https://beta.mm.spidr.pw">Beta Site</a> | Vibe code with Gemini <img src="gemini.svg"
-                alt="Gemini Logo" width="20" height="20"> ❤️
+                alt="Gemini Logo" width="20" height="20" loading="lazy"> ❤️
         </p>
     </footer>
     <!-- Settings Modal (Moved to root for stacking context) -->
@@ -736,6 +1079,8 @@
                         <button data-theme="smiling-friends"
                             class="theme-btn p-4 rounded-lg border-2 border-border-primary">Smiling
                             Friends</button>
+                        <button data-theme="it"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary">IT</button>
                     </div>
                     <div class="border border-border-primary rounded-lg p-4 mt-4">
                         <div class="flex items-center justify-between">

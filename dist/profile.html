@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon.png">
     <title>User Profile - Watchlist</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -38,10 +39,10 @@
             }
         }
     </script>
-  <script type="module" crossorigin src="/assets/profile-BaBCRrME.js"></script>
+  <script type="module" crossorigin src="/assets/profile-CXjoxgC8.js"></script>
   <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
   <link rel="modulepreload" crossorigin href="/assets/supabase-client-Dw9ZaCyq.js">
-  <link rel="stylesheet" crossorigin href="/assets/main-B_r3WhiE.css">
+  <link rel="stylesheet" crossorigin href="/assets/main-DQlquImP.css">
 </head>
 
 <body class="bg-bg-primary text-text-primary min-h-screen flex flex-col transition-colors duration-300">
@@ -106,7 +107,8 @@
             </div>
 
             <!-- Profile Info -->
-            <div class="absolute -bottom-16 left-6 md:left-10 flex items-end gap-4">
+            <div
+                class="absolute -bottom-16 left-6 md:left-10 flex flex-col md:flex-row items-center md:items-end gap-4 text-center md:text-left">
                 <div id="profile-avatar-container"
                     class="w-32 h-32 rounded-full border-4 border-bg-primary bg-bg-secondary overflow-hidden shadow-xl relative z-10">
                     <!-- Avatar injected here -->
@@ -118,25 +120,28 @@
 
             <!-- User Switcher (Top Right of Profile Area) -->
             <div class="absolute -bottom-12 right-4 flex gap-2">
-                <button id="view-juainny-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
-                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+                <button id="view-juainny-btn"
+                    class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
+                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
                     Juainny
                 </button>
-                <button id="view-erick-btn" class="px-4 py-2 rounded-full transition font-semibold text-sm"
-                    style="background-color: var(--color-bg-tertiary); border: 1px solid var(--color-border-primary); color: var(--color-text-primary);">
+                <button id="view-erick-btn"
+                    class="px-4 py-2 rounded-full transition font-semibold text-sm border border-border-primary"
+                    style="background-color: var(--color-bg-tertiary); color: var(--color-text-primary);">
                     Erick
                 </button>
             </div>
         </div>
 
         <!-- Bio Section -->
-        <div class="description-container mt-4 mb-8 px-4 relative group/bio" id="profile-description">
+        <div class="description-container mt-4 mb-8 px-6 py-6 relative group/bio rounded-xl shadow-lg"
+            id="profile-description"
+            style="background-color: var(--color-bg-secondary); border: 1px solid var(--color-border-primary);">
             <div id="bio-display-container">
                 <p id="profile-bio" class="text-text-secondary text-lg leading-relaxed inline-block">
                     Loading bio...
                 </p>
-                <button id="edit-bio-btn"
-                    class="ml-2 text-text-muted hover:text-accent-primary transition opacity-0 group-hover/bio:opacity-100">
+                <button id="edit-bio-btn" class="ml-2 text-text-muted hover:text-accent-primary transition">
                     <i class="fas fa-pencil-alt"></i>
                 </button>
             </div>
