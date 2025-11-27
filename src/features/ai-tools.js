@@ -310,6 +310,43 @@ export const tools = [
             },
             required: ["vibe"]
         }
+    },
+    {
+        name: "get_media_stats",
+        description: "Calculates statistics about the user's media (e.g., longest movie, shortest TV show, highest rated). Use this for questions like 'what is the longest movie I've watched?'.",
+        parameters: {
+            type: "object",
+            properties: {
+                user: {
+                    type: "string",
+                    description: "The user to calculate stats for ('juainny' or 'erick')."
+                },
+                type: {
+                    type: "string",
+                    description: "Optional. Filter by 'movie' or 'tv'."
+                },
+                stat: {
+                    type: "string",
+                    description: "The stat to calculate: 'longest', 'shortest', 'highest_rated', 'lowest_rated', 'total_runtime'.",
+                    enum: ["longest", "shortest", "highest_rated", "lowest_rated", "total_runtime"]
+                }
+            },
+            required: ["user", "stat"]
+        }
+    },
+    {
+        name: "remove_media",
+        description: "Permanently removes a media item from the database. Use with caution and always confirm with the user first.",
+        parameters: {
+            type: "object",
+            properties: {
+                tmdb_id: {
+                    type: "number",
+                    description: "The TMDB ID of the media to remove."
+                }
+            },
+            required: ["tmdb_id"]
+        }
     }
 ];
 
@@ -538,9 +575,10 @@ export const toolImplementations = {
             const title = item.title || item.name;
             const year = item.release_year || '';
             const mediaType = item.type === 'movie' ? '🎬' : '📺';
+            const runtime = item.runtime ? `${item.runtime}m` : '';
             const ratingColumn = user.toLowerCase() === 'juainny' ? 'juainny_rating' : 'erick_rating';
             const rating = item[ratingColumn] ? `⭐ ${item[ratingColumn]}/10` : '(unrated)';
-            return `${mediaType} ${title} ${year ? `(${year})` : ''} - ${rating}`;
+            return `${mediaType} ${title} ${year ? `(${year})` : ''} ${runtime ? `- ${runtime} ` : ''}- ${rating}`;
         }).slice(0, 50).join('\n');
 
         const total = filteredData.length;
@@ -700,5 +738,69 @@ Please pick the BEST match from this list. Explain why it fits the vibe perfectl
 
         if (error) return `Error marking media as currently watching: ${error.message}`;
         return `Marked '${existing.title}' as currently watching.`;
+    },
+
+    async get_media_stats({ user, type, stat }) {
+        let query = supabase.from('media').select('*');
+
+        // Filter by type if provided
+        if (type) {
+            query = query.eq('type', type);
+        }
+
+        // Filter by watched status (usually stats are for watched items)
+        query = query.eq('watched', true);
+
+        const { data, error } = await query;
+
+        if (error) return `Error calculating stats: ${error.message}`;
+        if (!data || data.length === 0) return "No watched media found to calculate stats.";
+
+        const ratingColumn = user.toLowerCase() === 'juainny' ? 'juainny_rating' : 'erick_rating';
+
+        let result;
+        switch (stat) {
+            case 'longest':
+                result = data.sort((a, b) => (b.runtime || 0) - (a.runtime || 0))[0];
+                return result ? `The longest ${type || 'item'} is "${result.title || result.name}" at ${result.runtime} minutes.` : "Could not determine longest item.";
+            case 'shortest':
+                // Filter out 0 runtime
+                const validRuntime = data.filter(i => i.runtime > 0);
+                result = validRuntime.sort((a, b) => (a.runtime || 0) - (b.runtime || 0))[0];
+                return result ? `The shortest ${type || 'item'} is "${result.title || result.name}" at ${result.runtime} minutes.` : "Could not determine shortest item.";
+            case 'highest_rated':
+                result = data.sort((a, b) => (b[ratingColumn] || 0) - (a[ratingColumn] || 0))[0];
+                return result ? `The highest rated ${type || 'item'} by ${user} is "${result.title || result.name}" with ${result[ratingColumn]}/10.` : "Could not determine highest rated item.";
+            case 'lowest_rated':
+                // Filter out unrated (0)
+                const rated = data.filter(i => i[ratingColumn] > 0);
+                result = rated.sort((a, b) => (a[ratingColumn] || 0) - (b[ratingColumn] || 0))[0];
+                return result ? `The lowest rated ${type || 'item'} by ${user} is "${result.title || result.name}" with ${result[ratingColumn]}/10.` : "Could not determine lowest rated item.";
+            case 'total_runtime':
+                const totalMinutes = data.reduce((acc, curr) => acc + (curr.runtime || 0), 0);
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                return `${user} has watched a total of ${hours} hours and ${minutes} minutes of ${type || 'content'}.`;
+            default:
+                return "Invalid stat requested.";
+        }
+    },
+
+    async remove_media({ tmdb_id }) {
+        const { data: existing } = await supabase
+            .from('media')
+            .select('id, title')
+            .eq('tmdb_id', tmdb_id)
+            .single();
+
+        if (!existing) return "Media item not found.";
+
+        const { error } = await supabase
+            .from('media')
+            .delete()
+            .eq('id', existing.id);
+
+        if (error) return `Error removing media: ${error.message}`;
+        return `Permanently removed '${existing.title}' from the database.`;
     }
 };
