@@ -100,6 +100,7 @@ Titles (Sample): ${JSON.stringify(titles.slice(0, 50))}... (Use search_media too
 - **ALWAYS** use \`get_tv_progress\` if the user asks about episode/season progress.
 - **ALWAYS** use \`get_media_notes\` when asked about notes or ratings for a specific title.
 - Use \`add_to_watchlist\`, \`rate_media\`, \`update_media_notes\`, or \`mark_watched\` when explicitly asked to perform these actions.
+- Use \`update_media_status\` or \`mark_currently_watching\` when asked to set something as currently watching.
 - **IMPORTANT:** If asked to update notes, ALWAYS confirm the content with the user before saving.
 - Maintain conversation context across messages.
 - Ratings are out of 10.

@@ -219,6 +219,39 @@ export const tools = [
         }
     },
     {
+        name: "update_media_status",
+        description: "Updates the status of a media item (watched, want_to_watch, or currently_watching). Use this when the user wants to change what status an item has.",
+        parameters: {
+            type: "object",
+            properties: {
+                tmdb_id: {
+                    type: "number",
+                    description: "The TMDB ID of the media."
+                },
+                status: {
+                    type: "string",
+                    description: "The status to set: 'watched', 'want_to_watch', or 'currently_watching'.",
+                    enum: ["watched", "want_to_watch", "currently_watching"]
+                }
+            },
+            required: ["tmdb_id", "status"]
+        }
+    },
+    {
+        name: "mark_currently_watching",
+        description: "Marks a media item as currently watching. This is a convenience wrapper for update_media_status.",
+        parameters: {
+            type: "object",
+            properties: {
+                tmdb_id: {
+                    type: "number",
+                    description: "The TMDB ID of the media."
+                }
+            },
+            required: ["tmdb_id"]
+        }
+    },
+    {
         name: "request_user_rating",
         description: "Ask the user to rate a movie or TV show. Use this when the user wants to rate something or you need their opinion. The UI will show a star rating input.",
         parameters: {
@@ -613,5 +646,59 @@ Please pick the BEST match from this list. Explain why it fits the vibe perfectl
 
         if (error) return `Error marking media as watched: ${error.message}`;
         return `Marked '${existing.title}' as watched.`;
+    },
+
+    async update_media_status({ tmdb_id, status }) {
+        const { data: existing } = await supabase
+            .from('media')
+            .select('id, title')
+            .eq('tmdb_id', tmdb_id)
+            .single();
+
+        if (!existing) return "Media item not found. Please add it first.";
+
+        // Set all status fields to false first, then set the requested one to true
+        const updates = {
+            watched: status === 'watched',
+            want_to_watch: status === 'want_to_watch',
+            currently_watching: status === 'currently_watching'
+        };
+
+        const { error } = await supabase
+            .from('media')
+            .update(updates)
+            .eq('id', existing.id);
+
+        if (error) return `Error updating media status: ${error.message}`;
+
+        const statusMap = {
+            'watched': 'watched',
+            'want_to_watch': 'want to watch',
+            'currently_watching': 'currently watching'
+        };
+
+        return `Updated '${existing.title}' status to ${statusMap[status]}.`;
+    },
+
+    async mark_currently_watching({ tmdb_id }) {
+        const { data: existing } = await supabase
+            .from('media')
+            .select('id, title')
+            .eq('tmdb_id', tmdb_id)
+            .single();
+
+        if (!existing) return "Media item not found. Please add it first.";
+
+        const { error } = await supabase
+            .from('media')
+            .update({
+                currently_watching: true,
+                watched: false,
+                want_to_watch: false
+            })
+            .eq('id', existing.id);
+
+        if (error) return `Error marking media as currently watching: ${error.message}`;
+        return `Marked '${existing.title}' as currently watching.`;
     }
 };
