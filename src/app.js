@@ -717,6 +717,27 @@ async function openMovieModal(tmdbId, type) {
         // Store the tmdbId in the modal for later use
         modal.dataset.tmdbId = tmdbId;
 
+        // --- PRE-LOAD UI (Performance) ---
+        // Force the modal to show IMMEDIATELY to feel responsive.
+        modal.classList.remove('hidden');
+        modal.classList.remove('modal-hidden');
+        modal.classList.add('flex');
+
+        // Reset fields to loading state
+        const overviewEl = document.getElementById('modal-overview');
+        const titleEl = document.getElementById('modal-title');
+        const yearEl = document.getElementById('modal-release-year');
+        const runtimeEl = document.getElementById('modal-runtime');
+        const contentRatingEl = document.getElementById('modal-content-rating');
+        const scoreEl = document.getElementById('modal-score');
+
+        if (overviewEl) overviewEl.textContent = 'Loading...';
+        if (titleEl) titleEl.textContent = 'Loading...';
+        if (yearEl) yearEl.textContent = '...';
+        if (runtimeEl) runtimeEl.textContent = '...';
+        if (contentRatingEl) contentRatingEl.textContent = 'N/A';
+        if (scoreEl) scoreEl.textContent = '...';
+
         // --- Optimistic Render (Performance) ---
         // Try to find data in allMedia or currentMediaItem to render immediately
         const preloadedData = allMedia.find(i => i.tmdb_id == tmdbId) || (currentMediaItem && currentMediaItem.tmdb_id == tmdbId ? currentMediaItem : null);
@@ -726,11 +747,6 @@ async function openMovieModal(tmdbId, type) {
             document.getElementById('modal-title').textContent = preloadedData.title || preloadedData.name || 'Loading...';
             const releaseDate = preloadedData.release_date || preloadedData.first_air_date || '';
             document.getElementById('modal-release-year').textContent = releaseDate.substring(0, 4);
-
-            // Show modal immediately with available data
-            modal.classList.remove('hidden');
-            modal.classList.remove('modal-hidden');
-            modal.classList.add('flex');
         }
 
         const endpoint = type === 'movie' ? 'movie' : 'tv';
@@ -3077,17 +3093,23 @@ async function initializeApp() {
 
         // Check for shared URL
         const sharedTmdbId = urlParams.get('tmdb_id');
+        const sharedType = urlParams.get('type'); // Optional: 'movie' or 'tv'
         if (sharedTmdbId) {
             const item = allMedia.find(i => i.tmdb_id == sharedTmdbId);
             if (item) {
-                openMovieModal(item.tmdb_id, item.type || item.media_type);
+                openMovieModal(item.tmdb_id, sharedType || item.type || item.media_type || 'movie');
+            } else if (sharedType) {
+                // If type is provided, we can jump straight in
+                openMovieModal(sharedTmdbId, sharedType);
             } else {
-                // Try to determine type if not in DB
+                // Try to determine type if not in DB and not provided in URL
                 try {
+                    // Try movie first
                     const movieResp = await fetch(`https://api.themoviedb.org/3/movie/${sharedTmdbId}?api_key=${TMDB_API_KEY}`);
                     if (movieResp.ok) {
                         openMovieModal(sharedTmdbId, 'movie');
                     } else {
+                        // Fallback to tv
                         const tvResp = await fetch(`https://api.themoviedb.org/3/tv/${sharedTmdbId}?api_key=${TMDB_API_KEY}`);
                         if (tvResp.ok) {
                             openMovieModal(sharedTmdbId, 'tv');
