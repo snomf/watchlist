@@ -5,125 +5,195 @@ const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6Ikp
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+const TMDB_API_KEY = process.env.VITE_TMDB_API_KEY || '25e3d089cc8e37a56bf6a1984daf3c5c';
+
 const VALID_STATUSES = ['want_to_watch', 'watching', 'watched'];
 
 /**
  * Vercel serverless function to handle watch status API
- * GET /api/status?tmdb_id=XXXX - Get status for a TMDB ID
- * POST /api/status - Set/update status for a TMDB ID
+ * GET /api/status?tmdb_id=XXXX&season=Y&episode=Z
+ * POST /api/status - body: { tmdb_id, season, episode, status }
  */
 export default async function handler(req, res) {
-    // CORS headers for cross-origin requests
+    // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Content-Type', 'application/json');
 
-    // Handle OPTIONS preflight request
-    if (req.method === 'OPTIONS') {
-        return res.status(204).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(204).end();
 
     try {
-        // GET /api/status?tmdb_id=XXXX
         if (req.method === 'GET') {
-            const tmdbId = req.query.tmdb_id;
+            const { tmdb_id, season, episode } = req.query;
+            if (!tmdb_id) return res.status(400).json({ error: 'tmdb_id is required' });
 
-            // Validate TMDB ID
-            if (!tmdbId) {
-                return res.status(400).json({ error: 'tmdb_id query parameter is required' });
-            }
+            const tmdbIdNum = parseInt(tmdb_id, 10);
+            const seasonNum = parseInt(season || '0', 10);
+            const episodeNum = parseInt(episode || '0', 10);
 
-            const tmdbIdNum = parseInt(tmdbId, 10);
-            if (isNaN(tmdbIdNum)) {
-                return res.status(400).json({ error: 'tmdb_id must be a valid integer' });
-            }
-
-            // Query database
-            const { data, error } = await supabase
+            // 1. Check the dedicated watch_status table (Dumb store)
+            const { data: apiData } = await supabase
                 .from('watch_status')
-                .select('tmdb_id, status')
+                .select('status')
+                .eq('tmdb_id', tmdbIdNum)
+                .eq('season_number', seasonNum)
+                .eq('episode_number', episodeNum)
+                .single();
+
+            if (apiData) {
+                return res.status(200).json({ tmdb_id: tmdbIdNum, season: seasonNum, episode: episodeNum, status: apiData.status, source: 'api_table' });
+            }
+
+            // 2. Smart Fallback: Check the main watchlist tables
+            const { data: mainMedia } = await supabase
+                .from('media')
+                .select('id, watched, currently_watching, want_to_watch')
                 .eq('tmdb_id', tmdbIdNum)
                 .single();
 
-            if (error) {
-                // If record doesn't exist, return "unknown" status
-                if (error.code === 'PGRST116') {
-                    return res.status(200).json({
-                        tmdb_id: tmdbIdNum,
-                        status: 'unknown',
-                    });
-                }
+            if (mainMedia) {
+                if (seasonNum > 0 || episodeNum > 0) {
+                    // Check episode progress fallback
+                    const { data: epProgress } = await supabase
+                        .from('episode_progress')
+                        .select('watched')
+                        .eq('media_id', mainMedia.id)
+                        .eq('season_number', seasonNum)
+                        .eq('episode_number', episodeNum)
+                        .eq('watched', true)
+                        .limit(1)
+                        .maybeSingle();
 
-                // Other database errors
-                console.error('Database error:', error);
-                return res.status(500).json({ error: 'Database error occurred' });
+                    if (epProgress) {
+                        return res.status(200).json({ tmdb_id: tmdbIdNum, season: seasonNum, episode: episodeNum, status: 'watched', source: 'main_db' });
+                    }
+                } else {
+                    // General item status
+                    let status = 'unknown';
+                    if (mainMedia.watched) status = 'watched';
+                    else if (mainMedia.currently_watching) status = 'watching';
+                    else if (mainMedia.want_to_watch) status = 'want_to_watch';
+
+                    return res.status(200).json({ tmdb_id: tmdbIdNum, season: seasonNum, episode: episodeNum, status, source: 'main_db' });
+                }
             }
 
-            // Return the status
-            return res.status(200).json({
-                tmdb_id: data.tmdb_id,
-                status: data.status,
-            });
+            // 3. Not found anywhere
+            return res.status(200).json({ tmdb_id: tmdbIdNum, season: seasonNum, episode: episodeNum, status: 'unknown' });
         }
 
-        // POST /api/status
         if (req.method === 'POST') {
-            const { tmdb_id, status } = req.body;
-
-            // Validate TMDB ID
-            if (!tmdb_id) {
-                return res.status(400).json({ error: 'tmdb_id is required in request body' });
-            }
+            const { tmdb_id, season, episode, status } = req.body;
+            if (!tmdb_id || !status) return res.status(400).json({ error: 'tmdb_id and status are required' });
+            if (!VALID_STATUSES.includes(status)) return res.status(400).json({ error: 'invalid status' });
 
             const tmdbIdNum = parseInt(tmdb_id, 10);
-            if (isNaN(tmdbIdNum)) {
-                return res.status(400).json({ error: 'tmdb_id must be a valid integer' });
-            }
+            const seasonNum = parseInt(season || '0', 10);
+            const episodeNum = parseInt(episode || '0', 10);
 
-            // Validate status
-            if (!status) {
-                return res.status(400).json({ error: 'status is required in request body' });
-            }
-
-            if (!VALID_STATUSES.includes(status)) {
-                return res.status(400).json({
-                    error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`,
-                });
-            }
-
-            // Upsert the record (insert or update)
+            // 1. Update the "Dumb" watch_status table (Master record)
             const { data, error } = await supabase
                 .from('watch_status')
-                .upsert(
-                    {
-                        tmdb_id: tmdbIdNum,
-                        status: status,
-                        updated_at: new Date().toISOString(),
-                    },
-                    {
-                        onConflict: 'tmdb_id',
-                    }
-                )
-                .select('tmdb_id, status')
+                .upsert({
+                    tmdb_id: tmdbIdNum,
+                    season_number: seasonNum,
+                    episode_number: episodeNum,
+                    status,
+                    updated_at: new Date().toISOString()
+                })
+                .select()
                 .single();
 
-            if (error) {
-                console.error('Database error:', error);
-                return res.status(500).json({ error: 'Failed to update status' });
+            if (error) throw error;
+
+            // 2. Sync-Back Logic: check if item is in main watchlist
+            let { data: mainMedia } = await supabase
+                .from('media')
+                .select('id')
+                .eq('tmdb_id', tmdbIdNum)
+                .single();
+
+            // AUTO-ADD LOGIC: If watched but not in media table
+            if (!mainMedia && status === 'watched' && seasonNum === 0 && episodeNum === 0) {
+                try {
+                    // Attempt to fetch as Movie first
+                    let tmdbRes = await fetch(`https://api.themoviedb.org/3/movie/${tmdbIdNum}?api_key=${TMDB_API_KEY}`);
+                    let type = 'movie';
+                    if (!tmdbRes.ok) {
+                        // Try TV
+                        tmdbRes = await fetch(`https://api.themoviedb.org/3/tv/${tmdbIdNum}?api_key=${TMDB_API_KEY}`);
+                        type = 'series';
+                    }
+
+                    if (tmdbRes.ok) {
+                        const tmdbData = await tmdbRes.json();
+                        const yearStr = tmdbData.release_date || tmdbData.first_air_date || '';
+                        const { data: newItem } = await supabase
+                            .from('media')
+                            .insert({
+                                tmdb_id: tmdbIdNum,
+                                type: type,
+                                title: tmdbData.title || tmdbData.name,
+                                poster_path: tmdbData.poster_path,
+                                backdrop_path: tmdbData.backdrop_path,
+                                release_year: yearStr ? parseInt(yearStr.split('-')[0]) : null,
+                                source: 'api_sync',
+                                watched: true,
+                                currently_watching: false,
+                                want_to_watch: false,
+                                runtime: tmdbData.runtime || (tmdbData.episode_run_time ? tmdbData.episode_run_time[0] : 0)
+                            })
+                            .select('id')
+                            .single();
+                        mainMedia = newItem;
+                    }
+                } catch (err) {
+                    console.error('Auto-add failed:', err);
+                }
             }
 
-            // Return the updated status
+            if (mainMedia) {
+                // Item is tracked (or just added)! Sync the progress
+                if (seasonNum > 0 || episodeNum > 0) {
+                    // Sync Episode/Season Progress
+                    const isWatched = status === 'watched';
+                    const upserts = ['user1', 'user2'].map(viewer => ({
+                        media_id: mainMedia.id,
+                        viewer: viewer,
+                        season_number: seasonNum,
+                        episode_number: episodeNum,
+                        watched: isWatched
+                    }));
+
+                    await supabase.from('episode_progress').upsert(upserts, {
+                        onConflict: 'media_id,viewer,season_number,episode_number'
+                    });
+                } else {
+                    // Sync Movie/Series Flags
+                    await supabase
+                        .from('media')
+                        .update({
+                            watched: status === 'watched',
+                            currently_watching: status === 'watching',
+                            want_to_watch: status === 'want_to_watch'
+                        })
+                        .eq('id', mainMedia.id);
+                }
+            }
+
             return res.status(200).json({
                 tmdb_id: data.tmdb_id,
+                season: data.season_number,
+                episode: data.episode_number,
                 status: data.status,
+                synced: !!mainMedia
             });
         }
 
-        // Method not allowed
-        return res.status(405).json({ error: `Method ${req.method} not allowed` });
+        return res.status(405).json({ error: 'method not allowed' });
     } catch (error) {
-        console.error('Function error:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        console.error('API Error:', error);
+        return res.status(500).json({ error: 'internal server error' });
     }
 }
