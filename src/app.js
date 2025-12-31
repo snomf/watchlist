@@ -2448,13 +2448,22 @@ function sortMedia() {
             break;
         case 'default':
         default:
-            const fetched = filteredMedia.filter(item => item.source === 'fetched').sort((a, b) => a.id - b.id);
-            const notFetched = filteredMedia.filter(item => item.source !== 'fetched').sort((a, b) => {
-                const dateA = new Date(a.release_date || a.first_air_date);
-                const dateB = new Date(b.release_date || b.first_air_date);
-                return dateB - dateA;
-            });
-            filteredMedia = [...notFetched, ...fetched];
+            if (currentFilter === 'watched') {
+                // Sort by watched_at (newest first), falling back to created_at
+                filteredMedia.sort((a, b) => {
+                    const timeA = new Date(a.watched_at || a.created_at).getTime();
+                    const timeB = new Date(b.watched_at || b.created_at).getTime();
+                    return timeB - timeA;
+                });
+            } else {
+                const fetched = filteredMedia.filter(item => item.source === 'fetched').sort((a, b) => a.id - b.id);
+                const notFetched = filteredMedia.filter(item => item.source !== 'fetched').sort((a, b) => {
+                    const dateA = new Date(a.release_date || a.first_air_date);
+                    const dateB = new Date(b.release_date || b.first_air_date);
+                    return dateB - dateA;
+                });
+                filteredMedia = [...notFetched, ...fetched];
+            }
             break;
     }
 }
@@ -2833,6 +2842,11 @@ function setupWatchedButtons() {
         const newWatchedStatus = isReject ? false : !currentMediaItem.watched;
 
         let updates = { watched: newWatchedStatus };
+        if (newWatchedStatus) {
+            updates.watched_at = new Date().toISOString();
+        } else {
+            updates.watched_at = null;
+        }
         if (isReject) {
             updates.currently_watching = false;
             updates.source = null;
