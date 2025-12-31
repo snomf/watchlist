@@ -2449,20 +2449,25 @@ function sortMedia() {
         case 'default':
         default:
             if (currentFilter === 'watched') {
-                // Group by not-fetched first, then sort within each group by watched_at
-                const fetched = filteredMedia.filter(item => item.source === 'fetched').sort((a, b) => {
+                // Unified sort: Primary by watched_at (DESC), Secondary by ID
+                filteredMedia.sort((a, b) => {
                     const timeA = new Date(a.watched_at || 0).getTime();
                     const timeB = new Date(b.watched_at || 0).getTime();
-                    if (timeA !== timeB) return timeB - timeA;
+
+                    // 1. Primary: Date Descending
+                    // Use a small buffer (1s) to treat items watched "at the same time" as equal
+                    if (Math.abs(timeA - timeB) > 1000) {
+                        return timeB - timeA;
+                    }
+
+                    // 2. Secondary: For original marathon items (id < 1440ish), use ID ASC
+                    if (a.source === 'fetched' && b.source === 'fetched') {
+                        return (a.id || 0) - (b.id || 0);
+                    }
+
+                    // 3. Fallback: ID DESC (Newest added first)
                     return (b.id || 0) - (a.id || 0);
                 });
-                const notFetched = filteredMedia.filter(item => item.source !== 'fetched').sort((a, b) => {
-                    const timeA = new Date(a.watched_at || 0).getTime();
-                    const timeB = new Date(b.watched_at || 0).getTime();
-                    if (timeA !== timeB) return timeB - timeA;
-                    return (b.id || 0) - (a.id || 0);
-                });
-                filteredMedia = [...notFetched, ...fetched];
             } else {
                 const fetched = filteredMedia.filter(item => item.source === 'fetched').sort((a, b) => a.id - b.id);
                 const notFetched = filteredMedia.filter(item => item.source !== 'fetched').sort((a, b) => {
