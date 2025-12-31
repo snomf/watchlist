@@ -2449,12 +2449,20 @@ function sortMedia() {
         case 'default':
         default:
             if (currentFilter === 'watched') {
-                // Sort by watched_at (newest first), falling back to created_at
-                filteredMedia.sort((a, b) => {
-                    const timeA = new Date(a.watched_at || a.created_at).getTime();
-                    const timeB = new Date(b.watched_at || b.created_at).getTime();
-                    return timeB - timeA;
+                // Group by not-fetched first, then sort within each group by watched_at
+                const fetched = filteredMedia.filter(item => item.source === 'fetched').sort((a, b) => {
+                    const timeA = new Date(a.watched_at || 0).getTime();
+                    const timeB = new Date(b.watched_at || 0).getTime();
+                    if (timeA !== timeB) return timeB - timeA;
+                    return (b.id || 0) - (a.id || 0);
                 });
+                const notFetched = filteredMedia.filter(item => item.source !== 'fetched').sort((a, b) => {
+                    const timeA = new Date(a.watched_at || 0).getTime();
+                    const timeB = new Date(b.watched_at || 0).getTime();
+                    if (timeA !== timeB) return timeB - timeA;
+                    return (b.id || 0) - (a.id || 0);
+                });
+                filteredMedia = [...notFetched, ...fetched];
             } else {
                 const fetched = filteredMedia.filter(item => item.source === 'fetched').sort((a, b) => a.id - b.id);
                 const notFetched = filteredMedia.filter(item => item.source !== 'fetched').sort((a, b) => {

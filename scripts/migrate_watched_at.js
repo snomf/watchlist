@@ -40,6 +40,10 @@ async function migrate() {
 
     console.log('Column watched_at exists. Proceeding with backfill...');
 
+    // Rename 'api_sync' to 'added'
+    console.log('Renaming api_sync to added...');
+    await supabase.from('media').update({ source: 'added' }).eq('source', 'api_sync');
+
     // 2. Fetch all watched media
     const { data: watchedMedia, error: fetchError } = await supabase
         .from('media')

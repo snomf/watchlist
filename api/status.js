@@ -138,8 +138,9 @@ export default async function handler(req, res) {
                                 poster_path: tmdbData.poster_path,
                                 backdrop_path: tmdbData.backdrop_path,
                                 release_year: yearStr ? parseInt(yearStr.split('-')[0]) : null,
-                                source: 'api_sync',
+                                source: 'added',
                                 watched: true,
+                                watched_at: new Date().toISOString(),
                                 currently_watching: false,
                                 want_to_watch: false,
                                 runtime: tmdbData.runtime || (tmdbData.episode_run_time ? tmdbData.episode_run_time[0] : 0)
@@ -175,6 +176,7 @@ export default async function handler(req, res) {
                         .from('media')
                         .update({
                             watched: status === 'watched',
+                            watched_at: status === 'watched' ? new Date().toISOString() : null,
                             currently_watching: status === 'watching',
                             want_to_watch: status === 'want_to_watch'
                         })
