@@ -792,26 +792,29 @@
 
                 <!-- Scrollable Filters -->
                 <div class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-6">
-                    <!-- Source List -->
-                    <div class="bg-bg-tertiary rounded-xl p-1 flex relative">
-                        <div class="absolute inset-y-1 left-1 w-[calc(33.33%-0.5rem)] bg-accent-primary rounded-lg transition-all duration-300"
-                            id="source-indicator"></div>
-                        <button
-                            class="flex-1 relative z-10 py-2 text-xs md:text-sm font-medium text-text-secondary hover:text-text-primary transition text-center"
-                            onclick="document.getElementById('wheel-source-select').value='all'; document.getElementById('wheel-source-select').dispatchEvent(new Event('change'));">All</button>
-                        <button
-                            class="flex-1 relative z-10 py-2 text-xs md:text-sm font-medium text-text-secondary hover:text-text-primary transition text-center"
-                            onclick="document.getElementById('wheel-source-select').value='want-to-watch'; document.getElementById('wheel-source-select').dispatchEvent(new Event('change'));">Want</button>
-                        <button
-                            class="flex-1 relative z-10 py-2 text-xs md:text-sm font-medium text-text-secondary hover:text-text-primary transition text-center"
-                            onclick="document.getElementById('wheel-source-select').value='currently-watching'; document.getElementById('wheel-source-select').dispatchEvent(new Event('change'));">Current</button>
-
-                        <!-- Hidden select for logic compatibility -->
-                        <select id="wheel-source-select" class="hidden">
-                            <option value="all">All Items</option>
-                            <option value="want-to-watch" selected>Want to Watch</option>
-                            <option value="currently-watching">Currently Watching</option>
-                        </select>
+                    <!-- Source Lists -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-text-muted uppercase tracking-wider">Source Lists</h3>
+                        <div class="flex flex-wrap gap-2">
+                            <label class="flex-1 min-w-[100px] cursor-pointer group">
+                                <input type="checkbox" id="wheel-source-want" checked class="peer hidden wheel-source-checkbox">
+                                <div class="h-10 rounded-xl bg-bg-tertiary border border-border-primary peer-checked:border-accent-primary peer-checked:bg-accent-primary/10 flex items-center justify-center transition-all">
+                                    <span class="text-sm font-medium text-text-secondary peer-checked:text-accent-primary group-hover:text-text-primary">Want</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 min-w-[100px] cursor-pointer group">
+                                <input type="checkbox" id="wheel-source-current" checked class="peer hidden wheel-source-checkbox">
+                                <div class="h-10 rounded-xl bg-bg-tertiary border border-border-primary peer-checked:border-accent-primary peer-checked:bg-accent-primary/10 flex items-center justify-center transition-all">
+                                    <span class="text-sm font-medium text-text-secondary peer-checked:text-accent-primary group-hover:text-text-primary">Current</span>
+                                </div>
+                            </label>
+                            <label class="flex-1 min-w-[100px] cursor-pointer group">
+                                <input type="checkbox" id="wheel-source-watched" class="peer hidden wheel-source-checkbox">
+                                <div class="h-10 rounded-xl bg-bg-tertiary border border-border-primary peer-checked:border-accent-primary peer-checked:bg-accent-primary/10 flex items-center justify-center transition-all">
+                                    <span class="text-sm font-medium text-text-secondary peer-checked:text-accent-primary group-hover:text-text-primary">Watched</span>
+                                </div>
+                            </label>
+                        </div>
                     </div>
 
                     <!-- Collapsible Filters Section -->

@@ -32,7 +32,7 @@ export class WheelPicker {
         this.filterRuntime = document.getElementById('wheel-filter-runtime');
         this.filterRuntimeValue = document.getElementById('wheel-runtime-value');
         this.ratingFiltersContainer = document.getElementById('wheel-rating-filters');
-        this.sourceSelect = document.getElementById('wheel-source-select');
+        this.sourceCheckboxes = document.querySelectorAll('.wheel-source-checkbox');
 
         // Result Overlay
         this.resultOverlay = document.getElementById('wheel-result-overlay');
@@ -68,9 +68,8 @@ export class WheelPicker {
             this.filterRuntimeValue.textContent = val >= 240 ? 'All' : `< ${val}m`;
             this.applyFilters();
         });
-        this.sourceSelect.addEventListener('change', () => {
-            this.updateSourceIndicator();
-            this.applyFilters();
+        this.sourceCheckboxes.forEach(cb => {
+            cb.addEventListener('change', () => this.applyFilters());
         });
 
         // Result Listeners
@@ -103,7 +102,6 @@ export class WheelPicker {
         this.populateRatingFilters();
 
         // Initial Filter Apply
-        this.updateSourceIndicator();
         this.applyFilters();
     }
 
@@ -144,7 +142,9 @@ export class WheelPicker {
         const showMovies = this.filterMovie.checked;
         const showTV = this.filterTV.checked;
         const maxRuntime = parseInt(this.filterRuntime.value);
-        const source = this.sourceSelect.value;
+        const sourceWant = document.getElementById('wheel-source-want').checked;
+        const sourceCurrent = document.getElementById('wheel-source-current').checked;
+        const sourceWatched = document.getElementById('wheel-source-watched').checked;
 
         // Get checked ratings
         const checkedRatings = Array.from(this.ratingFiltersContainer.querySelectorAll('input:checked')).map(cb => cb.value);
@@ -173,8 +173,14 @@ export class WheelPicker {
             }
 
             // Source Filter
-            if (source === 'want-to-watch' && !item.want_to_watch) return false;
-            if (source === 'currently-watching' && !item.currently_watching) return false;
+            let sourceMatch = false;
+            if (sourceWant && item.want_to_watch) sourceMatch = true;
+            if (sourceCurrent && item.currently_watching) sourceMatch = true;
+            if (sourceWatched && item.watched) sourceMatch = true;
+
+            // If no source is selected, maybe show nothing? Or All? 
+            // Usually, if no source filters are checked, nothing is shown.
+            if (!sourceMatch) return false;
 
             return true;
         });
@@ -183,19 +189,7 @@ export class WheelPicker {
         this.drawWheel();
     }
 
-    updateSourceIndicator() {
-        const indicator = document.getElementById('source-indicator');
-        if (!indicator) return;
-
-        const value = this.sourceSelect.value;
-        if (value === 'all') {
-            indicator.style.transform = 'translateX(0)';
-        } else if (value === 'want-to-watch') {
-            indicator.style.transform = 'translateX(100%)';
-        } else if (value === 'currently-watching') {
-            indicator.style.transform = 'translateX(200%)';
-        }
-    }
+    // Removed updateSourceIndicator as it's no longer needed for multi-select
 
     resizeCanvas() {
         const parent = this.canvas.parentElement;

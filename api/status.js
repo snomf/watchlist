@@ -25,7 +25,51 @@ export default async function handler(req, res) {
 
     try {
         if (req.method === 'GET') {
-            const { tmdb_id, season, episode } = req.query;
+            const { tmdb_id, season, episode, random, status } = req.query;
+
+            // RANDOM SELECTION LOGIC
+            // Check for various truthy values (string 'true', '1', or boolean true)
+            if (random === 'true' || random === true || random === '1') {
+                let query = supabase.from('media').select('*');
+
+                // Filter by statuses if provided (comma-separated: want_to_watch,currently_watching,watched)
+                if (status) {
+                    const statuses = status.split(',');
+                    const filters = [];
+                    if (statuses.includes('want_to_watch')) filters.push('want_to_watch.eq.true');
+                    if (statuses.includes('currently_watching') || statuses.includes('watching')) filters.push('currently_watching.eq.true');
+                    if (statuses.includes('watched')) filters.push('watched.eq.true');
+
+                    if (filters.length > 0) {
+                        query = query.or(filters.join(','));
+                    }
+                } else {
+                    // Default to items in any list if no status filter provided
+                    query = query.or('want_to_watch.eq.true,currently_watching.eq.true,watched.eq.true');
+                }
+
+                const { data: items, error } = await query;
+                if (error) throw error;
+                if (!items || items.length === 0) return res.status(200).json({ error: 'no items found matched filters' });
+
+                // Pick a random item
+                const randomItem = items[Math.floor(Math.random() * items.length)];
+
+                // Determine the status for the response
+                let itemStatus = 'unknown';
+                if (randomItem.watched) itemStatus = 'watched';
+                else if (randomItem.currently_watching) itemStatus = 'watching';
+                else if (randomItem.want_to_watch) itemStatus = 'want_to_watch';
+
+                return res.status(200).json({
+                    tmdb_id: randomItem.tmdb_id,
+                    type: randomItem.type,
+                    title: randomItem.title,
+                    status: itemStatus,
+                    item: randomItem // Return full item for convenience
+                });
+            }
+
             if (!tmdb_id) return res.status(400).json({ error: 'tmdb_id is required' });
 
             const tmdbIdNum = parseInt(tmdb_id, 10);
