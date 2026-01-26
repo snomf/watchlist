@@ -56,26 +56,16 @@
 
             if (!state) {
                 // Fallback: Try to get from localStorage if we are on the same device
-                const storedUser = localStorage.getItem('currentUser');
-                if (!storedUser) {
+                const storedId = localStorage.getItem('watchlist_current_user_id');
+                if (!storedId) {
                     showError('Could not identify user. Please try connecting again from the Settings menu.');
                     return;
                 }
                 // If we have local user, we can send that.
+                finalUserId = storedId;
+            } else {
+                finalUserId = state;
             }
-
-            // We'll prefer the 'state' if strictly secure, but for this app localStorage is likely fine if same browser.
-            // Let's grab the user object.
-            let user = localStorage.getItem('activeUser') || localStorage.getItem('watchlist_current_user');
-            // Check how app.js saves it. 
-            // In auth.js (if we had it visible), we'd see what key is used.
-            // Based on previous code: `localStorage.setItem('watchlist_current_user', JSON.stringify(user));`
-
-            try {
-                if (user) user = JSON.parse(user);
-            } catch (e) { user = null; }
-
-            const finalUserId = state || (user ? user.id : null);
 
             if (!finalUserId) {
                 showError('User session not found.');

@@ -8,6 +8,7 @@ import { generateMediaSummary, chatWithWillow, startWillowChat } from './feature
 import { setupEasterEggs } from './features/easter-eggs.js';
 import { initWheelPicker } from './features/wheel-picker.js';
 import { auth } from './auth.js';
+import { traktSync } from './trakt-sync.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -2396,58 +2397,63 @@ async function saveRatingsAndNotes() {
     const currentUser = auth.getCurrentUser();
     if (!currentUser) return; // Should allow save only if logged in
 
-    // Read values from the Current User's input ONLY
-    const containerId = `${currentUser.handle}-rating-container`;
-    const notesId = `${currentUser.handle}-notes`;
+    const handle = currentUser.handle;
+    if (handle !== 'juainny' && handle !== 'erick') return;
+
+    const containerId = `${handle}-rating-container`;
+    const notesId = `${handle}-notes`;
 
     const hiddenInput = document.querySelector(`#${containerId} .rating-input-hidden`);
-    const ratingValue = hiddenInput ? parseFloat(hiddenInput.value) : null;
+    const ratingValue = hiddenInput ? (parseFloat(hiddenInput.value) || null) : null;
     const notesValue = document.getElementById(notesId)?.innerHTML || null;
+
+    // Construct update data for media table
+    const updates = {};
+    updates[`${handle}_rating`] = ratingValue;
+    updates[`${handle}_notes`] = notesValue;
 
     // Check if the item exists in the database
     const { data: existingItem, error: fetchError } = await supabase
         .from('media')
         .select('*')
         .eq('tmdb_id', tmdbId)
-        .single(); // Assuming only one media item per tmdbId
+        .single();
 
     if (!existingItem) return;
 
-    // Upsert to user_media_actions
-    const upsertData = {
-        user_id: currentUser.id,
-        media_id: existingItem.id,
-        rating: ratingValue,
-        review: notesValue,
-        updated_at: new Date()
-    };
-
-    const { data: savedAction, error } = await supabase
-        .from('user_media_actions')
-        .upsert(upsertData, { onConflict: 'user_id, media_id' })
+    // Update the media table directly (Simplified approach requested by user)
+    const { data: savedItem, error } = await supabase
+        .from('media')
+        .update(updates)
+        .eq('id', existingItem.id)
         .select()
         .single();
 
     if (error) {
         console.error('Error saving user action:', error);
     } else {
-        // Detect changes and log activity
-        // We can check against old values if we fetched them previously, or just log 'rate' if rating > 0
-        // Simplification: Always log 'rate' if rating is set, 'note_added' if note is set.
-        // To avoid spam, we might want to check against `currentMediaItem` local cache if we updated it.
-        // BUT `currentMediaItem` now only holds `media` table data. We need a cache for actions.
-        // Let's just log.
-        if (ratingValue > 0) await logActivity('rate', currentUser.handle, existingItem, { rating: ratingValue });
-        if (notesValue && notesValue.length > 0) await logActivity('note_added', currentUser.handle, existingItem);
+        // Log activity locally
+        const oldRating = existingItem[`${handle}_rating`];
+        const oldNotes = existingItem[`${handle}_notes`];
 
-        // Update local state if needed (e.g. for re-render)
+        if (ratingValue !== oldRating && ratingValue !== null) {
+            await logActivity('rate', handle, savedItem, { rating: ratingValue });
+
+            // --- TRAKT SYNC ---
+            // Push to Trakt if connected
+            await traktSync.pushRating(savedItem, ratingValue);
+        }
+
+        if (notesValue !== oldNotes && (notesValue || oldNotes)) {
+            await logActivity('note_added', handle, savedItem);
+        }
+
+        // Update local cache
+        currentMediaItem = savedItem;
     }
 }
 
-// Update currentMediaItem with the latest data
-currentMediaItem = data;
-    }
-}
+
 
 async function fetchUserMediaAction(mediaId, userId) {
     if (!mediaId) return null;

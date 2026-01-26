@@ -534,8 +534,9 @@ async function setupTraktIntegration() {
     if (!traktSection) return; // UI might not exist yet
 
     // Determine current user
-    const currentUser = JSON.parse(localStorage.getItem('activeUser') || '{}');
-    if (!currentUser.id) {
+    const currentUserId = localStorage.getItem('watchlist_current_user_id');
+    const userHandle = localStorage.getItem('watchlist_current_user_handle');
+    if (!currentUserId) {
         if (connectBtn) connectBtn.disabled = true;
         if (statusText) statusText.textContent = 'Please log in to connect Trakt.';
         return;
@@ -545,7 +546,7 @@ async function setupTraktIntegration() {
     const { data: interaction } = await supabase
         .from('integrations')
         .select('*')
-        .eq('user_id', currentUser.id)
+        .eq('user_id', currentUserId)
         .eq('provider', 'trakt')
         .maybeSingle();
 
@@ -554,7 +555,7 @@ async function setupTraktIntegration() {
     if (isConnected) {
         if (connectBtn) connectBtn.classList.add('hidden');
         if (disconnectBtn) disconnectBtn.classList.remove('hidden');
-        if (statusText) statusText.innerHTML = `<span class="text-green-400">Connected as ${currentUser.handle}</span>`;
+        if (statusText) statusText.innerHTML = `<span class="text-green-400">Connected as ${userHandle}</span>`;
     } else {
         if (connectBtn) connectBtn.classList.remove('hidden');
         if (disconnectBtn) disconnectBtn.classList.add('hidden');
@@ -571,7 +572,7 @@ async function setupTraktIntegration() {
             const clientId = import.meta.env.VITE_TRAKT_CLIENT_ID || '29c90ce71a39987699554ed7238b63cad28426f5b697cba738011db637de6cba';
             const redirectUri = import.meta.env.VITE_TRAKT_REDIRECT_URI || window.location.origin + '/callback.html';
             // We pass the user ID as 'state' to retrieve it later in the callback
-            const state = currentUser.id;
+            const state = currentUserId;
 
             const authUrl = `https://trakt.tv/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 
@@ -589,7 +590,7 @@ async function setupTraktIntegration() {
                 await supabase
                     .from('integrations')
                     .delete()
-                    .eq('user_id', currentUser.id)
+                    .eq('user_id', currentUserId)
                     .eq('provider', 'trakt');
 
                 // Refresh UI
