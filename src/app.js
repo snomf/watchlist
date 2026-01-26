@@ -1068,10 +1068,10 @@ async function openMovieModal(tmdbId, type) {
                 erickContainer.classList.add('opacity-75'); // Visual dim
 
                 // Make Erick's input readonly
-                setupReadOnlyNotes('erick-notes', erickAction?.review);
-                setupNotesToolbar('juainny', 'juainny-notes', juainnyAction?.review); // Editable
+                setupReadOnlyNotes('erick-notes', currentMediaItem?.erick_notes);
+                setupNotesToolbar('juainny', 'juainny-notes', currentMediaItem?.juainny_notes); // Editable
 
-                // Disable Star Interaction for Erick's container? 
+                // Disable Star Interaction for Erick's container?
                 // The `ratings.js` doesn't natively support readonly, but we can pointer-events-none content
                 document.getElementById('erick-rating-container').style.pointerEvents = 'none';
                 document.getElementById('juainny-rating-container').style.pointerEvents = 'auto';
@@ -1079,8 +1079,8 @@ async function openMovieModal(tmdbId, type) {
                 erickContainer.classList.add('ring-2', 'ring-accent-primary');
                 juainnyContainer.classList.add('opacity-75');
 
-                setupReadOnlyNotes('juainny-notes', juainnyAction?.review);
-                setupNotesToolbar('erick', 'erick-notes', erickAction?.review); // Editable
+                setupReadOnlyNotes('juainny-notes', currentMediaItem?.juainny_notes);
+                setupNotesToolbar('erick', 'erick-notes', currentMediaItem?.erick_notes); // Editable
 
                 document.getElementById('juainny-rating-container').style.pointerEvents = 'none';
                 document.getElementById('erick-rating-container').style.pointerEvents = 'auto';

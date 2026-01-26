@@ -827,6 +827,229 @@
         </div>
     </div>
 
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[55] hidden items-center justify-center modal-hidden p-4">
+        <div class="modal-backdrop fixed inset-0" onclick="closeSettingsModal()"></div>
+        <div
+            class="bg-bg-secondary rounded-lg shadow-xl z-50 w-full md:w-1/2 mx-auto modal-content relative max-h-full overflow-y-auto">
+            <button id="close-settings-modal-btn"
+                class="absolute top-4 right-4 text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full p-2 z-10">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+            <div class="p-6">
+                <h2 class="text-2xl font-bold mb-4">Settings</h2>
+                <div class="border border-border-primary rounded-lg p-4 mb-4">
+                    <h3 class="text-lg font-semibold mb-2">Device Name</h3>
+                    <input type="text" id="device-name-input"
+                        class="w-full bg-bg-primary border-border-primary rounded-md text-center p-2"
+                        placeholder="Enter device name" value="User">
+                    <p class="text-xs text-text-muted mt-2">This will only change the text that appears next to the user
+                        avatars in the top bar on this device.</p>
+                    <button id="reset-device-name-btn" class="text-xs text-accent-primary hover:underline mt-2">Reset
+                        device name</button>
+                </div>
+                <div class="border border-border-primary rounded-lg p-4">
+                    <h3 class="text-lg font-semibold mb-2">Theme</h3>
+                    <div id="theme-picker" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- AI: This section should be dynamically populated with available themes. -->
+                        <button data-theme="dark"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary">Dark</button>
+                        <button data-theme="night"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary">Night</button>
+                        <button data-theme="dracula"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#282a36] text-[#f8f8f2]">Dracula</button>
+                        <button data-theme="cyberpunk"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#fdf500] text-[#000000]">Cyberpunk</button>
+                        <button data-theme="coffee"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#20161F] text-[#DC944C]">Coffee</button>
+                        <button data-theme="forest"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#171212] text-[#1EB854]">Forest</button>
+                        <button data-theme="aqua"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#002b36] text-[#2aa198]">Aqua</button>
+                        <button data-theme="synthwave"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#2b213a] text-[#e2d7f4]">Synth</button>
+                        <button data-theme="retro"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#ece3ca] text-[#a45a1d]">Retro</button>
+                        <button data-theme="valentine"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#f0d6e8] text-[#632c3b]">Love</button>
+                        <button data-theme="halloween"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#212121] text-[#f28c18]">Spooky</button>
+                        <button data-theme="luxury"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#090b0d] text-[#dca54c]">Luxury</button>
+                        <button data-theme="smiling-friends"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#FFD700] text-[#FF4500] font-comic shadow-md hover:scale-105 transition-transform"
+                            style="font-family: 'Comic Sans MS', cursive, sans-serif;">Glep</button>
+                    </div>
+                    <p class="text-xs text-text-muted mt-2">*no light theme haha</p>
+                </div>
+
+                <!-- Wallpaper Selector -->
+                <div class="border border-border-primary rounded-lg p-4 mt-4">
+                    <h3 class="text-lg font-semibold mb-2">Wallpaper</h3>
+                    <div class="flex gap-2">
+                        <button id="wallpaper-btn"
+                            class="bg-bg-tertiary hover:bg-bg-secondary text-text-primary px-4 py-2 rounded-lg transition border border-border-primary flex items-center gap-2">
+                            <i class="fas fa-image"></i> Choose Wallpaper
+                        </button>
+                        <button id="reset-wallpaper-btn"
+                            class="text-text-muted hover:text-danger px-4 py-2 rounded-lg transition">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <div class="border border-border-primary rounded-lg p-4 mt-4">
+                    <h3 class="text-lg font-semibold mb-2">Avatars</h3>
+                    <div class="flex gap-4">
+                        <button id="avatar-picker-user1-btn"
+                            class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center hover:bg-bg-tertiary transition">
+                            <span>Juainny's Avatar</span>
+                            <div id="user1-avatar-preview" class="w-10 h-10 rounded-full mt-2">
+                                <!-- AI: User 1's avatar will be rendered here. -->
+                            </div>
+                        </button>
+                        <button id="avatar-picker-user2-btn"
+                            class="flex-1 p-4 rounded-lg border-2 border-border-primary flex flex-col items-center hover:bg-bg-tertiary transition">
+                            <span>Erick's Avatar</span>
+                            <div id="user2-avatar-preview" class="w-10 h-10 rounded-full mt-2">
+                                <!-- AI: User 2's avatar will be rendered here. -->
+                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="trakt-integration-section" class="border border-border-primary rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold mb-2 flex items-center gap-2">
+                    <i class="fas fa-sync text-accent-primary"></i> Trakt Integration
+                </h3>
+                <p class="text-sm text-text-muted mb-4">Connect your Trakt account to automatically sync your ratings
+                    and watched status.</p>
+
+                <div id="trakt-status-container" class="flex flex-col gap-3">
+                    <p id="trakt-status-text" class="text-sm font-medium">Checking status...</p>
+                    <button id="connect-trakt-btn"
+                        class="w-full py-2 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition font-bold flex items-center justify-center gap-2">
+                        <i class="fas fa-link"></i> Connect Trakt
+                    </button>
+                    <button id="disconnect-trakt-btn"
+                        class="hidden w-full py-2 px-4 bg-danger hover:opacity-80 text-white rounded-lg transition font-bold">
+                        Disconnect
+                    </button>
+                </div>
+            </div>
+
+            <div class="border border-border-primary rounded-lg p-4 mt-4">
+                <h3 class="text-lg font-semibold mb-2">Jarvis Settings</h3>
+                <div class="space-y-4">
+                    <label for="quota-conservation-toggle" class="flex items-center justify-between cursor-pointer">
+                        <span class="text-text-primary">Quota Conservation</span>
+                        <div class="relative">
+                            <input type="checkbox" id="quota-conservation-toggle" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary">
+                            </div>
+                        </div>
+                    </label>
+                    <label for="ai-disabled-toggle" class="flex items-center justify-between cursor-pointer">
+                        <span class="text-text-primary">AI Disabled</span>
+                        <div class="relative">
+                            <input type="checkbox" id="ai-disabled-toggle" class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-bg-tertiary peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-secondary rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary">
+                            </div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Avatar Picker Modal -->
+    <div id="avatar-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
+        style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.6);">
+        <div
+            class="bg-bg-secondary rounded-xl shadow-2xl w-full max-w-md p-6 border border-border-primary relative overflow-hidden">
+            <button id="close-avatar-modal-btn"
+                class="absolute top-4 right-4 text-text-muted hover:text-white transition">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold mb-6 text-center text-text-primary">Customize Avatar</h3>
+
+            <div class="flex flex-col items-center mb-8">
+                <div id="avatar-preview-large"
+                    class="w-32 h-32 rounded-full border-4 border-bg-tertiary shadow-lg mb-4 flex items-center justify-center overflow-hidden bg-bg-primary">
+                    <!-- Preview -->
+                </div>
+                <div class="flex gap-4 mb-4">
+                    <button id="avatar-mode-gradient"
+                        class="px-4 py-2 rounded-full bg-accent-primary text-white font-semibold text-sm">Gradient</button>
+                    <button id="avatar-mode-image"
+                        class="px-4 py-2 rounded-full bg-bg-tertiary text-text-muted font-semibold text-sm hover:text-white">Image</button>
+                </div>
+            </div>
+
+            <!-- Gradient Controls -->
+            <div id="avatar-gradient-controls" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase">Color Palette</label>
+                    <div class="grid grid-cols-6 gap-2" id="avatar-color-grid">
+                        <!-- Colors injected via JS -->
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase">Icon</label>
+                    <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" id="avatar-icon-grid">
+                        <!-- Icons injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Controls -->
+            <div id="avatar-image-controls" class="hidden space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase">Image URL</label>
+                    <input type="text" id="avatar-image-url"
+                        class="w-full bg-bg-primary border border-border-primary rounded-lg px-4 py-3 text-text-primary focus:border-accent-primary outline-none"
+                        placeholder="https://...">
+                </div>
+                <p class="text-xs text-text-muted text-center">Paste a link to any image.</p>
+            </div>
+
+            <div class="mt-8 flex gap-3">
+                <button id="save-avatar-btn"
+                    class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold py-3 rounded-xl transition shadow-lg transform hover:scale-105">
+                    Save New Look
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallpaper Selector Modal -->
+    <div id="wallpaper-modal" class="fixed inset-0 z-[65] hidden items-center justify-center p-4"
+        style="background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);">
+        <div
+            class="rounded-xl p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto flex flex-col bg-bg-secondary border border-border-primary relative">
+            <button id="close-wallpaper-modal"
+                class="absolute top-4 right-4 text-2xl text-text-muted hover:text-text-primary transition">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-text-primary mb-4">Select Wallpaper</h2>
+            <div class="mb-4">
+                <input type="text" id="wallpaper-search" placeholder="Search from your library..."
+                    class="w-full px-4 py-2 rounded-lg bg-bg-tertiary border border-border-primary text-text-primary focus:border-accent-primary outline-none">
+            </div>
+            <div id="wallpaper-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto flex-1 p-2">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
     <script type="module" src="/src/app.js"></script>
 </body>
 
