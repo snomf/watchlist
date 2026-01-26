@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connecting to Trakt...</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="text-center">
+        <div id="status-icon" class="mb-4">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500 mx-auto"></div>
+        </div>
+        <h1 id="status-text" class="text-xl font-semibold mb-2">Connecting to Trakt...</h1>
+        <p id="status-subtext" class="text-gray-400 text-sm">Please wait while we complete the secure handshake.</p>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+        // Initialize Supabase (Public Anon Key is fine here for user ID lookup if we used Auth, 
+        // but remember we use custom localStorage auth. We need to grab the user ID from localStorage or URL state if passed.)
+
+        // ACTUAL FLOW:
+        // 1. Get code from URL
+        // 2. Send to backend Function (which has the Secret)
+        // 3. Backend stores token in DB attached to the "current user"
+
+        // Problem: How does the Backend know WHO the current user is? 
+        // We aren't sending a session token. 
+        // Solution: We should have passed a `state` param in the OAuth Request with the user_id (or handle).
+        // Trakt returns `state` back to us.
+
+        async function handleCallback() {
+            const params = new URLSearchParams(window.location.search);
+            const code = params.get('code');
+            const state = params.get('state'); // Should contain our user handle/ID
+
+            if (!code) {
+                showError('No code received from Trakt.');
+                return;
+            }
+
+            if (!state) {
+                // Fallback: Try to get from localStorage if we are on the same device
+                const storedUser = localStorage.getItem('currentUser');
+                if (!storedUser) {
+                    showError('Could not identify user. Please try connecting again from the Settings menu.');
+                    return;
+                }
+                // If we have local user, we can send that.
+            }
+
+            // We'll prefer the 'state' if strictly secure, but for this app localStorage is likely fine if same browser.
+            // Let's grab the user object.
+            let user = localStorage.getItem('activeUser') || localStorage.getItem('watchlist_current_user');
+            // Check how app.js saves it. 
+            // In auth.js (if we had it visible), we'd see what key is used.
+            // Based on previous code: `localStorage.setItem('watchlist_current_user', JSON.stringify(user));`
+
+            try {
+                if (user) user = JSON.parse(user);
+            } catch (e) { user = null; }
+
+            const finalUserId = state || (user ? user.id : null);
+
+            if (!finalUserId) {
+                showError('User session not found.');
+                return;
+            }
+
+            try {
+                // Call our serverless function
+                const response = await fetch('/api/trakt-auth', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        code,
+                        user_id: finalUserId,
+                        redirect_uri: window.location.origin + '/callback.html'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to exchange token');
+                }
+
+                // Success
+                document.getElementById('status-icon').innerHTML = '<svg class="w-12 h-12 text-green-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                document.getElementById('status-text').textContent = 'Connected!';
+                document.getElementById('status-subtext').textContent = 'Redirecting back to app...';
+
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+
+            } catch (err) {
+                console.error(err);
+                showError('Authentication failed: ' + err.message);
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('status-icon').innerHTML = '<svg class="w-12 h-12 text-red-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+            document.getElementById('status-text').textContent = 'Error';
+            document.getElementById('status-text').classList.add('text-red-500');
+            document.getElementById('status-subtext').textContent = msg;
+        }
+
+        handleCallback();
+    </script>
+</body>
+
+</html>

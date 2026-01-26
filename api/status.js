@@ -28,8 +28,7 @@ export default async function handler(req, res) {
             const { tmdb_id, season, episode, random, status } = req.query;
 
             // RANDOM SELECTION LOGIC
-            // Check for various truthy values (string 'true', '1', or boolean true)
-            if (random === 'true' || random === true || random === '1') {
+            if (random === 'true') {
                 let query = supabase.from('media').select('*');
 
                 // Filter by statuses if provided (comma-separated: want_to_watch,currently_watching,watched)

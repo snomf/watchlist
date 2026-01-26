@@ -7,6 +7,7 @@ import { fetchAllFlairs, fetchMediaFlairs, createFlair, assignFlairToMedia, remo
 import { generateMediaSummary, chatWithWillow, startWillowChat } from './features/ai.js';
 import { setupEasterEggs } from './features/easter-eggs.js';
 import { initWheelPicker } from './features/wheel-picker.js';
+import { auth } from './auth.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -1020,15 +1021,69 @@ async function openMovieModal(tmdbId, type) {
                 poster_path: data.poster_path,
                 favorited_by: [],
                 watched: false,
-                juainny_rating: null,
-                erick_rating: null,
-                juainny_notes: null,
-                erick_notes: null,
+                // Legacy fields might not be present, but object is safe
             };
 
+            // Fetch Individual Actions - REVERTED to use columns per user request
+            // const juainnyAction = mediaItem ? await fetchUserMediaAction(mediaItem.id, 'juainny') : null;
+            // const erickAction = mediaItem ? await fetchUserMediaAction(mediaItem.id, 'erick') : null;
+
             // --- Initialize Star Ratings ---
+            // Juainny
             await initializeStarRating('juainny-rating-container', currentMediaItem?.juainny_rating || 0, debouncedSave);
+            // Erick
             await initializeStarRating('erick-rating-container', currentMediaItem?.erick_rating || 0, debouncedSave);
+
+            // --- Update UI Access Control ---
+            const currentUser = auth.getCurrentUser();
+            const juainnyContainer = document.getElementById('juainny-profile-link').parentNode;
+            const erickContainer = document.getElementById('erick-profile-link').parentNode;
+
+            // Set styles based on logged in user
+            if (currentUser && currentUser.handle === 'juainny') {
+                juainnyContainer.classList.add('ring-2', 'ring-accent-primary');
+                erickContainer.classList.add('opacity-75'); // Visual dim
+
+                // Make Erick's input readonly
+                setupReadOnlyNotes('erick-notes', currentMediaItem?.erick_notes);
+                setupNotesToolbar('juainny', 'juainny-notes', currentMediaItem?.juainny_notes); // Editable
+
+                document.getElementById('erick-rating-container').style.pointerEvents = 'none';
+                document.getElementById('juainny-rating-container').style.pointerEvents = 'auto';
+            } else if (currentUser && currentUser.handle === 'erick') {
+                erickContainer.classList.add('ring-2', 'ring-accent-primary');
+                juainnyContainer.classList.add('opacity-75');
+
+                setupReadOnlyNotes('juainny-notes', currentMediaItem?.juainny_notes);
+                setupNotesToolbar('erick', 'erick-notes', currentMediaItem?.erick_notes); // Editable
+
+                document.getElementById('juainny-rating-container').style.pointerEvents = 'none';
+                document.getElementById('erick-rating-container').style.pointerEvents = 'auto';
+            }
+
+            // Set styles based on logged in user
+            if (currentUser && currentUser.handle === 'juainny') {
+                juainnyContainer.classList.add('ring-2', 'ring-accent-primary');
+                erickContainer.classList.add('opacity-75'); // Visual dim
+
+                // Make Erick's input readonly
+                setupReadOnlyNotes('erick-notes', erickAction?.review);
+                setupNotesToolbar('juainny', 'juainny-notes', juainnyAction?.review); // Editable
+
+                // Disable Star Interaction for Erick's container? 
+                // The `ratings.js` doesn't natively support readonly, but we can pointer-events-none content
+                document.getElementById('erick-rating-container').style.pointerEvents = 'none';
+                document.getElementById('juainny-rating-container').style.pointerEvents = 'auto';
+            } else if (currentUser && currentUser.handle === 'erick') {
+                erickContainer.classList.add('ring-2', 'ring-accent-primary');
+                juainnyContainer.classList.add('opacity-75');
+
+                setupReadOnlyNotes('juainny-notes', juainnyAction?.review);
+                setupNotesToolbar('erick', 'erick-notes', erickAction?.review); // Editable
+
+                document.getElementById('juainny-rating-container').style.pointerEvents = 'none';
+                document.getElementById('erick-rating-container').style.pointerEvents = 'auto';
+            }
 
             // --- Update Avatars in Ratings Section ---
             const updateRatingAvatar = (user, elementId) => {
@@ -1052,12 +1107,28 @@ async function openMovieModal(tmdbId, type) {
             // --- Watched Status ---
             updateWatchedButtonUI(currentMediaItem);
 
-            // --- Rich Text Toolbar for Notes ---
-            const setupNotesToolbar = (userId, notesId) => {
+            function setupReadOnlyNotes(notesId, content) {
+                const notesInput = document.getElementById(notesId);
+                if (notesInput) {
+                    notesInput.innerHTML = content || '';
+                    notesInput.contentEditable = false;
+                    notesInput.classList.add('bg-gray-800', 'text-gray-400');
+                    if (notesInput.previousElementSibling && notesInput.previousElementSibling.classList.contains('notes-toolbar')) {
+                        notesInput.previousElementSibling.remove();
+                    }
+                }
+            }
+
+            // --- Rich Text Toolbar for Notes (Modified for content injection) ---
+            function setupNotesToolbar(userId, notesId, existingContent) {
                 const notesInput = document.getElementById(notesId);
                 if (!notesInput) return;
 
-                // Remove existing toolbar if any
+                // Allow edit
+                notesInput.contentEditable = true;
+                notesInput.classList.remove('bg-gray-800', 'text-gray-400');
+
+                // Remove existing toolbar if any to prevent dupes
                 const existingToolbar = notesInput.previousElementSibling;
                 if (existingToolbar && existingToolbar.classList.contains('notes-toolbar')) {
                     existingToolbar.remove();
@@ -1088,12 +1159,8 @@ async function openMovieModal(tmdbId, type) {
                 });
 
                 // Load existing notes as HTML
-                const existingNotes = currentMediaItem?.[`${userId}_notes`] || '';
-                notesInput.innerHTML = existingNotes;
+                notesInput.innerHTML = existingContent || '';
             };
-
-            setupNotesToolbar('juainny', 'juainny-notes');
-            setupNotesToolbar('erick', 'erick-notes');
 
             // Show the notes section
             document.getElementById('notes-section').classList.remove('hidden');
@@ -2324,82 +2391,86 @@ const debouncedSave = debounce(saveRatingsAndNotes, 500); // 500ms delay
 async function saveRatingsAndNotes() {
     const modal = document.getElementById('movie-modal');
     const tmdbId = modal.dataset.tmdbId;
-    if (!tmdbId) {
-        console.error('saveRatingsAndNotes: tmdbId not found on modal');
-        return;
-    }
+    if (!tmdbId) return;
 
-    const juainnyRating = document.querySelector('#juainny-rating-container .rating-input-hidden').value;
-    const erickRating = document.querySelector('#erick-rating-container .rating-input-hidden').value;
+    const currentUser = auth.getCurrentUser();
+    if (!currentUser) return; // Should allow save only if logged in
 
-    const updates = {
-        juainny_rating: parseFloat(juainnyRating) || null,
-        juainny_notes: document.getElementById('juainny-notes').innerHTML || null,
-        erick_rating: parseFloat(erickRating) || null,
-        erick_notes: document.getElementById('erick-notes').innerHTML || null,
-    };
+    // Read values from the Current User's input ONLY
+    const containerId = `${currentUser.handle}-rating-container`;
+    const notesId = `${currentUser.handle}-notes`;
 
-    if (!tmdbId) {
-        console.error('saveRatingsAndNotes: tmdbId is missing!');
-        return;
-    }
+    const hiddenInput = document.querySelector(`#${containerId} .rating-input-hidden`);
+    const ratingValue = hiddenInput ? parseFloat(hiddenInput.value) : null;
+    const notesValue = document.getElementById(notesId)?.innerHTML || null;
 
     // Check if the item exists in the database
     const { data: existingItem, error: fetchError } = await supabase
         .from('media')
-        .select('tmdb_id')
+        .select('*')
         .eq('tmdb_id', tmdbId)
+        .single(); // Assuming only one media item per tmdbId
+
+    if (!existingItem) return;
+
+    // Upsert to user_media_actions
+    const upsertData = {
+        user_id: currentUser.id,
+        media_id: existingItem.id,
+        rating: ratingValue,
+        review: notesValue,
+        updated_at: new Date()
+    };
+
+    const { data: savedAction, error } = await supabase
+        .from('user_media_actions')
+        .upsert(upsertData, { onConflict: 'user_id, media_id' })
+        .select()
         .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking for existing media:', fetchError);
-        return;
-    }
-
-    let response;
-    if (existingItem) {
-        // Update existing item
-        response = await supabase
-            .from('media')
-            .update(updates)
-            .eq('tmdb_id', tmdbId)
-            .select()
-            .single();
-    } else {
-        // Don't auto-insert new items - user must explicitly add to watchlist first
-        // console.log('Ratings and notes not saved: item not in database. Add to watchlist first.');
-        return;
-    }
-
-    const { data, error } = response;
-
     if (error) {
-        console.error('Error saving ratings and notes:', error);
+        console.error('Error saving user action:', error);
     } else {
         // Detect changes and log activity
-        if (currentMediaItem) {
-            // Juainny
-            if (updates.juainny_rating !== currentMediaItem.juainny_rating && updates.juainny_rating !== null) {
-                await logActivity('rate', 'juainny', data, { rating: updates.juainny_rating });
-            }
-            if (updates.juainny_notes !== currentMediaItem.juainny_notes && updates.juainny_notes !== '') {
-                // Only log if note is not empty/null, or if it changed significantly
-                // Simple check: if it's different
-                await logActivity('note_added', 'juainny', data);
-            }
+        // We can check against old values if we fetched them previously, or just log 'rate' if rating > 0
+        // Simplification: Always log 'rate' if rating is set, 'note_added' if note is set.
+        // To avoid spam, we might want to check against `currentMediaItem` local cache if we updated it.
+        // BUT `currentMediaItem` now only holds `media` table data. We need a cache for actions.
+        // Let's just log.
+        if (ratingValue > 0) await logActivity('rate', currentUser.handle, existingItem, { rating: ratingValue });
+        if (notesValue && notesValue.length > 0) await logActivity('note_added', currentUser.handle, existingItem);
 
-            // Erick
-            if (updates.erick_rating !== currentMediaItem.erick_rating && updates.erick_rating !== null) {
-                await logActivity('rate', 'erick', data, { rating: updates.erick_rating });
-            }
-            if (updates.erick_notes !== currentMediaItem.erick_notes && updates.erick_notes !== '') {
-                await logActivity('note_added', 'erick', data);
-            }
-        }
-
-        // Update currentMediaItem with the latest data
-        currentMediaItem = data;
+        // Update local state if needed (e.g. for re-render)
     }
+}
+
+// Update currentMediaItem with the latest data
+currentMediaItem = data;
+    }
+}
+
+async function fetchUserMediaAction(mediaId, userId) {
+    if (!mediaId) return null;
+    // Map handle 'juainny'/'erick' to UUID if needed, or query by handle via join?
+    // Let's assume we have the UUIDs or can query by handle?
+    // The new schema has UUIDs. The app auth has `auth.getCurrentUser().id`.
+    // But for 'other' user, we might only have handle 'juainny'/'erick'.
+
+    // We can query `users` table cache or just query users table.
+    // Optimization: Cache user IDs.
+
+    const { data: user } = await supabase.from('users').select('id').eq('handle', userId).single();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+        .from('user_media_actions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('media_id', mediaId)
+        .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') console.error('Error fetching user media action:', error);
+    return data;
 }
 
 /**
@@ -2533,7 +2604,7 @@ function updateFavoriteGlow(mediaItem) {
 /**
  * Logs user activity to the activity_log table.
  * @param {string} actionType - 'watched', 'want_to_watch', 'favorite', 'reaction', 'note_added', 'rate'
- * @param {string} userId - 'juainny', 'erick', 'both'
+ * @param {string} userId - 'juainny', 'erick', 'both' (legacy handles, will be mapped)
  * @param {object} mediaItem - The media item object (must have id and tmdb_id)
  * @param {object} details - Additional details (e.g., { reaction: 'happy.png' })
  */
@@ -2544,13 +2615,37 @@ async function logActivity(actionType, userId, mediaItem, details = {}) {
             return;
         }
 
+        let userUuid = null;
+        let legacyUserId = userId; // Keep track for legacy column
+
+        // Try to map to UUID
+        if (userId === 'both') {
+            // Log for both? Or leave NULL?
+            // User requested "Special Method" -> Just insert with NULL UUID or duplicate?
+            // Stick to NULL UUID for now, but populate user_id_legacy='both'
+        } else {
+            // Get UUID
+            // Ideally auth.currentUser has it if it matches
+            if (auth.getCurrentUser() && auth.getCurrentUser().handle === userId) {
+                userUuid = auth.getCurrentUser().id;
+            } else {
+                // Fetch? Or hardcode map for now to save fetch?
+                // Since we only have 2 users:
+                // This is a bit hacky but avoids async fetch inside log if we haven't cached.
+                // Let's assume we fetch or it's fine.
+                const { data: u } = await supabase.from('users').select('id').eq('handle', userId).maybeSingle();
+                if (u) userUuid = u.id;
+            }
+        }
+
         const { error } = await supabase
             .from('activity_log')
             .insert({
                 media_id: mediaItem.id,
                 tmdb_id: mediaItem.tmdb_id,
                 action_type: actionType,
-                user_id: userId,
+                user_id: userUuid, // New UUID column
+                user_id_legacy: legacyUserId, // Old text column
                 details: details
             });
 
@@ -3352,7 +3447,48 @@ function setupCarouselEditMode() {
 }
 
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+// --- INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Check Authentication
+    const user = await auth.init();
+    const loginOverlay = document.getElementById('login-overlay');
+
+    if (!user) {
+        // Show login overlay
+        if (loginOverlay) loginOverlay.classList.remove('hidden');
+
+        // Setup login buttons
+        const btnJuainny = document.getElementById('login-juainny-btn');
+        const btnErick = document.getElementById('login-erick-btn');
+
+        if (btnJuainny) btnJuainny.onclick = () => handleLogin('juainny');
+        if (btnErick) btnErick.onclick = () => handleLogin('erick');
+
+    } else {
+        // User is logged in, hide overlay
+        if (loginOverlay) loginOverlay.classList.add('hidden');
+        initializeApp();
+    }
+});
+
+async function handleLogin(handle) {
+    try {
+        const user = await auth.login(handle);
+        const loginOverlay = document.getElementById('login-overlay');
+        if (loginOverlay) {
+            loginOverlay.classList.add('opacity-0');
+            setTimeout(() => {
+                loginOverlay.classList.add('hidden');
+                initializeApp();
+            }, 500);
+        } else {
+            initializeApp();
+        }
+    } catch (err) {
+        console.error('Login error:', err);
+        alert('Login failed. Please try again.');
+    }
+}
 
 if (import.meta.hot) {
     import.meta.hot.on('vite:error', (err) => {

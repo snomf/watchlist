@@ -517,6 +517,86 @@ export function initializeSettings() {
             }
         });
     }
+
+    // Trakt Integration Setup
+    setupTraktIntegration();
+}
+
+/**
+ * Sets up Trakt Integration UI and listeners
+ */
+async function setupTraktIntegration() {
+    const connectBtn = document.getElementById('connect-trakt-btn');
+    const disconnectBtn = document.getElementById('disconnect-trakt-btn');
+    const statusText = document.getElementById('trakt-status-text');
+    const traktSection = document.getElementById('trakt-integration-section');
+
+    if (!traktSection) return; // UI might not exist yet
+
+    // Determine current user
+    const currentUser = JSON.parse(localStorage.getItem('activeUser') || '{}');
+    if (!currentUser.id) {
+        if (connectBtn) connectBtn.disabled = true;
+        if (statusText) statusText.textContent = 'Please log in to connect Trakt.';
+        return;
+    }
+
+    // Check integration status
+    const { data: interaction } = await supabase
+        .from('integrations')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('provider', 'trakt')
+        .maybeSingle();
+
+    const isConnected = !!interaction;
+
+    if (isConnected) {
+        if (connectBtn) connectBtn.classList.add('hidden');
+        if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+        if (statusText) statusText.innerHTML = `<span class="text-green-400">Connected as ${currentUser.handle}</span>`;
+    } else {
+        if (connectBtn) connectBtn.classList.remove('hidden');
+        if (disconnectBtn) disconnectBtn.classList.add('hidden');
+        if (statusText) statusText.textContent = 'Not connected';
+    }
+
+    // Connect Listener
+    if (connectBtn) {
+        // Remove old listeners by cloning
+        const newConnectBtn = connectBtn.cloneNode(true);
+        connectBtn.parentNode.replaceChild(newConnectBtn, connectBtn);
+
+        newConnectBtn.addEventListener('click', () => {
+            const clientId = import.meta.env.VITE_TRAKT_CLIENT_ID || '29c90ce71a39987699554ed7238b63cad28426f5b697cba738011db637de6cba';
+            const redirectUri = import.meta.env.VITE_TRAKT_REDIRECT_URI || window.location.origin + '/callback.html';
+            // We pass the user ID as 'state' to retrieve it later in the callback
+            const state = currentUser.id;
+
+            const authUrl = `https://trakt.tv/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+
+            window.location.href = authUrl;
+        });
+    }
+
+    // Disconnect Listener
+    if (disconnectBtn) {
+        const newDisconnectBtn = disconnectBtn.cloneNode(true);
+        disconnectBtn.parentNode.replaceChild(newDisconnectBtn, disconnectBtn);
+
+        newDisconnectBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to disconnect Trakt? Syncing will stop.')) {
+                await supabase
+                    .from('integrations')
+                    .delete()
+                    .eq('user_id', currentUser.id)
+                    .eq('provider', 'trakt');
+
+                // Refresh UI
+                setupTraktIntegration();
+            }
+        });
+    }
 }
 
 // --- AVATAR LOGIC ---
