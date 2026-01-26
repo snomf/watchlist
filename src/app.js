@@ -3460,6 +3460,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Show login overlay
         if (loginOverlay) loginOverlay.classList.remove('hidden');
 
+        // Hide loading spinner so it doesn't overlap
+        const loadingSpinner = document.getElementById('loading-spinner');
+        if (loadingSpinner) loadingSpinner.style.display = 'none';
+
         // Setup login buttons
         const btnJuainny = document.getElementById('login-juainny-btn');
         const btnErick = document.getElementById('login-erick-btn');
