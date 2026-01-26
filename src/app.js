@@ -1062,29 +1062,7 @@ async function openMovieModal(tmdbId, type) {
                 document.getElementById('erick-rating-container').style.pointerEvents = 'auto';
             }
 
-            // Set styles based on logged in user
-            if (currentUser && currentUser.handle === 'juainny') {
-                juainnyContainer.classList.add('ring-2', 'ring-accent-primary');
-                erickContainer.classList.add('opacity-75'); // Visual dim
 
-                // Make Erick's input readonly
-                setupReadOnlyNotes('erick-notes', currentMediaItem?.erick_notes);
-                setupNotesToolbar('juainny', 'juainny-notes', currentMediaItem?.juainny_notes); // Editable
-
-                // Disable Star Interaction for Erick's container?
-                // The `ratings.js` doesn't natively support readonly, but we can pointer-events-none content
-                document.getElementById('erick-rating-container').style.pointerEvents = 'none';
-                document.getElementById('juainny-rating-container').style.pointerEvents = 'auto';
-            } else if (currentUser && currentUser.handle === 'erick') {
-                erickContainer.classList.add('ring-2', 'ring-accent-primary');
-                juainnyContainer.classList.add('opacity-75');
-
-                setupReadOnlyNotes('juainny-notes', currentMediaItem?.juainny_notes);
-                setupNotesToolbar('erick', 'erick-notes', currentMediaItem?.erick_notes); // Editable
-
-                document.getElementById('juainny-rating-container').style.pointerEvents = 'none';
-                document.getElementById('erick-rating-container').style.pointerEvents = 'auto';
-            }
 
             // --- Update Avatars in Ratings Section ---
             const updateRatingAvatar = (user, elementId) => {
@@ -3052,15 +3030,17 @@ function setupWatchedButtons() {
             updates.currently_watching = false;
         }
 
-        const { data, error } = await supabase
-            .from('media')
-            .update(updates)
-            .eq('tmdb_id', tmdb_id)
-            .select()
-            .single();
-        if (error) {
-            console.error('Error updating bookmark:', error);
-        } else {
+        // Update Supabase
+        try {
+            const { data, error } = await supabase
+                .from('media')
+                .update(updates) // Use updates directly
+                .eq('tmdb_id', tmdb_id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            // console.log('Reaction saved');
             currentMediaItem = data;
             updateWatchedButtonUI(currentMediaItem);
 
@@ -3132,6 +3112,10 @@ async function initializeApp() {
     try {
         // --- 1. Load Flairs FIRST ---
         // console.log('App Initializing... v2.1'); // DEBUG
+
+        // Initialize Settings listeners and load theme immediately
+        initializeSettings();
+
         // Load flairs
         allFlairs = await fetchAllFlairs();
 
@@ -3287,6 +3271,12 @@ async function initializeApp() {
         // Use both 'input' and 'keyup' events for better compatibility
         const handleSearch = async (e) => {
             // console.log('Search input event:', e.target.value); // DEBUG
+            // --- Notes Section Visibility ---
+            const notesSection = document.getElementById('notes-section');
+            if (notesSection) {
+                // Always show notes section for reviews
+                notesSection.classList.remove('hidden');
+            }
             try {
                 const searchTerm = e.target.value.trim();
                 if (searchTerm === '') {
