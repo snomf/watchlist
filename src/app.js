@@ -3216,9 +3216,6 @@ async function initializeApp() {
         // Hide the loading spinner
         if (loadingSpinner) loadingSpinner.style.display = 'none';
 
-        // Check for welcome modal
-        checkWelcomeModal();
-
         // Check for shared URL
         const sharedTmdbId = urlParams.get('tmdb_id');
         const sharedType = urlParams.get('type'); // Optional: 'movie' or 'tv'
@@ -3457,7 +3454,7 @@ function setupCarouselEditMode() {
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Check Authentication
     const user = await auth.init();
-    const loginOverlay = document.getElementById('login-overlay');
+    const loginOverlay = document.getElementById('auth-overlay');
 
     if (!user) {
         // Show login overlay
@@ -3480,7 +3477,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function handleLogin(handle) {
     try {
         const user = await auth.login(handle);
-        const loginOverlay = document.getElementById('login-overlay');
+        const loginOverlay = document.getElementById('auth-overlay');
         if (loginOverlay) {
             loginOverlay.classList.add('opacity-0');
             setTimeout(() => {
