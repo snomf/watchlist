@@ -3550,7 +3550,7 @@ function openReactionSelector(tmdbId) {
             <div style="padding: 1.5rem;">
                 <h2 class="text-2xl font-bold mb-6 text-center">How did this movie make you react?</h2>
                 
-                <div class="flex justify-center mb-8 gap-4">
+                <div id="mood-user-selection" class="flex justify-center mb-8 gap-4 ${auth.getCurrentUser() ? 'hidden' : ''}">
                     <button class="user-select-btn" data-user="juainny">
                         <div class="user-avatar-preview user1-avatar-preview">J</div>
                         <span class="font-semibold">Juainny</span>
@@ -3579,6 +3579,21 @@ function openReactionSelector(tmdbId) {
             </div>
         </div >
         `;
+
+    // Initialize state if user is logged in
+    const currentUser = auth.getCurrentUser();
+    if (currentUser) {
+        selectedReactionUser = currentUser.handle;
+        // Auto-enable grid
+        setTimeout(() => {
+            const grid = container.querySelector('#mood-grid-container');
+            if (grid) {
+                grid.classList.remove('grayscale');
+                grid.style.opacity = '1';
+                grid.style.pointerEvents = 'auto';
+            }
+        }, 100);
+    }
 
     // Event Listeners
     document.getElementById('close-mood-modal-btn').addEventListener('click', closeReactionSelector);
