@@ -489,7 +489,7 @@ function createActivityItem(activity, viewUser) {
             ` : ''}
              ${details && details.rating ? `
                 <div class="mt-2 text-sm" style="color: var(--color-star-filled);">
-                    ${'★'.repeat(Math.round(details.rating))} <span style="color: var(--color-text-muted);">(${details.rating}/5)</span>
+                    ${'★'.repeat(Math.round(details.rating))} <span style="color: var(--color-text-muted);">(${details.rating}/10)</span>
                 </div>
             ` : ''}
         </div>

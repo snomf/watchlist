@@ -206,7 +206,13 @@ function renderContent() {
     }
 
     // 2. Sort the media
-    sortMedia();
+    // Sort watched items by updated_at (most recently modified first)
+    // Sort others by created_at (recently added)
+    if (currentFilter === 'watched') {
+        filteredMedia.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at));
+    } else {
+        filteredMedia.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
 
     // 3. Render based on the current view
     if (currentView === 'grid') {
@@ -2605,21 +2611,32 @@ async function logActivity(actionType, userId, mediaItem, details = {}) {
 
         // Try to map to UUID
         if (userId === 'both') {
-            // Log for both? Or leave NULL?
-            // User requested "Special Method" -> Just insert with NULL UUID or duplicate?
-            // Stick to NULL UUID for now, but populate user_id_legacy='both'
+            // Keep 'both' for shared events like adding new items, but log logged-in user if available for metadata
+            if (auth.getCurrentUser()) {
+                userUuid = auth.getCurrentUser().id;
+            }
         } else {
-            // Get UUID
-            // Ideally auth.currentUser has it if it matches
+            // Helper to get UUID from handle
             if (auth.getCurrentUser() && auth.getCurrentUser().handle === userId) {
                 userUuid = auth.getCurrentUser().id;
             } else {
-                // Fetch? Or hardcode map for now to save fetch?
-                // Since we only have 2 users:
-                // This is a bit hacky but avoids async fetch inside log if we haven't cached.
-                // Let's assume we fetch or it's fine.
-                const { data: u } = await supabase.from('users').select('id').eq('handle', userId).maybeSingle();
-                if (u) userUuid = u.id;
+                // If the handle passed doesn't match current session, we should ideally fetch it.
+                // However, for performance, if we are in a valid session, we trust the passed userId implies an action by that user.
+                // BUT the goal is to attribute the LOG entry to the user performing it.
+                // If I (Juainny) rate for Erick, the log should say "Erick rated" ? Or "Juainny updated Erick's rating"?
+                // Standard app behavior: The log reflects the "actor".
+                // If I am logged in as Juainny, I can only perform actions for Juainny (mostly).
+                // EXCEPT for "Want to Watch" which might be shared.
+
+                // Let's rely on the Auth service.
+                const currentUser = auth.getCurrentUser();
+                if (currentUser) {
+                    userUuid = currentUser.id;
+                    // If the action was explicitly for the other user (e.g. setting their rating), maybe we shouldn't log it as *their* action?
+                    // But for simplicity, we are logging "ACTION occurred".
+                    // The prompt asked: "Attribute activity logs to specific user".
+                    // So we use the logged-in user's UUID.
+                }
             }
         }
 
@@ -3285,7 +3302,6 @@ async function initializeApp() {
                 if (searchTerm === '') {
                     exitSearchMode();
                 } else {
-                    homeBtn.classList.remove('hidden');
                     currentlyWatchingSection.classList.add('hidden');
                     wantToWatchSection.classList.add('hidden');
                     isSearchMode = true; // Enter search mode

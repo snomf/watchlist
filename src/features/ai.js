@@ -78,8 +78,8 @@ export function startWillowChat(allMedia, userName = null) {
     }));
 
     const userContext = userName
-        ? `\n**Current User:** You are chatting with ${userName.charAt(0).toUpperCase() + userName.slice(1)}. When they say "my notes" or "my rating", they mean ${userName}'s notes/rating. Personalize your responses accordingly.`
-        : '';
+        ? `\n**Current User:** You are chatting with ${userName.charAt(0).toUpperCase() + userName.slice(1)}. When they say "my notes" or "my rating", they mean ${userName}'s notes/rating. Personalize your responses accordingly. Do NOT ask them who they are.`
+        : '\n**Current User:** Assume you are talking to one of the owners. Use context clues.';
 
     const systemContext = `Today: ${today}
 
