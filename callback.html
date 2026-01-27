@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Connecting to Trakt...</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             background-color: #0f172a;
@@ -15,6 +14,87 @@
             justify-content: center;
             height: 100vh;
             font-family: sans-serif;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .h-12 {
+            height: 3rem;
+        }
+
+        .w-12 {
+            width: 3rem;
+        }
+
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .rounded-full {
+            border-radius: 9999px;
+        }
+
+        .border-t-2 {
+            border-top-width: 2px;
+        }
+
+        .border-b-2 {
+            border-bottom-width: 2px;
+        }
+
+        .border-purple-500 {
+            border-color: #a855f7;
+        }
+
+        .text-xl {
+            font-size: 1.25rem;
+            line-height: 1.75rem;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        .text-gray-400 {
+            color: #9ca3af;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+
+        .text-green-500 {
+            color: #22c55e;
+        }
+
+        .text-red-500 {
+            color: #ef4444;
         }
     </style>
 </head>
@@ -48,6 +128,7 @@
             const params = new URLSearchParams(window.location.search);
             const code = params.get('code');
             const state = params.get('state'); // Should contain our user handle/ID
+            let finalUserId = null;
 
             if (!code) {
                 showError('No code received from Trakt.');
