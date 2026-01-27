@@ -124,6 +124,7 @@ function setupWallpaperModal() {
 
 async function loadWallpaperOptions() {
     if (allMediaForWallpapers.length === 0) {
+        // Fetch items with backdrop_path
         const { data, error } = await supabase.from('media').select('title, backdrop_path');
         if (error) {
             console.error('Error fetching media for wallpapers:', error);
