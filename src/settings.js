@@ -464,19 +464,7 @@ export function initializeSettings() {
     if (closeAvatarBackdrop) closeAvatarBackdrop.addEventListener('click', closeAvatarModal);
     if (saveAvatarBtn) saveAvatarBtn.addEventListener('click', saveAvatar);
 
-    // User Switcher in Avatar Modal
-    document.querySelectorAll('.avatar-user-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            currentAvatarState.user = btn.dataset.user;
-            // Reset to gradient mode on user switch if no image
-            if (!userAvatars[currentAvatarState.user]?.imageUrl) {
-                currentAvatarState.mode = 'gradient';
-            } else {
-                currentAvatarState.mode = userAvatars[currentAvatarState.user].type || 'gradient';
-            }
-            updateAvatarModalUI();
-        });
-    });
+    if (saveAvatarBtn) saveAvatarBtn.addEventListener('click', saveAvatar);
 
     // Mode Switcher
     document.querySelectorAll('.avatar-mode-btn').forEach(btn => {
@@ -633,6 +621,11 @@ async function openAvatarModal(user) {
     const modal = document.getElementById('avatar-modal');
     if (!modal) return;
 
+    // Default to current user handle if not provided
+    if (!user) {
+        user = localStorage.getItem('watchlist_current_user_handle') || 'juainny';
+    }
+
     // Load current settings for this user
     await loadAndApplySettings();
 
@@ -683,15 +676,6 @@ function closeAvatarModal() {
 }
 
 function updateAvatarModalUI() {
-    // Update User Buttons
-    document.querySelectorAll('.avatar-user-btn').forEach(btn => {
-        if (btn.dataset.user === currentAvatarState.user) {
-            btn.classList.add('border-accent-primary', 'bg-bg-tertiary');
-        } else {
-            btn.classList.remove('border-accent-primary', 'bg-bg-tertiary');
-        }
-    });
-
     // Update Mode Buttons
     document.querySelectorAll('.avatar-mode-btn').forEach(btn => {
         if (btn.dataset.mode === currentAvatarState.mode) {
