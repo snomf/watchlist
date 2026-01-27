@@ -544,13 +544,16 @@ async function setupTraktIntegration() {
         .maybeSingle();
 
     const isConnected = !!interaction;
+    const syncBtn = document.getElementById('sync-trakt-btn');
 
     if (isConnected) {
         if (connectBtn) connectBtn.classList.add('hidden');
+        if (syncBtn) syncBtn.classList.remove('hidden');
         if (disconnectBtn) disconnectBtn.classList.remove('hidden');
         if (statusText) statusText.innerHTML = `<span class="text-green-400">Connected as ${userHandle}</span>`;
     } else {
         if (connectBtn) connectBtn.classList.remove('hidden');
+        if (syncBtn) syncBtn.classList.add('hidden');
         if (disconnectBtn) disconnectBtn.classList.add('hidden');
         if (statusText) statusText.textContent = 'Not connected';
     }
@@ -570,6 +573,35 @@ async function setupTraktIntegration() {
             const authUrl = `https://trakt.tv/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
 
             window.location.href = authUrl;
+        });
+    }
+
+    // Sync Listener
+    if (syncBtn) {
+        const newSyncBtn = syncBtn.cloneNode(true);
+        syncBtn.parentNode.replaceChild(newSyncBtn, syncBtn);
+        newSyncBtn.addEventListener('click', async () => {
+            newSyncBtn.disabled = true;
+            newSyncBtn.innerHTML = '<i class="fas fa-spinner animate-spin"></i> Syncing...';
+            try {
+                const response = await fetch('/api/trakt-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: currentUserId })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('Trakt sync complete!');
+                } else {
+                    alert('Sync failed: ' + result.error);
+                }
+            } catch (err) {
+                console.error('Sync Error:', err);
+                alert('Sync failed. Please try again later.');
+            } finally {
+                newSyncBtn.disabled = false;
+                newSyncBtn.textContent = 'Sync Now';
+            }
         });
     }
 
