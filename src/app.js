@@ -1,4 +1,5 @@
 import { supabase } from './supabase-client.js';
+import './theme.css';
 import './firebase-client.js';
 import { seedDatabaseFromLocal } from './seeder.js';
 import { initializeSettings, loadAndApplySettings, getAvatarHTML } from './settings.js';
@@ -3048,6 +3049,8 @@ function setupWatchedButtons() {
             if (newWantToWatch) {
                 await logActivity('want_to_watch', 'both', data);
             }
+        } catch (err) {
+            console.error('Error updating bookmark from grid:', err);
         }
     });
 

@@ -268,7 +268,8 @@ export async function loadAndApplySettings() {
     });
 
     // Set the toggle
-    document.getElementById('hide-search-images-toggle').checked = hide_search_results_without_images;
+    const searchToggle = document.getElementById('hide-search-images-toggle');
+    if (searchToggle) searchToggle.checked = !!hide_search_results_without_images;
 
     // Apply wallpaper
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');
