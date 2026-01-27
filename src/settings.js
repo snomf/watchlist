@@ -14,7 +14,7 @@ export async function openSettingsModal() {
     }
 
     try {
-        await populateWallpaperSelector();
+        await loadWallpaperOptions();
         await loadAndApplySettings();
     } catch (error) {
         console.error('Error preparing settings modal:', error);
@@ -101,16 +101,19 @@ function setupWallpaperModal() {
 
     wallpaperBtn.addEventListener('click', async () => {
         modal.classList.remove('hidden');
+        modal.classList.add('flex');
         await loadWallpaperOptions();
     });
 
     closeBtn.addEventListener('click', () => {
         modal.classList.add('hidden');
+        modal.classList.remove('flex');
     });
 
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.classList.add('hidden');
+            modal.classList.remove('flex');
         }
     });
 

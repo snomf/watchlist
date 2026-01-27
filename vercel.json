@@ -8,6 +8,10 @@
     {
       "source": "/profile/:user",
       "destination": "/profile.html?user=:user"
+    },
+    {
+      "source": "/callback",
+      "destination": "/callback.html"
     }
   ]
 }

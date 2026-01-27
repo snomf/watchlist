@@ -337,7 +337,7 @@ async function loadActivityFeed(user) {
                 title, poster_path, backdrop_path, type
             )
         `)
-        .or(`user_id.eq.${user},user_id.eq.both`)
+        .or(`user_id_legacy.eq.${user},user_id_legacy.eq.both`)
         .order('created_at', { ascending: false })
         .limit(50); // Increased limit to allow for grouping
 

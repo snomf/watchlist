@@ -823,6 +823,13 @@
                     </div>
                     <i class="fas fa-chevron-right text-text-muted group-hover:text-accent-primary transition"></i>
                 </button>
+
+                <div class="pt-4 border-t border-border-primary">
+                    <button onclick="auth.logout(); window.location.reload();"
+                        class="text-xs text-text-muted hover:text-accent-primary transition">
+                        <i class="fas fa-sign-out-alt mr-1"></i> Clear Local Session
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -883,7 +890,11 @@
                             class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#090b0d] text-[#dca54c]">Luxury</button>
                         <button data-theme="smiling-friends"
                             class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#FFD700] text-[#FF4500] font-comic shadow-md hover:scale-105 transition-transform"
-                            style="font-family: 'Comic Sans MS', cursive, sans-serif;">Glep</button>
+                            style="font-family: 'Comic Sans MS', cursive, sans-serif;">Smiling Friends</button>
+                        <button data-theme="it"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#000000] text-[#ef4444]">IT</button>
+                        <button data-theme="endgame"
+                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#100c2a] text-[#a855f7]">Endgame</button>
                     </div>
                     <p class="text-xs text-text-muted mt-2">*no light theme haha</p>
                 </div>
