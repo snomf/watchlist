@@ -999,38 +999,55 @@
     <!-- Avatar Picker Modal -->
     <div id="avatar-modal" class="fixed inset-0 z-[60] hidden items-center justify-center p-4"
         style="backdrop-filter: blur(5px); background-color: rgba(0,0,0,0.6);">
+        <div id="close-avatar-modal-backdrop" class="fixed inset-0 cursor-pointer"></div>
         <div
-            class="bg-bg-secondary rounded-xl shadow-2xl w-full max-w-md p-6 border border-border-primary relative overflow-hidden">
+            class="bg-bg-secondary rounded-xl shadow-2xl w-full max-w-md p-6 border border-border-primary relative overflow-hidden z-10">
             <button id="close-avatar-modal-btn"
                 class="absolute top-4 right-4 text-text-muted hover:text-white transition">
                 <i class="fas fa-times text-xl"></i>
             </button>
             <h3 class="text-2xl font-bold mb-6 text-center text-text-primary">Customize Avatar</h3>
 
+            <!-- User Selector inside Modal -->
+            <div class="flex justify-center gap-2 mb-6">
+                <button data-user="juainny"
+                    class="avatar-user-btn px-4 py-2 rounded-lg border-2 border-transparent text-sm font-semibold transition">Juainny</button>
+                <button data-user="erick"
+                    class="avatar-user-btn px-4 py-2 rounded-lg border-2 border-transparent text-sm font-semibold transition">Erick</button>
+            </div>
+
             <div class="flex flex-col items-center mb-8">
-                <div id="avatar-preview-large"
+                <div id="avatar-preview-display"
                     class="w-32 h-32 rounded-full border-4 border-bg-tertiary shadow-lg mb-4 flex items-center justify-center overflow-hidden bg-bg-primary">
                     <!-- Preview -->
                 </div>
                 <div class="flex gap-4 mb-4">
-                    <button id="avatar-mode-gradient"
-                        class="px-4 py-2 rounded-full bg-accent-primary text-white font-semibold text-sm">Gradient</button>
-                    <button id="avatar-mode-image"
-                        class="px-4 py-2 rounded-full bg-bg-tertiary text-text-muted font-semibold text-sm hover:text-white">Image</button>
+                    <button data-mode="gradient"
+                        class="avatar-mode-btn px-4 py-2 rounded-full text-sm font-semibold transition">Gradient</button>
+                    <button data-mode="image"
+                        class="avatar-mode-btn px-4 py-2 rounded-full text-sm font-semibold transition">Image</button>
                 </div>
             </div>
 
             <!-- Gradient Controls -->
             <div id="avatar-gradient-controls" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase">Color Palette</label>
-                    <div class="grid grid-cols-6 gap-2" id="avatar-color-grid">
+                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase text-center">Color
+                        1</label>
+                    <div class="flex flex-wrap justify-center gap-2" id="color-picker-1">
                         <!-- Colors injected via JS -->
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase">Icon</label>
-                    <div class="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" id="avatar-icon-grid">
+                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase text-center">Color
+                        2</label>
+                    <div class="flex flex-wrap justify-center gap-2" id="color-picker-2">
+                        <!-- Colors injected via JS -->
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase text-center">Icon</label>
+                    <div class="flex flex-wrap justify-center gap-3" id="icon-picker">
                         <!-- Icons injected via JS -->
                     </div>
                 </div>
@@ -1039,16 +1056,15 @@
             <!-- Image Controls -->
             <div id="avatar-image-controls" class="hidden space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase">Image URL (or
-                        Upload)</label>
-                    <input type="text" id="avatar-image-url"
+                    <label class="block text-xs font-semibold text-text-muted mb-2 uppercase">Image URL</label>
+                    <input type="text" id="avatar-url-input"
                         class="w-full bg-bg-primary border border-border-primary rounded-lg px-4 py-3 text-text-primary focus:border-accent-primary outline-none"
                         placeholder="https://...">
                 </div>
 
                 <div class="relative">
                     <label for="avatar-file-input"
-                        class="w-full text-center py-2 px-4 border border-dashed border-border-primary rounded-lg cursor-pointer hover:bg-bg-tertiary transition text-sm text-text-muted">
+                        class="w-full text-center block py-2 px-4 border border-dashed border-border-primary rounded-lg cursor-pointer hover:bg-bg-tertiary transition text-sm text-text-muted">
                         <i class="fas fa-upload mr-2"></i> Upload Image
                     </label>
                     <input type="file" id="avatar-file-input" class="hidden" accept="image/*">

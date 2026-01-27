@@ -148,7 +148,7 @@ function renderWallpaperOptions(media) {
         const backdropUrl = `https://image.tmdb.org/t/p/original${item.backdrop_path}`;
 
         div.innerHTML = `
-            <div class="w-full h-24 bg-cover bg-center" style="background-image: url('${backdropUrl}');"></div>
+            <img src="${backdropUrl}" class="w-full h-24 object-cover">
             <div class="p-2" style="background-color: var(--color-bg-tertiary);">
                 <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">${item.title}</p>
             </div>
@@ -661,7 +661,10 @@ async function openAvatarModal(user) {
 
     // Reset file input
     const fileInput = document.getElementById('avatar-file-input');
+    const urlInput = document.getElementById('avatar-url-input');
     if (fileInput) fileInput.value = '';
+    if (urlInput) urlInput.value = currentAvatarState.imageUrl || '';
+
     document.getElementById('avatar-file-name').textContent = '';
     document.getElementById('avatar-file-name').classList.add('hidden');
 
@@ -801,21 +804,23 @@ function renderAvatarPreview() {
 
 async function uploadAvatarImage(file) {
     const fileName = `${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-        .from('images')
-        .upload(`avatars/${fileName}`, file);
+    try {
+        const { data, error } = await supabase.storage
+            .from('images')
+            .upload(`avatars/${fileName}`, file);
 
-    if (error) {
+        if (error) throw error;
+
+        const { data: publicData } = supabase.storage
+            .from('images')
+            .getPublicUrl(`avatars/${fileName}`);
+
+        return publicData.publicUrl;
+    } catch (error) {
         console.error('Error uploading image:', error);
         alert('Failed to upload image. Please try again.');
         return null;
     }
-
-    const { data: publicData } = supabase.storage
-        .from('images')
-        .getPublicUrl(`avatars/${fileName}`);
-
-    return publicData.publicUrl;
 }
 
 async function saveAvatar() {
@@ -849,8 +854,12 @@ async function saveAvatar() {
         await loadAndApplySettings();
 
         // Refresh all reaction avatars immediately
-        const { refreshAllReactionAvatars } = await import('./app.js');
-        refreshAllReactionAvatars();
+        try {
+            const { refreshAllReactionAvatars } = await import('./app.js');
+            refreshAllReactionAvatars();
+        } catch (e) {
+            console.warn('Could not refresh reaction avatars:', e);
+        }
 
         closeAvatarModal();
     }
