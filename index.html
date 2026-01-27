@@ -859,6 +859,13 @@
                         avatars in the top bar on this device.</p>
                     <button id="reset-device-name-btn" class="text-xs text-accent-primary hover:underline mt-2">Reset
                         device name</button>
+
+                    <div class="mt-4 pt-4 border-t border-border-primary">
+                        <button onclick="auth.logout(); window.location.reload();"
+                            class="text-xs text-danger hover:underline font-bold">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Log Out
+                        </button>
+                    </div>
                 </div>
                 <div class="border border-border-primary rounded-lg p-4">
                     <h3 class="text-lg font-semibold mb-2">Theme</h3>
@@ -884,8 +891,7 @@
                             class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#ece3ca] text-[#a45a1d]">Retro</button>
                         <button data-theme="valentine"
                             class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#f0d6e8] text-[#632c3b]">Love</button>
-                        <button data-theme="halloween"
-                            class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#212121] text-[#f28c18]">Spooky</button>
+
                         <button data-theme="luxury"
                             class="theme-btn p-4 rounded-lg border-2 border-border-primary bg-[#090b0d] text-[#dca54c]">Luxury</button>
                         <button data-theme="smiling-friends"

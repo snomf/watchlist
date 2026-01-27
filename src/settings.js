@@ -148,7 +148,7 @@ function renderWallpaperOptions(media) {
         const backdropUrl = `https://image.tmdb.org/t/p/original${item.backdrop_path}`;
 
         div.innerHTML = `
-            <img src="${backdropUrl}" class="w-full h-24 object-cover">
+            <div class="w-full h-24 bg-cover bg-center" style="background-image: url('${backdropUrl}');"></div>
             <div class="p-2" style="background-color: var(--color-bg-tertiary);">
                 <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">${item.title}</p>
             </div>

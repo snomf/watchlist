@@ -207,21 +207,7 @@
     --color-star-filled: #e96d7b;
 }
 
-[data-theme="halloween"] {
-    --color-bg-primary: #212121;
-    --color-bg-secondary: #1a1a1a;
-    --color-bg-tertiary: #333333;
-    --color-text-primary: #f28c18;
-    --color-text-secondary: #d4a017;
-    --color-text-muted: #4e4e4e;
-    --color-accent-primary: #f28c18;
-    --color-accent-secondary: #63328e;
-    --color-border-primary: #3d3b3b;
-    --color-success: #10b981;
-    --color-danger: #ef4444;
-    --color-text-on-accent: #ffffff;
-    --color-star-filled: #f28c18;
-}
+
 
 [data-theme="luxury"] {
     --color-bg-primary: #090b0d;
