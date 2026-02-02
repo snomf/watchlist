@@ -57,8 +57,7 @@ export default async function handler(req, res) {
                 .update({
                     access_token: accessToken,
                     refresh_token: refreshData.refresh_token,
-                    expires_at: newExpiresAt,
-                    updated_at: new Date().toISOString()
+                    expires_at: newExpiresAt
                 })
                 .eq('user_id', user_id)
                 .eq('provider', 'trakt');

@@ -48,8 +48,8 @@ export default async function handler(req, res) {
             throw new Error(tokenData.error_description || 'Failed to get token from Trakt');
         }
 
-        // 2. Convert expires_in to absolute timestamp
-        const expiresAt = Math.floor(Date.now() / 1000) + tokenData.expires_in;
+        // 2. Convert expires_in to absolute timestamp (ISO string for Postgres)
+        const expiresAt = new Date(Date.now() + (tokenData.expires_in * 1000)).toISOString();
 
         // 3. Store in Supabase `integrations` table
         // We use upsert to replace if exists
@@ -60,14 +60,13 @@ export default async function handler(req, res) {
                 provider: 'trakt',
                 access_token: tokenData.access_token,
                 refresh_token: tokenData.refresh_token,
-                expires_at: expiresAt,
-                updated_at: new Date().toISOString()
+                expires_at: expiresAt
             }, { onConflict: 'user_id, provider' })
             .select();
 
         if (error) {
             console.error('Supabase Insert Error:', error);
-            throw new Error('Failed to save credentials to database');
+            throw new Error(`Failed to save credentials: ${error.message || 'Unknown DB error'}`);
         }
 
         return res.status(200).json({ success: true });
