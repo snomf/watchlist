@@ -13,6 +13,16 @@ import { traktSync } from './trakt-sync.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
+// Global helper for settings modal (called by inline onclick in index.html)
+window.closeSettingsModal = () => {
+    const modal = document.getElementById('settings-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = 'auto';
+    }
+};
+
 /**
  * Fetches the user's watchlist from Supabase, only including items with an
  * approved source.
@@ -644,6 +654,7 @@ let currentMediaItem = null; // To store the full media item for the open modal
 async function openMovieModal(tmdbId, type) {
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
+    const currentUser = auth.getCurrentUser(); // Define early
     try {
 
         // Declare manageFlairsBtn at function scope to avoid redeclaration
@@ -1125,7 +1136,6 @@ async function openMovieModal(tmdbId, type) {
             await initializeStarRating('erick-rating-container', currentMediaItem?.erick_rating || 0, debouncedSave);
 
             // --- Update UI Access Control ---
-            const currentUser = auth.getCurrentUser();
             const juainnyContainer = document.getElementById('juainny-profile-link').parentNode;
             const erickContainer = document.getElementById('erick-profile-link').parentNode;
 
@@ -1263,49 +1273,45 @@ async function openMovieModal(tmdbId, type) {
             // --- Manage Flairs Button ---
             manageFlairsBtn = document.getElementById('manage-flairs-btn');
             if (manageFlairsBtn) {
-                // Hide flair button if item is not tracked (not watched, want_to_watch, or currently_watching)
-                if (isItemTracked) {
-                    manageFlairsBtn.classList.remove('hidden');
-                    manageFlairsBtn.onclick = async (e) => {
-                        e.preventDefault();
-                        // Ensure media exists first
-                        const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
-                        if (mediaItem) {
-                            openFlairModal(mediaItem.id);
-                        }
-                    };
-                } else {
-                    manageFlairsBtn.classList.add('hidden');
-                }
+                // Show flair button always, but ensure media exists
+                manageFlairsBtn.classList.remove('hidden');
+                manageFlairsBtn.onclick = async (e) => {
+                    e.preventDefault();
+                    // Ensure media exists first
+                    const mediaItem = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+                    if (mediaItem) {
+                        openFlairModal(mediaItem.id);
+                    }
+                };
+            }
 
-                // --- Discuss with Mr. W Button ---
-                const discussBtn = document.getElementById('discuss-ai-btn');
-                if (discussBtn) {
-                    discussBtn.onclick = (e) => {
-                        e.preventDefault();
-                        startDiscussion(currentMediaItem || { tmdb_id: tmdbId, title: data.title || data.name, poster_path: data.poster_path, release_date: data.release_date || data.first_air_date });
-                    };
-                } else {
-                    // If button doesn't exist in HTML, create it dynamically near the regenerate button or flairs
-                    // For now, let's assume we might need to inject it if not present, or rely on it being in the HTML.
-                    // Let's inject it into the 'willow-summary-section' if possible, or the action bar.
-                    const actionContainer = document.querySelector('.modal-actions') || document.getElementById('willow-summary-section');
-                    if (actionContainer) {
-                        // Check if already added
-                        if (!document.getElementById('discuss-ai-btn-dynamic')) {
-                            const btn = document.createElement('button');
-                            btn.id = 'discuss-ai-btn-dynamic';
-                            btn.className = 'mt-3 w-full py-2 px-4 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 rounded-lg transition flex items-center justify-center gap-2 text-sm font-medium';
-                            btn.innerHTML = '<i class="fas fa-comments"></i> Discuss with Mr. W';
-                            btn.onclick = () => startDiscussion(currentMediaItem || { tmdb_id: tmdbId, title: data.title || data.name, poster_path: data.poster_path, release_date: data.release_date || data.first_air_date });
+            // --- Discuss with Mr. W Button ---
+            const discussBtn = document.getElementById('discuss-ai-btn');
+            if (discussBtn) {
+                discussBtn.onclick = (e) => {
+                    e.preventDefault();
+                    startDiscussion(currentMediaItem || { tmdb_id: tmdbId, title: data.title || data.name, poster_path: data.poster_path, release_date: data.release_date || data.first_air_date });
+                };
+            } else {
+                // If button doesn't exist in HTML, create it dynamically near the regenerate button or flairs
+                // For now, let's assume we might need to inject it if not present, or rely on it being in the HTML.
+                // Let's inject it into the 'willow-summary-section' if possible, or the action bar.
+                const actionContainer = document.querySelector('.modal-actions') || document.getElementById('willow-summary-section');
+                if (actionContainer) {
+                    // Check if already added
+                    if (!document.getElementById('discuss-ai-btn-dynamic')) {
+                        const btn = document.createElement('button');
+                        btn.id = 'discuss-ai-btn-dynamic';
+                        btn.className = 'mt-3 w-full py-2 px-4 bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 border border-purple-500/30 rounded-lg transition flex items-center justify-center gap-2 text-sm font-medium';
+                        btn.innerHTML = '<i class="fas fa-comments"></i> Discuss with Mr. W';
+                        btn.onclick = () => startDiscussion(currentMediaItem || { tmdb_id: tmdbId, title: data.title || data.name, poster_path: data.poster_path, release_date: data.release_date || data.first_air_date });
 
-                            // Insert after the summary text or regenerate button
-                            const regenBtn = document.getElementById('regenerate-summary-btn');
-                            if (regenBtn && regenBtn.parentNode) {
-                                regenBtn.parentNode.insertBefore(btn, regenBtn.nextSibling);
-                            } else {
-                                actionContainer.appendChild(btn);
-                            }
+                        // Insert after the summary text or regenerate button
+                        const regenBtn = document.getElementById('regenerate-summary-btn');
+                        if (regenBtn && regenBtn.parentNode) {
+                            regenBtn.parentNode.insertBefore(btn, regenBtn.nextSibling);
+                        } else {
+                            actionContainer.appendChild(btn);
                         }
                     }
                 }
@@ -1368,24 +1374,18 @@ async function openMovieModal(tmdbId, type) {
                         // Desktop fallback
                         try {
                             await navigator.clipboard.writeText(shareUrl);
-                            // Show "Copied!" popup (reusing the one from title double-click if available, or alert for now)
-                            // Assuming showCopiedPopup exists or we create a simple one
-                            const tooltip = document.getElementById('tooltip');
-                            if (tooltip) {
-                                tooltip.textContent = 'Link copied to clipboard!';
-                                tooltip.style.display = 'block';
-                                // Position near the button
-                                const rect = newShareBtn.getBoundingClientRect();
-                                tooltip.style.left = `${rect.left - 100}px`; // Adjust as needed
-                                tooltip.style.top = `${rect.bottom + 10}px`;
-                                tooltip.classList.remove('hidden');
-
+                            // Visual feedback
+                            const shareIcon = newShareBtn.querySelector('i');
+                            if (shareIcon) {
+                                const originalClass = shareIcon.className;
+                                shareIcon.className = 'fas fa-check text-success';
                                 setTimeout(() => {
-                                    tooltip.classList.add('hidden');
+                                    shareIcon.className = originalClass;
                                 }, 2000);
-                            } else {
-                                alert('Link copied to clipboard!');
                             }
+                            import('./trakt-sync.js').then(({ traktSync }) => {
+                                if (traktSync) traktSync.notify('Link copied to clipboard!');
+                            });
                         } catch (err) {
                             console.error('Failed to copy:', err);
                         }
@@ -2954,12 +2954,13 @@ function updateWatchedButtonUI(mediaItem) {
         if (currentlyWatchingBtn) currentlyWatchingBtn.classList.remove('hidden');
     }
 
-    // Favorite icon state (previously bookmarkBtn)
-    if (favoriteBtn) {
+    // Favorite icon state
+    const favBtn = document.getElementById('favorite-btn');
+    if (favBtn) {
         if (mediaItem.favorited_by && mediaItem.favorited_by.length > 0) {
-            favoriteBtn.classList.add('text-accent-primary');
+            favBtn.classList.add('text-accent-primary');
         } else {
-            favoriteBtn.classList.remove('text-accent-primary');
+            favBtn.classList.remove('text-accent-primary');
         }
     }
 }
@@ -3089,6 +3090,15 @@ function setupWatchedButtons() {
             if (newWatchedStatus && !isReject) {
                 await logActivity('watched', 'both', data);
             }
+
+            if (isReject) {
+                import('./trakt-sync.js').then(({ traktSync }) => {
+                    if (traktSync) traktSync.notify('Marked as Not Interested');
+                });
+                modal.classList.add('hidden'); // Close modal on reject
+                document.body.style.overflow = 'auto';
+            }
+
             renderContent(); // Refresh grid to reflect changes
         }
     };
@@ -3144,8 +3154,9 @@ function setupWatchedButtons() {
         }
     });
 
-    if (favoriteBtn) {
-        favoriteBtn.addEventListener('click', async () => {
+    const favBtn = document.getElementById('favorite-btn');
+    if (favBtn) {
+        favBtn.addEventListener('click', async () => {
             const { tmdb_id, type, title, poster_path } = currentMediaItem;
             const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
             if (!mediaItem) return;
