@@ -46,7 +46,10 @@ export const traktSync = {
                 ids: { tmdb: parseInt(showItem.tmdb_id) },
                 seasons: [{
                     number: season,
-                    episodes: [{ number: episode }]
+                    episodes: [{
+                        number: episode,
+                        watched_at: watched ? new Date().toISOString() : null
+                    }]
                 }]
             }]
         };
@@ -80,6 +83,7 @@ export const traktSync = {
             [type]: [
                 {
                     ids: { tmdb: parseInt(mediaItem.tmdb_id) },
+                    watched_at: path === 'history' ? new Date().toISOString() : null,
                     ...extraData
                 }
             ]
