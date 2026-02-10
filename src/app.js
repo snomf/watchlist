@@ -2954,13 +2954,25 @@ function updateWatchedButtonUI(mediaItem) {
         if (currentlyWatchingBtn) currentlyWatchingBtn.classList.remove('hidden');
     }
 
-    // Favorite icon state
+    // Favorite/Bookmark icon state
     const favBtn = document.getElementById('favorite-btn');
+    const bookmarkHeaderBtn = document.getElementById('bookmark-modal-btn');
+
     if (favBtn) {
         if (mediaItem.favorited_by && mediaItem.favorited_by.length > 0) {
             favBtn.classList.add('text-accent-primary');
         } else {
             favBtn.classList.remove('text-accent-primary');
+        }
+    }
+
+    if (bookmarkHeaderBtn) {
+        if (mediaItem.want_to_watch) {
+            bookmarkHeaderBtn.classList.add('text-yellow-400');
+            bookmarkHeaderBtn.classList.remove('text-text-primary');
+        } else {
+            bookmarkHeaderBtn.classList.remove('text-yellow-400');
+            bookmarkHeaderBtn.classList.add('text-text-primary');
         }
     }
 }
@@ -3155,30 +3167,41 @@ function setupWatchedButtons() {
     });
 
     const favBtn = document.getElementById('favorite-btn');
-    if (favBtn) {
-        favBtn.addEventListener('click', async () => {
-            const { tmdb_id, type, title, poster_path } = currentMediaItem;
-            const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
-            if (!mediaItem) return;
+    const bookmarkHeaderBtn = document.getElementById('bookmark-modal-btn');
 
-            const newWantToWatch = !currentMediaItem.want_to_watch;
-            let updates = { want_to_watch: newWantToWatch };
-            if (newWantToWatch) {
-                updates.currently_watching = false;
-            }
+    const handleWantToWatchToggle = async () => {
+        const { tmdb_id, type, title, poster_path } = currentMediaItem;
+        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
+        if (!mediaItem) return;
 
-            // Update Supabase
-            try {
-                const { data, error } = await supabase
-                    .from('media')
-                    .update(updates)
-                    .eq('tmdb_id', tmdb_id)
-                    .select()
-                    .single();
+        const newWantToWatch = !currentMediaItem.want_to_watch;
+        let updates = { want_to_watch: newWantToWatch };
+        if (newWantToWatch) {
+            updates.currently_watching = false;
+        }
 
-                if (error) throw error;
+        // Update Supabase
+        try {
+            const { data, error } = await supabase
+                .from('media')
+                .update(updates)
+                .eq('tmdb_id', tmdb_id)
+                .select()
+                .single();
+
+            if (error) {
+                console.error('Error updating want to watch status:', error);
+            } else {
                 currentMediaItem = data;
                 updateWatchedButtonUI(currentMediaItem);
+
+                // Update grid item as well
+                const index = allMedia.findIndex(item => item.tmdb_id === tmdb_id);
+                if (index > -1) {
+                    allMedia[index] = data;
+                } else {
+                    allMedia.push(data);
+                }
 
                 // --- Trakt Real-time Sync (Watchlist) ---
                 import('./trakt-sync.js').then(({ traktSync }) => {
@@ -3189,12 +3212,20 @@ function setupWatchedButtons() {
                 if (newWantToWatch) {
                     await logActivity('want_to_watch', 'both', data);
                 }
+
                 renderContent();
-            } catch (err) {
-                console.error('Error updating bookmark from grid:', err);
+
+                // Optional: Trakt sync for watchlist? 
+                // (Existing logic might already handle this if hooked into syncWithTrakt)
             }
-        });
-    }
+        } catch (err) {
+            console.error('Failed to toggle want to watch:', err);
+        }
+    };
+
+    if (favBtn) favBtn.onclick = handleWantToWatchToggle;
+    if (bookmarkHeaderBtn) bookmarkHeaderBtn.onclick = handleWantToWatchToggle;
+
 
 
     watchedBtn.addEventListener('click', () => handleWatchedToggle(false));
