@@ -12,6 +12,10 @@
     {
       "source": "/callback",
       "destination": "/callback.html"
+    },
+    {
+      "source": "/sync",
+      "destination": "/sync.html"
     }
   ]
 }
