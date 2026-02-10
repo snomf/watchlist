@@ -1,6 +1,7 @@
 import { supabase } from './supabase-client.js';
 import Papa from 'papaparse';
 import { auth } from './auth.js';
+import { loadAndApplySettings, initializeSettings } from './settings.js';
 
 // --- CONFIG ---
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '25e3d089cc8e37a56bf6a1984daf3c5c';
@@ -38,6 +39,14 @@ const missingCount = document.getElementById('missing-count');
 // --- INITIALIZATION ---
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // 0. Initialize Theme and Settings
+    try {
+        await loadAndApplySettings();
+        initializeSettings();
+    } catch (e) {
+        console.warn('Failed to load settings:', e);
+    }
+
     // 1. Initialize Auth
     currentUser = await auth.init();
 
