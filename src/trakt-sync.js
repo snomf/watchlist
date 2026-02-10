@@ -43,7 +43,7 @@ export const traktSync = {
         const path = watched ? 'history' : 'history/remove';
         const data = {
             shows: [{
-                ids: { tmdb: showItem.tmdb_id },
+                ids: { tmdb: parseInt(showItem.tmdb_id) },
                 seasons: [{
                     number: season,
                     episodes: [{ number: episode }]
@@ -59,7 +59,7 @@ export const traktSync = {
     async pushCheckin(mediaItem, appName = 'Watchlist') {
         const type = mediaItem.type === 'tv' || mediaItem.type === 'series' ? 'show' : 'movie';
         const payload = {
-            [type]: { ids: { tmdb: mediaItem.tmdb_id } },
+            [type]: { ids: { tmdb: parseInt(mediaItem.tmdb_id) } },
             sharing: { twitter: false, mastodon: false, tumblr: false },
             app_version: '1.0',
             app_date: new Date().toISOString().split('T')[0]

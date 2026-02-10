@@ -1031,41 +1031,87 @@ async function openMovieModal(tmdbId, type) {
                 watched: false,
             };
 
-            // --- Ignore Trakt Sync Toggle ---
+            // --- Trakt Settings UI & Auto-Pull ---
+            const traktContainer = document.getElementById('trakt-settings-container');
+            const traktPopoverBtn = document.getElementById('trakt-popover-btn');
+            const traktPopover = document.getElementById('trakt-settings-popover');
             const ignoreToggle = document.getElementById('ignore-trakt-toggle');
-            if (ignoreToggle && currentUser) {
-                // Fetch ignore status for this user
-                const { data: userAction } = await supabase
-                    .from('user_media_actions')
-                    .select('ignore_trakt')
+            const autoPullToggle = document.getElementById('auto-pull-toggle');
+
+            if (traktContainer && currentUser) {
+                // 1. Check Trakt Connectivity
+                const { data: integration } = await supabase
+                    .from('integrations')
+                    .select('user_id')
                     .eq('user_id', currentUser.id)
-                    .eq('media_id', currentMediaItem.id)
+                    .eq('provider', 'trakt')
                     .maybeSingle();
 
-                ignoreToggle.checked = userAction?.ignore_trakt || false;
+                if (integration) {
+                    traktContainer.classList.remove('hidden');
 
-                ignoreToggle.onchange = async () => {
-                    if (!currentMediaItem.id) {
-                        // Ensure media item exists first if it's a new search result
-                        const ensured = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
-                        if (!ensured) return;
-                        currentMediaItem.id = ensured.id;
-                    }
-
-                    const { error } = await supabase
+                    // Fetch user specific actions for this media
+                    const { data: userAction } = await supabase
                         .from('user_media_actions')
-                        .upsert({
+                        .select('ignore_trakt, auto_pull')
+                        .eq('user_id', currentUser.id)
+                        .eq('media_id', currentMediaItem.id)
+                        .maybeSingle();
+
+                    if (ignoreToggle) ignoreToggle.checked = userAction?.ignore_trakt || false;
+                    if (autoPullToggle) autoPullToggle.checked = userAction?.auto_pull || false;
+
+                    // 2. Handle Popover Toggle
+                    traktPopoverBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        traktPopover.classList.toggle('hidden');
+                    };
+
+                    // Close popover when clicking outside
+                    const closePopover = (e) => {
+                        if (traktPopover && !traktPopover.contains(e.target) && e.target !== traktPopoverBtn) {
+                            traktPopover.classList.add('hidden');
+                            document.removeEventListener('click', closePopover);
+                        }
+                    };
+                    document.addEventListener('click', closePopover);
+
+                    // 3. Handle Toggle Changes
+                    const updateAction = async (updates) => {
+                        if (!currentMediaItem.id) {
+                            const ensured = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+                            if (!ensured) return;
+                            currentMediaItem.id = ensured.id;
+                        }
+                        await supabase.from('user_media_actions').upsert({
                             user_id: currentUser.id,
                             media_id: currentMediaItem.id,
-                            ignore_trakt: ignoreToggle.checked,
-                            updated_at: new Date().toISOString()
+                            updated_at: new Date().toISOString(),
+                            ...updates
                         }, { onConflict: 'user_id, media_id' });
+                    };
 
-                    if (error) {
-                        console.error('Error updating ignore_trakt:', error);
-                        alert('Failed to update ignore status.');
+                    if (ignoreToggle) ignoreToggle.onchange = () => updateAction({ ignore_trakt: ignoreToggle.checked });
+                    if (autoPullToggle) autoPullToggle.onchange = () => updateAction({ auto_pull: autoPullToggle.checked });
+
+                    // 4. TRIGGER AUTO-PULL if enabled
+                    if (userAction?.auto_pull && !userAction?.ignore_trakt) {
+                        console.log('Auto-pulling Trakt updates for:', currentMediaItem.title);
+                        fetch('/api/trakt-sync', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ user_id: currentUser.id, tmdb_id: tmdbId })
+                        }).then(r => r.json()).then(res => {
+                            if (res.success) {
+                                // Potentially refresh modal data here if needed, 
+                                // though most updates affect background state (watched/episodes)
+                                console.log('Auto-pull successful');
+                            }
+                        }).catch(e => console.error('Auto-pull error:', e));
                     }
-                };
+                } else {
+                    traktContainer.classList.add('hidden');
+                }
             }
 
             // Fetch Individual Actions - REVERTED to use columns per user request
@@ -3086,7 +3132,10 @@ function setupWatchedButtons() {
 
             // --- Trakt Real-time Sync (Check-in) ---
             import('./trakt-sync.js').then(({ traktSync }) => {
-                if (traktSync) traktSync.pushCheckin(data);
+                // Only push check-in for movies, as series check-ins are handled per-episode on Trakt
+                if (traktSync && data.type !== 'tv' && data.type !== 'series') {
+                    traktSync.pushCheckin(data);
+                }
             });
 
             // LOG ACTIVITY

@@ -468,20 +468,56 @@
                                         Not Interested
                                     </button>
                                 </div>
-                                <label for="ignore-trakt-toggle"
-                                    class="flex items-center justify-between cursor-pointer bg-bg-tertiary p-3 rounded-lg border border-border-primary mt-2">
-                                    <div class="flex flex-col">
-                                        <span class="text-text-primary font-semibold">Ignore Trakt Sync</span>
-                                        <span class="text-xs text-text-muted">Skip this item in Trakt
-                                            synchronization</span>
-                                    </div>
-                                    <div class="relative">
-                                        <input type="checkbox" id="ignore-trakt-toggle" class="sr-only peer">
-                                        <div
-                                            class="w-11 h-6 bg-bg-primary border border-border-primary peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-primary">
+                                <!-- Compact Trakt Settings -->
+                                <div id="trakt-settings-container" class="hidden mt-2">
+                                    <div class="relative inline-block">
+                                        <button id="trakt-popover-btn"
+                                            class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition text-xs text-text-muted">
+                                            <i class="fab fa-trakt text-[#ED1C24] text-sm"></i>
+                                            <span>Trakt Settings</span>
+                                            <i class="fas fa-chevron-down text-[10px]"></i>
+                                        </button>
+
+                                        <div id="trakt-settings-popover"
+                                            class="hidden absolute left-0 bottom-full mb-2 w-56 bg-bg-secondary border border-white/10 rounded-xl shadow-2xl p-3 z-[65] animate-fade-in-up">
+                                            <div class="space-y-3">
+                                                <label class="flex items-center justify-between cursor-pointer group">
+                                                    <div class="flex flex-col">
+                                                        <span class="text-xs font-semibold text-text-primary">Ignore
+                                                            from Sync</span>
+                                                        <span class="text-[10px] text-text-muted">Don't push/pull to
+                                                            Trakt</span>
+                                                    </div>
+                                                    <div class="relative">
+                                                        <input type="checkbox" id="ignore-trakt-toggle"
+                                                            class="sr-only peer">
+                                                        <div
+                                                            class="w-8 h-4 bg-bg-primary border border-white/10 rounded-full peer peer-checked:bg-accent-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4">
+                                                        </div>
+                                                    </div>
+                                                </label>
+
+                                                <div class="h-[1px] bg-white/5"></div>
+
+                                                <label class="flex items-center justify-between cursor-pointer group">
+                                                    <div class="flex flex-col">
+                                                        <span class="text-xs font-semibold text-text-primary">Auto-Pull
+                                                            Updates</span>
+                                                        <span class="text-[10px] text-text-muted">Sync when opening
+                                                            modal</span>
+                                                    </div>
+                                                    <div class="relative">
+                                                        <input type="checkbox" id="auto-pull-toggle"
+                                                            class="sr-only peer">
+                                                        <div
+                                                            class="w-8 h-4 bg-bg-primary border border-white/10 rounded-full peer peer-checked:bg-success after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4">
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
-                                </label>
+                                </div>
                             </div>
                         </div>
                     </div>
