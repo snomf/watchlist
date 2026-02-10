@@ -1,0 +1,36 @@
+name: Bug Report
+description: Create a report of your issue
+body:
+- type: checkboxes
+  attributes:
+    label: Is there already an issue for your problem?
+    description: Please make sure you are not creating an already submitted <a href="https://github.com/RileyXX/IMDB-Trakt-Syncer/issues">Issue</a>. Be sure to check closed issues as well.
+    options:
+      - label: I have checked older issues, open and closed
+        required: true
+- type: textarea
+  attributes:
+    label: Bug Description
+    description: Please describe the issue your are having, include error messages and any relevant steps needed to reproduce the error.
+    placeholder: |
+      Error Message: `paste code here`
+      Steps needed to reproduce the error:
+      1. ...
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Environment
+    description: Please provide the details of the system IMDB-Trakt-Syncer is running on and the method you are using to run the script.
+    placeholder: |
+      OS: Windows 10 or 11/Linux/macOS etc
+      Using pip install method: yes
+      Using manual no pip install method: no
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: Screenshots
+    description: Place any screenshots of the issue here if needed.
+  validations:
+    required: false

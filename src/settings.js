@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { setupEasterEggs } from './features/easter-eggs.js';
+import { auth } from './auth.js';
 
 let allMediaForWallpapers = [];
 
@@ -199,12 +200,13 @@ async function saveSettings(closeModal = true) {
     const deviceName = deviceNameInput ? deviceNameInput.value.trim() : '';
 
     // Save device name to localStorage
-    if (deviceName) {
-        localStorage.setItem('device_name', deviceName);
-    }
+    localStorage.setItem('device_name', deviceName);
 
     const deviceNameDisplay = document.getElementById('device-name');
-    if (deviceNameDisplay) deviceNameDisplay.textContent = deviceName || 'User';
+    if (deviceNameDisplay) {
+        const currentUser = auth.getCurrentUser();
+        deviceNameDisplay.textContent = deviceName || (currentUser ? currentUser.handle : 'User');
+    }
 
     const { error } = await supabase.from('settings').update({
         theme: selectedTheme,
@@ -311,12 +313,16 @@ export async function loadAndApplySettings() {
     const bannerSelect = document.getElementById('movie-banner-select');
     if (bannerSelect) bannerSelect.value = wallpaper_url || '';
 
-    // Set device name from localStorage
+    // Set device name from localStorage or profile
     const savedDeviceName = localStorage.getItem('device_name');
     const deviceNameInput = document.getElementById('device-name-input');
     const deviceNameDisplay = document.getElementById('device-name');
+    const currentUser = auth.getCurrentUser();
+
     if (deviceNameInput) deviceNameInput.value = savedDeviceName || '';
-    if (deviceNameDisplay) deviceNameDisplay.textContent = savedDeviceName || 'User';
+    if (deviceNameDisplay) {
+        deviceNameDisplay.textContent = savedDeviceName || (currentUser ? currentUser.handle : 'User');
+    }
 
     // Update Top Bar Avatars (if elements exist)
     const navUser1 = document.getElementById('user1-avatar-nav');
@@ -545,16 +551,40 @@ async function setupTraktIntegration() {
 
     const isConnected = !!interaction;
     const syncBtn = document.getElementById('sync-trakt-btn');
+    const syncSettings = document.getElementById('trakt-sync-settings');
+    const syncModeSelect = document.getElementById('trakt-sync-mode');
 
     if (isConnected) {
         if (connectBtn) connectBtn.classList.add('hidden');
         if (syncBtn) syncBtn.classList.remove('hidden');
         if (disconnectBtn) disconnectBtn.classList.remove('hidden');
+        if (syncSettings) syncSettings.classList.remove('hidden');
         if (statusText) statusText.innerHTML = `<span class="text-green-400">Connected as ${userHandle}</span>`;
+
+        // Set current sync mode
+        if (syncModeSelect) {
+            syncModeSelect.value = interaction.sync_mode || 'both';
+
+            // Add listener for sync mode change
+            syncModeSelect.onchange = async () => {
+                const newMode = syncModeSelect.value;
+                const { error } = await supabase
+                    .from('integrations')
+                    .update({ sync_mode: newMode })
+                    .eq('user_id', currentUserId)
+                    .eq('provider', 'trakt');
+
+                if (error) {
+                    console.error('Error updating sync mode:', error);
+                    alert('Failed to update sync mode.');
+                }
+            };
+        }
     } else {
         if (connectBtn) connectBtn.classList.remove('hidden');
         if (syncBtn) syncBtn.classList.add('hidden');
         if (disconnectBtn) disconnectBtn.classList.add('hidden');
+        if (syncSettings) syncSettings.classList.add('hidden');
         if (statusText) statusText.textContent = 'Not connected';
     }
 

@@ -1029,8 +1029,44 @@ async function openMovieModal(tmdbId, type) {
                 poster_path: data.poster_path,
                 favorited_by: [],
                 watched: false,
-                // Legacy fields might not be present, but object is safe
             };
+
+            // --- Ignore Trakt Sync Toggle ---
+            const ignoreToggle = document.getElementById('ignore-trakt-toggle');
+            if (ignoreToggle && currentUser) {
+                // Fetch ignore status for this user
+                const { data: userAction } = await supabase
+                    .from('user_media_actions')
+                    .select('ignore_trakt')
+                    .eq('user_id', currentUser.id)
+                    .eq('media_id', currentMediaItem.id)
+                    .maybeSingle();
+
+                ignoreToggle.checked = userAction?.ignore_trakt || false;
+
+                ignoreToggle.onchange = async () => {
+                    if (!currentMediaItem.id) {
+                        // Ensure media item exists first if it's a new search result
+                        const ensured = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+                        if (!ensured) return;
+                        currentMediaItem.id = ensured.id;
+                    }
+
+                    const { error } = await supabase
+                        .from('user_media_actions')
+                        .upsert({
+                            user_id: currentUser.id,
+                            media_id: currentMediaItem.id,
+                            ignore_trakt: ignoreToggle.checked,
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'user_id, media_id' });
+
+                    if (error) {
+                        console.error('Error updating ignore_trakt:', error);
+                        alert('Failed to update ignore status.');
+                    }
+                };
+            }
 
             // Fetch Individual Actions - REVERTED to use columns per user request
             // const juainnyAction = mediaItem ? await fetchUserMediaAction(mediaItem.id, 'juainny') : null;
@@ -2115,11 +2151,14 @@ async function toggleEpisodeWatched(seasonNumber, episodeNumber, watched) {
 
     if (error) {
         console.error('Error updating episode progress:', error);
-        // Revert on error
-        renderSeasonEpisodes(currentSeasonNumber); // Re-render current season to reflect actual state
+        renderSeasonEpisodes(currentSeasonNumber);
     } else {
+        // --- Trakt Real-time Sync ---
+        import('./trakt-sync.js').then(({ traktSync }) => {
+            traktSync.pushEpisodeHistory(currentMediaItem, seasonNumber, episodeNumber, watched);
+        });
+
         // LOG ACTIVITY
-        // Since this updates for both users, we log for 'both'
         if (watched) {
             await logActivity('watched_episode', 'both', currentMediaItem, {
                 season: seasonNumber,
@@ -2241,8 +2280,11 @@ async function markAllEpisodesWatched(tmdbId) {
             if (error) {
                 console.error('Error marking all episodes watched:', error);
             } else {
-                // console.log('All episodes marked as watched successfully.');
-                // Re-fetch and re-render TV progress to update UI
+                // --- Trakt Real-time Sync (Bulk) ---
+                import('./trakt-sync.js').then(({ traktSync }) => {
+                    traktSync.pushHistory(mediaData, true); // Mark whole show
+                });
+
                 await renderTVProgress(tmdbId, seriesDetails.seasons);
             }
         }
@@ -2839,36 +2881,40 @@ async function showFavoriteRemovalModal(favorites, user) {
 }
 
 function updateWatchedButtonUI(mediaItem) {
-    const watchedBtn = document.getElementById('toggle-watched-btn');
+    const watchedBtn = document.getElementById('watched-btn');
+    const rejectedBtn = document.getElementById('rejected-btn');
     const currentlyWatchingBtn = document.getElementById('currently-watching-btn');
     const removeCurrentlyWatchingBtn = document.getElementById('remove-currently-watching-btn');
-    const bookmarkBtn = document.getElementById('bookmark-btn');
+    const bookmarkBtn = document.getElementById('favorite-btn');
 
     // Reset all buttons
-    currentlyWatchingBtn.classList.add('hidden');
-    removeCurrentlyWatchingBtn.classList.add('hidden');
-    watchedBtn.classList.remove('hidden');
-
+    if (currentlyWatchingBtn) currentlyWatchingBtn.classList.add('hidden');
+    if (removeCurrentlyWatchingBtn) removeCurrentlyWatchingBtn.classList.add('hidden');
+    if (watchedBtn) {
+        watchedBtn.classList.remove('hidden');
+        watchedBtn.textContent = 'Watched';
+        watchedBtn.classList.replace('bg-gray-600', 'bg-success');
+    }
 
     // Button visibility logic
     if (mediaItem.watched) {
-        watchedBtn.textContent = 'Mark as Unwatched';
-        watchedBtn.classList.replace('bg-success', 'bg-gray-600');
+        if (watchedBtn) {
+            watchedBtn.textContent = 'Unwatch';
+            watchedBtn.classList.replace('bg-success', 'bg-gray-600');
+        }
     } else if (mediaItem.currently_watching) {
-        watchedBtn.textContent = 'Mark as Watched';
-        watchedBtn.classList.replace('bg-gray-600', 'bg-success');
-        removeCurrentlyWatchingBtn.classList.remove('hidden');
+        if (removeCurrentlyWatchingBtn) removeCurrentlyWatchingBtn.classList.remove('hidden');
     } else {
-        watchedBtn.textContent = 'Mark as Watched';
-        watchedBtn.classList.replace('bg-gray-600', 'bg-success');
-        currentlyWatchingBtn.classList.remove('hidden');
+        if (currentlyWatchingBtn) currentlyWatchingBtn.classList.remove('hidden');
     }
 
-    // Bookmark icon state
-    if (mediaItem.want_to_watch) {
-        bookmarkBtn.classList.add('text-accent-primary');
-    } else {
-        bookmarkBtn.classList.remove('text-accent-primary');
+    // Favorite icon state (previously bookmarkBtn)
+    if (favoriteBtn) {
+        if (mediaItem.favorited_by && mediaItem.favorited_by.length > 0) {
+            favoriteBtn.classList.add('text-accent-primary');
+        } else {
+            favoriteBtn.classList.remove('text-accent-primary');
+        }
     }
 }
 
@@ -2921,11 +2967,11 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
 
 
 function setupWatchedButtons() {
-    const watchedBtn = document.getElementById('toggle-watched-btn');
-    const rejectedBtn = document.getElementById('toggle-rejected-btn');
+    const watchedBtn = document.getElementById('watched-btn');
+    const rejectedBtn = document.getElementById('rejected-btn');
     const currentlyWatchingBtn = document.getElementById('currently-watching-btn');
     const removeCurrentlyWatchingBtn = document.getElementById('remove-currently-watching-btn');
-    const bookmarkBtn = document.getElementById('bookmark-btn');
+    const favoriteBtn = document.getElementById('favorite-btn');
 
     const handleWatchedToggle = async (isReject) => {
         const { tmdb_id, type, title, poster_path } = currentMediaItem;
@@ -2979,6 +3025,12 @@ function setupWatchedButtons() {
         } else {
             currentMediaItem = data;
             updateWatchedButtonUI(currentMediaItem);
+
+            // --- Trakt Real-time Sync ---
+            import('./trakt-sync.js').then(({ traktSync }) => {
+                if (traktSync) traktSync.pushHistory(data, newWatchedStatus);
+            });
+
             const index = allMedia.findIndex(item => item.tmdb_id === tmdb_id);
             if (index > -1) {
                 allMedia[index] = data; // Replace the old item with the updated one
@@ -3032,44 +3084,57 @@ function setupWatchedButtons() {
             currentMediaItem = data;
             updateWatchedButtonUI(currentMediaItem);
 
+            // --- Trakt Real-time Sync (Check-in) ---
+            import('./trakt-sync.js').then(({ traktSync }) => {
+                if (traktSync) traktSync.pushCheckin(data);
+            });
+
             // LOG ACTIVITY
             await logActivity('currently_watching', 'both', data);
+            renderContent();
         }
     });
 
-    bookmarkBtn.addEventListener('click', async () => {
-        const { tmdb_id, type, title, poster_path } = currentMediaItem;
-        const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
-        if (!mediaItem) return;
+    if (favoriteBtn) {
+        favoriteBtn.addEventListener('click', async () => {
+            const { tmdb_id, type, title, poster_path } = currentMediaItem;
+            const mediaItem = await ensureMediaItemExists(tmdb_id, type, title, poster_path);
+            if (!mediaItem) return;
 
-        const newWantToWatch = !currentMediaItem.want_to_watch;
-        let updates = { want_to_watch: newWantToWatch };
-        if (newWantToWatch) {
-            updates.currently_watching = false;
-        }
-
-        // Update Supabase
-        try {
-            const { data, error } = await supabase
-                .from('media')
-                .update(updates) // Use updates directly
-                .eq('tmdb_id', tmdb_id)
-                .select()
-                .single();
-
-            if (error) throw error;
-            // console.log('Reaction saved');
-            currentMediaItem = data;
-            updateWatchedButtonUI(currentMediaItem);
-
-            // LOG ACTIVITY
+            const newWantToWatch = !currentMediaItem.want_to_watch;
+            let updates = { want_to_watch: newWantToWatch };
             if (newWantToWatch) {
-                await logActivity('want_to_watch', 'both', data);
+                updates.currently_watching = false;
             }
-        } catch (err) {
-            console.error('Error updating bookmark from grid:', err);
-        }
-    });
+
+            // Update Supabase
+            try {
+                const { data, error } = await supabase
+                    .from('media')
+                    .update(updates)
+                    .eq('tmdb_id', tmdb_id)
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                currentMediaItem = data;
+                updateWatchedButtonUI(currentMediaItem);
+
+                // --- Trakt Real-time Sync (Watchlist) ---
+                import('./trakt-sync.js').then(({ traktSync }) => {
+                    if (traktSync) traktSync.pushWatchlist(data, newWantToWatch);
+                });
+
+                // LOG ACTIVITY
+                if (newWantToWatch) {
+                    await logActivity('want_to_watch', 'both', data);
+                }
+                renderContent();
+            } catch (err) {
+                console.error('Error updating bookmark from grid:', err);
+            }
+        });
+    }
 
 
     watchedBtn.addEventListener('click', () => handleWatchedToggle(false));
@@ -3347,6 +3412,13 @@ async function initializeApp() {
         setupSortControls();
         initializeSettings();
         await loadAndApplySettings(); // Wait for settings and avatars to load
+
+        // Refresh UI when auth state changes (e.g., login/logout)
+        auth.subscribe(async () => {
+            await loadAndApplySettings();
+            refreshAllReactionAvatars();
+        });
+
         setupUserMenu();
         setupCarouselEditMode();
 

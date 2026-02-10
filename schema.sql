@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS public.user_media_actions (
     reaction TEXT, -- 'happy', 'sad', etc.
     watched_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    ignore_trakt BOOLEAN DEFAULT FALSE,
     UNIQUE(user_id, media_id)
 );
 
@@ -42,6 +43,7 @@ CREATE TABLE IF NOT EXISTS public.integrations (
     refresh_token TEXT,
     expires_at TIMESTAMP WITH TIME ZONE,
     last_sync_at TIMESTAMP WITH TIME ZONE,
+    sync_mode TEXT DEFAULT 'both', -- 'both', 'up_only', 'down_only', 'none'
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     PRIMARY KEY (user_id, provider)
 );

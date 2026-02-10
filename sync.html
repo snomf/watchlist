@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>Sync Settings - Watchlist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="src/theme.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: {
+                            primary: 'var(--bg-primary)',
+                            secondary: 'var(--bg-secondary)',
+                            tertiary: 'var(--bg-tertiary)',
+                        },
+                        text: {
+                            primary: 'var(--text-primary)',
+                            secondary: 'var(--text-secondary)',
+                            muted: 'var(--text-muted)',
+                        },
+                        accent: {
+                            primary: 'var(--accent-primary)',
+                            secondary: 'var(--accent-secondary)',
+                        },
+                        border: {
+                            primary: 'var(--border-primary)',
+                        },
+                        success: 'var(--success)',
+                        warning: 'var(--warning)',
+                        danger: 'var(--danger)',
+                        info: 'var(--info)',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-bg-primary text-text-primary min-h-screen flex flex-col transition-colors duration-300">
+    <div id="wallpaper-overlay"
+        class="fixed inset-0 z-[-1] bg-black/70 pointer-events-none transition-opacity duration-500"></div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-bg-secondary border-b border-border-primary">
+        <div class="container mx-auto flex items-center justify-between h-16 px-4">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="nav-pill flex items-center cursor-pointer hover:opacity-80 transition">
+                    <img src="icon.png" alt="Logo" class="h-8 w-8 mr-2">
+                    <span class="font-bold text-white text-lg">Watchlist</span>
+                </a>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <a href="index.html" class="text-text-muted hover:text-text-primary transition" title="Home">
+                    <i class="fas fa-home text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 flex-grow max-w-4xl">
+
+        <h1 class="text-3xl font-bold mb-8">Synchronization Settings</h1>
+
+        <!-- Profile Selector Section -->
+        <section class="mb-8 bg-bg-secondary p-6 rounded-xl border border-border-primary">
+            <h2 class="text-xl font-bold mb-4">Active Profile</h2>
+            <p class="text-text-muted text-sm mb-4">Syncing will be applied to the selected profile.</p>
+            <div class="flex gap-4" id="profile-selector">
+                <button data-handle="juainny"
+                    class="profile-btn flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-border-primary hover:border-accent-primary transition group">
+                    <div id="juainny-avatar-sync" class="w-10 h-10 rounded-full bg-bg-tertiary overflow-hidden"></div>
+                    <div class="text-left">
+                        <div class="font-bold">Juainny</div>
+                        <div class="text-xs text-text-muted">Collector</div>
+                    </div>
+                </button>
+                <button data-handle="erick"
+                    class="profile-btn flex items-center gap-3 px-4 py-3 rounded-lg border-2 border-border-primary hover:border-accent-primary transition group">
+                    <div id="erick-avatar-sync" class="w-10 h-10 rounded-full bg-bg-tertiary overflow-hidden"></div>
+                    <div class="text-left">
+                        <div class="font-bold">Erick</div>
+                        <div class="text-xs text-text-muted">Critic</div>
+                    </div>
+                </button>
+            </div>
+        </section>
+
+        <!-- Trakt Sync Section -->
+        <section class="mb-12 bg-bg-secondary p-6 rounded-xl border border-border-primary">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <img src="https://walter.trakt.tv/images/logos/trakt-icon-red.png" alt="Trakt" class="w-10 h-10">
+                    <div>
+                        <h2 class="text-xl font-bold">Trakt.tv Integration</h2>
+                        <p class="text-text-muted text-sm">Sync your history, ratings, and watchlist.</p>
+                    </div>
+                </div>
+                <div id="trakt-status"
+                    class="px-3 py-1 rounded-full text-sm font-semibold bg-bg-tertiary text-text-muted">
+                    Checking...
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="trakt-sync-btn"
+                    class="bg-accent-primary hover:bg-accent-secondary text-white px-4 py-2 rounded-lg font-semibold transition flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-sync-alt"></i>
+                    Sync Now
+                </button>
+                <div id="trakt-auth-container">
+                    <!-- Auth buttons injected by JS -->
+                </div>
+            </div>
+            <div id="trakt-last-sync" class="mt-2 text-sm text-text-muted hidden">Last synced: Never</div>
+        </section>
+
+        <!-- IMDB Import Section -->
+        <section class="bg-bg-secondary p-6 rounded-xl border border-border-primary">
+            <div class="flex items-center gap-3 mb-4">
+                <i class="fab fa-imdb text-4xl text-yellow-500"></i>
+                <div>
+                    <h2 class="text-xl font-bold">IMDB Import</h2>
+                    <p class="text-text-muted text-sm">Import your data from IMDB CSV exports.</p>
+                </div>
+            </div>
+
+            <div class="bg-bg-tertiary p-4 rounded-lg mb-6 text-sm">
+                <p class="mb-2"><strong class="text-accent-primary">How to import:</strong></p>
+                <ol class="list-decimal list-inside space-y-1 text-text-secondary">
+                    <li>Go to your <a href="https://www.imdb.com/exports/" target="_blank"
+                            class="text-blue-400 hover:underline">IMDB Exports page</a>.</li>
+                    <li>Export your <strong>Ratings</strong>, <strong>Watchlist</strong>, and <strong>Check-ins</strong>
+                        (if available).</li>
+                    <li>Wait for the exports to complete and download the CSV files.</li>
+                    <li>Upload the CSV files below.</li>
+                </ol>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Watchlist Upload -->
+                <div
+                    class="border-2 border-dashed border-border-primary rounded-lg p-4 text-center hover:border-accent-primary transition cursor-pointer relative group">
+                    <input type="file" id="imdb-watchlist-file" accept=".csv"
+                        class="absolute inset-0 opacity-0 cursor-pointer">
+                    <i class="fas fa-list text-3xl mb-2 text-text-muted group-hover:text-accent-primary transition"></i>
+                    <h3 class="font-semibold">Watchlist</h3>
+                    <p id="watchlist-file-name" class="text-xs text-text-muted mt-1 truncate">No file chosen</p>
+                </div>
+
+                <!-- Ratings Upload -->
+                <div
+                    class="border-2 border-dashed border-border-primary rounded-lg p-4 text-center hover:border-accent-primary transition cursor-pointer relative group">
+                    <input type="file" id="imdb-ratings-file" accept=".csv"
+                        class="absolute inset-0 opacity-0 cursor-pointer">
+                    <i class="fas fa-star text-3xl mb-2 text-text-muted group-hover:text-accent-primary transition"></i>
+                    <h3 class="font-semibold">Ratings</h3>
+                    <p id="ratings-file-name" class="text-xs text-text-muted mt-1 truncate">No file chosen</p>
+                </div>
+
+                <!-- Checkins Upload -->
+                <div
+                    class="border-2 border-dashed border-border-primary rounded-lg p-4 text-center hover:border-accent-primary transition cursor-pointer relative group">
+                    <input type="file" id="imdb-checkins-file" accept=".csv"
+                        class="absolute inset-0 opacity-0 cursor-pointer">
+                    <i
+                        class="fas fa-check-circle text-3xl mb-2 text-text-muted group-hover:text-accent-primary transition"></i>
+                    <h3 class="font-semibold">Check-ins</h3>
+                    <p id="checkins-file-name" class="text-xs text-text-muted mt-1 truncate">No file chosen</p>
+                </div>
+            </div>
+
+            <button id="import-imdb-btn"
+                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-3 rounded-lg font-bold transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                <i class="fas fa-file-import"></i>
+                Import Data
+            </button>
+
+            <!-- Progress Bar -->
+            <div id="import-progress-container" class="hidden mt-6">
+                <div class="flex justify-between text-sm mb-1">
+                    <span id="import-status-text">Importing...</span>
+                    <span id="import-percentage">0%</span>
+                </div>
+                <div class="w-full bg-bg-tertiary rounded-full h-2.5">
+                    <div id="import-progress-bar" class="bg-accent-primary h-2.5 rounded-full" style="width: 0%"></div>
+                </div>
+                <div id="import-log" class="mt-4 p-2 bg-black/30 rounded text-xs font-mono h-32 overflow-y-auto hidden">
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <script type="module" src="/src/sync.js"></script>
+</body>
+
+</html>
