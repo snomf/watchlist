@@ -17,8 +17,64 @@ export default async function handler(req, res) {
     if (!user_id) return res.status(400).json({ error: 'Missing user_id' });
 
     try {
-        // ... (existing user/integration logic) ...
-        // ... (omitting unchanged lines for brevity in instruction, but replacing correctly) ...
+        // 1. Get User info to determine handle and columns
+        const { data: userInfo, error: userError } = await supabase
+            .from('users')
+            .select('handle')
+            .eq('id', user_id)
+            .single();
+
+        if (userError || !userInfo) throw new Error('User not found');
+        const handle = userInfo.handle;
+        const viewer = handle === 'juainny' ? 'user1' : 'user2';
+        const ratingColumn = `${handle}_rating`;
+
+        // 2. Get Integration Token & Sync Mode
+        let { data: integration, error: intError } = await supabase
+            .from('integrations')
+            .select('*')
+            .eq('user_id', user_id)
+            .eq('provider', 'trakt')
+            .single();
+
+        if (intError || !integration) throw new Error('Trakt integration not found');
+        const syncMode = integration.sync_mode || 'both';
+
+        let accessToken = integration.access_token;
+
+        // 3. Check if token expired and refresh (if expires in < 15 mins)
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAt = integration.expires_at ? Math.floor(new Date(integration.expires_at).getTime() / 1000) : 0;
+
+        if (expiresAt < now + 900) {
+            const refreshResponse = await fetch('https://api.trakt.tv/oauth/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    refresh_token: integration.refresh_token,
+                    client_id: TRAKT_CLIENT_ID,
+                    client_secret: TRAKT_CLIENT_SECRET,
+                    redirect_uri: (req.headers.origin || 'https://marvel-marathon.vercel.app') + '/callback.html',
+                    grant_type: 'refresh_token'
+                })
+            });
+
+            const refreshData = await refreshResponse.json();
+            if (!refreshResponse.ok) throw new Error('Failed to refresh Trakt token: ' + (refreshData.error_description || refreshData.error));
+
+            accessToken = refreshData.access_token;
+            const newExpiresAt = new Date(Date.now() + refreshData.expires_in * 1000).toISOString();
+
+            await supabase
+                .from('integrations')
+                .update({
+                    access_token: accessToken,
+                    refresh_token: refreshData.refresh_token,
+                    expires_at: newExpiresAt
+                })
+                .eq('user_id', user_id)
+                .eq('provider', 'trakt');
+        }
 
         // 4. Fetch Local Data
         // A. Ratings
@@ -55,7 +111,98 @@ export default async function handler(req, res) {
         const { data: ignoreActions } = await ignoreQuery;
         const ignoredIds = new Set(ignoreActions?.map(a => a.media_id) || []);
 
-        // ... (rest of local formatting logic) ...
+        // 5. Format for Trakt
+        const syncData = {
+            history: { movies: [], shows: [] },
+            ratings: { movies: [], shows: [] },
+            watchlist: { movies: [], shows: [] }
+        };
+
+        // Process Ratings
+        ratedMedia?.forEach(m => {
+            if (ignoredIds.has(m.id) || !m.tmdb_id) return;
+            const ratingValue = Math.round(m[ratingColumn]);
+            if (!ratingValue) return;
+
+            const item = {
+                rating: ratingValue,
+                ids: { tmdb: parseInt(m.tmdb_id) }
+            };
+            if (m.type === 'movie') syncData.ratings.movies.push(item);
+            else syncData.ratings.shows.push(item);
+        });
+
+        // Process History (Movies & Shows)
+        const showHistoryMap = new Map();
+
+        // Group Episodes
+        episodeProgress?.forEach(ep => {
+            if (ignoredIds.has(ep.media_id) || !ep.media?.tmdb_id) return;
+            const tmdbId = parseInt(ep.media.tmdb_id);
+            if (!showHistoryMap.has(tmdbId)) showHistoryMap.set(tmdbId, new Map());
+
+            const seasonMap = showHistoryMap.get(tmdbId);
+            if (!seasonMap.has(ep.season_number)) seasonMap.set(ep.season_number, []);
+            seasonMap.get(ep.season_number).push({ number: ep.episode_number });
+        });
+
+        // Process Whole Media Items (Movies + Watchlist)
+        mediaItems?.forEach(m => {
+            if (ignoredIds.has(m.id) || !m.tmdb_id) return;
+            const tmdbId = parseInt(m.tmdb_id);
+            const item = { ids: { tmdb: tmdbId } };
+
+            if (m.watched) {
+                if (m.type === 'movie') {
+                    syncData.history.movies.push({ ...item, watched_at: m.watched_at || m.updated_at });
+                } else {
+                    if (!showHistoryMap.has(tmdbId)) {
+                        syncData.history.shows.push({ ...item, watched_at: m.watched_at || m.updated_at });
+                    }
+                }
+            }
+
+            if (m.want_to_watch) {
+                if (m.type === 'movie') syncData.watchlist.movies.push(item);
+                else syncData.watchlist.shows.push(item);
+            }
+        });
+
+        for (const [tmdbId, seasons] of showHistoryMap.entries()) {
+            const showItem = {
+                ids: { tmdb: tmdbId },
+                seasons: Array.from(seasons.entries()).map(([num, eps]) => ({
+                    number: num,
+                    episodes: eps
+                }))
+            };
+            syncData.history.shows.push(showItem);
+        }
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'trakt-api-version': '2',
+            'trakt-api-key': TRAKT_CLIENT_ID
+        };
+
+        const pushSync = async (path, data) => {
+            if (data.movies.length === 0 && data.shows.length === 0) return;
+            const res = await fetch(`https://api.trakt.tv/sync/${path}`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify(data)
+            });
+            return res.json();
+        };
+
+        if (syncMode === 'both' || syncMode === 'up_only') {
+            await Promise.all([
+                pushSync('history', syncData.history),
+                pushSync('ratings', syncData.ratings),
+                pushSync('watchlist', syncData.watchlist)
+            ]);
+        }
 
         // 7. PULL Logic (Trakt -> App)
         if (syncMode === 'both' || syncMode === 'down_only') {
@@ -71,14 +218,11 @@ export default async function handler(req, res) {
             ]);
             const traktShows = await fetchTrakt('watched/shows');
 
-            // Filter Trakt data if targetTmdbId is provided
             const filterTrakt = (list, key) => targetTmdbId ? list.filter(i => (i[key]?.ids?.tmdb || i[key]?.tmdb) == targetTmdbId) : list;
 
             const filteredMovies = filterTrakt(traktHistory, 'movie');
             const filteredShows = filterTrakt(traktShows, 'show');
-            const filteredRatings = filterTrakt([...traktRatings, ...(await fetchTrakt('ratings/shows'))], (r) => r.movie ? 'movie' : 'show');
 
-            // --- RECONCILE HISTORY (Movies) ---
             for (const item of filteredMovies) {
                 if (!item.movie?.ids?.tmdb) continue;
                 const { data: m } = await supabase.from('media')
@@ -91,7 +235,6 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- RECONCILE HISTORY (Shows/Episodes) ---
             const allEpisodesToUpsert = [];
             for (const show of filteredShows) {
                 if (!show.show?.ids?.tmdb) continue;
@@ -125,7 +268,6 @@ export default async function handler(req, res) {
                 }
             }
 
-            // --- RECONCILE RATINGS ---
             const ratingsToReconcile = targetTmdbId ? [...traktRatings, ...(await fetchTrakt('ratings/shows'))].filter(r => (r.movie?.ids?.tmdb || r.show?.ids?.tmdb) == targetTmdbId) : [...traktRatings, ...(await fetchTrakt('ratings/shows'))];
 
             for (const r of ratingsToReconcile) {
@@ -145,7 +287,6 @@ export default async function handler(req, res) {
             }
         }
 
-        // 8. Update Sync Timestamp
         await supabase
             .from('integrations')
             .update({ last_sync_at: new Date().toISOString() })
