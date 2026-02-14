@@ -16,10 +16,11 @@ class AuthService {
     async init() {
         const storedId = localStorage.getItem(STORAGE_KEY_USER_ID);
         if (storedId) {
-            // Validate against DB
-            const { data, error } = await supabase.from('users').select('*').eq('id', storedId).single();
+            // Validate against DB - Use user_profiles table
+            const { data, error } = await supabase.from('user_profiles').select('*').eq('id', storedId).single();
             if (data && !error) {
-                this.currentUser = data;
+                // Map user_id to handle for internal app compatibility
+                this.currentUser = { ...data, handle: data.user_id };
             } else {
                 this.logout();
             }
@@ -28,17 +29,18 @@ class AuthService {
     }
 
     async login(handle) {
-        const { data, error } = await supabase.from('users').select('*').eq('handle', handle).single();
+        const { data, error } = await supabase.from('user_profiles').select('*').eq('user_id', handle).single();
         if (error || !data) {
             console.error('Login failed:', error);
             throw new Error('User not found');
         }
 
-        this.currentUser = data;
+        // Map user_id to handle for internal app compatibility
+        this.currentUser = { ...data, handle: data.user_id };
         localStorage.setItem(STORAGE_KEY_USER_ID, data.id);
-        localStorage.setItem(STORAGE_KEY_USER_HANDLE, data.handle);
+        localStorage.setItem(STORAGE_KEY_USER_HANDLE, data.user_id);
         this.notifyListeners();
-        return data;
+        return this.currentUser;
     }
 
     logout() {
