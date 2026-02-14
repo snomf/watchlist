@@ -1061,13 +1061,17 @@ async function openMovieModal(tmdbId, type) {
                 if (integration) {
                     traktContainer.classList.remove('hidden');
 
-                    // Fetch user specific actions for this media
-                    const { data: userAction } = await supabase
-                        .from('user_media_actions')
-                        .select('ignore_trakt, auto_pull')
-                        .eq('user_id', currentUser.id)
-                        .eq('media_id', currentMediaItem.id)
-                        .maybeSingle();
+                    // Fetch user specific actions for this media if it exists
+                    let userAction = null;
+                    if (currentMediaItem.id) {
+                        const { data } = await supabase
+                            .from('user_media_actions')
+                            .select('ignore_trakt, auto_pull')
+                            .eq('user_id', currentUser.id)
+                            .eq('media_id', currentMediaItem.id)
+                            .maybeSingle();
+                        userAction = data;
+                    }
 
                     if (ignoreToggle) ignoreToggle.checked = userAction?.ignore_trakt || false;
                     if (autoPullToggle) autoPullToggle.checked = userAction?.auto_pull || false;
@@ -1089,17 +1093,27 @@ async function openMovieModal(tmdbId, type) {
 
                     // 3. Handle Toggle Changes
                     const updateAction = async (updates) => {
-                        if (!currentMediaItem.id) {
-                            const ensured = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
-                            if (!ensured) return;
-                            currentMediaItem.id = ensured.id;
+                        try {
+                            if (!currentMediaItem.id) {
+                                const ensured = await ensureMediaItemExists(tmdbId, type, data.title || data.name, data.poster_path);
+                                if (!ensured) return;
+                                currentMediaItem = ensured;
+                            }
+                            const { error } = await supabase.from('user_media_actions').upsert({
+                                user_id: currentUser.id,
+                                media_id: currentMediaItem.id,
+                                updated_at: new Date().toISOString(),
+                                ...updates
+                            }, { onConflict: 'user_id, media_id' });
+
+                            if (!error) {
+                                import('./trakt-sync.js').then(({ traktSync }) => {
+                                    if (traktSync) traktSync.notify('Setting saved!', 'success');
+                                });
+                            }
+                        } catch (err) {
+                            console.error('Trakt setting save error:', err);
                         }
-                        await supabase.from('user_media_actions').upsert({
-                            user_id: currentUser.id,
-                            media_id: currentMediaItem.id,
-                            updated_at: new Date().toISOString(),
-                            ...updates
-                        }, { onConflict: 'user_id, media_id' });
                     };
 
                     if (ignoreToggle) ignoreToggle.onchange = () => updateAction({ ignore_trakt: ignoreToggle.checked });

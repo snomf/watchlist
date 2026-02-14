@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { traktHelper } from './_trakt_helper.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://wuaoaeadrjewtyhvxyno.supabase.co';
 const supabaseKey = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1YW9hZWFkcmpld3R5aHZ4eW5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNjc4MjMsImV4cCI6MjA3ODc0MzgyM30.9wymTewNn9AvnK2H6Spi7hE6n3wj_IBGljHjbAxRnY0';
@@ -225,6 +226,15 @@ export default async function handler(req, res) {
                         })
                         .eq('id', mainMedia.id);
                 }
+            }
+
+            // 3. Trigger Trakt Sync for all users (if not ignored)
+            try {
+                // Return immediately to user, but trigger sync in background
+                traktHelper.syncItemForAllUsers(tmdbIdNum, status, seasonNum, episodeNum)
+                    .catch(e => console.error('Background Trakt sync failed:', e));
+            } catch (err) {
+                console.error('Trakt sync trigger failed:', err);
             }
 
             return res.status(200).json({

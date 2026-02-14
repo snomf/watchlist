@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import { traktHelper } from './_trakt_helper.js';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://wuaoaeadrjewtyhvxyno.supabase.co';
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind1YW9hZWFkcmpld3R5aHZ4eW5vIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMxNjc4MjMsImV4cCI6MjA3ODc0MzgyM30.9wymTewNn9AvnK2H6Spi7hE6n3wj_IBGljHjbAxRnY0';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const TRAKT_CLIENT_ID = process.env.VITE_TRAKT_CLIENT_ID;
-const TRAKT_CLIENT_SECRET = process.env.TRAKT_CLIENT_SECRET;
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -44,41 +44,8 @@ export default async function handler(req, res) {
         if (syncMode === 'push') syncMode = 'up_only';
         if (syncMode === 'pull') syncMode = 'down_only';
 
-        let accessToken = integration.access_token;
-
-        // 3. Check if token expired and refresh (if expires in < 15 mins)
-        const now = Math.floor(Date.now() / 1000);
-        const expiresAt = integration.expires_at ? Math.floor(new Date(integration.expires_at).getTime() / 1000) : 0;
-
-        if (expiresAt < now + 900) {
-            const refreshResponse = await fetch('https://api.trakt.tv/oauth/token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    refresh_token: integration.refresh_token,
-                    client_id: TRAKT_CLIENT_ID,
-                    client_secret: TRAKT_CLIENT_SECRET,
-                    redirect_uri: (req.headers.origin || 'https://marvel-marathon.vercel.app') + '/callback.html',
-                    grant_type: 'refresh_token'
-                })
-            });
-
-            const refreshData = await refreshResponse.json();
-            if (!refreshResponse.ok) throw new Error('Failed to refresh Trakt token: ' + (refreshData.error_description || refreshData.error));
-
-            accessToken = refreshData.access_token;
-            const newExpiresAt = new Date(Date.now() + refreshData.expires_in * 1000).toISOString();
-
-            await supabase
-                .from('integrations')
-                .update({
-                    access_token: accessToken,
-                    refresh_token: refreshData.refresh_token,
-                    expires_at: newExpiresAt
-                })
-                .eq('user_id', user_id)
-                .eq('provider', 'trakt');
-        }
+        const accessToken = await traktHelper.getValidToken(user_id);
+        if (!accessToken) throw new Error('Failed to get valid Trakt token');
 
         // 4. Fetch Local Data
         // A. Ratings
