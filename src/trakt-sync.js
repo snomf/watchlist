@@ -40,6 +40,12 @@ export const traktSync = {
      * Syncs a single episode to Trakt history.
      */
     async pushEpisodeHistory(showItem, season, episode, watched = true) {
+        // Check if ignored
+        if (await this._isIgnored(showItem)) {
+            console.log('Trakt: Item is ignored, skipping episode push.');
+            return;
+        }
+
         const path = watched ? 'history' : 'history/remove';
         const data = {
             shows: [{
@@ -73,10 +79,34 @@ export const traktSync = {
     },
 
     /**
+     * Internal check if item should be ignored
+     */
+    async _isIgnored(mediaItem) {
+        if (!mediaItem || !mediaItem.id) return false;
+        const currentUser = JSON.parse(localStorage.getItem('activeUser') || localStorage.getItem('watchlist_user') || '{}');
+        if (!currentUser.id) return false;
+
+        const { data: action } = await supabase
+            .from('user_media_actions')
+            .select('ignore_trakt')
+            .eq('user_id', currentUser.id)
+            .eq('media_id', mediaItem.id)
+            .maybeSingle();
+
+        return action?.ignore_trakt || false;
+    },
+
+    /**
      * Internal helper for single item sync
      */
     async _pushSingle(path, mediaItem, extraData = {}) {
         if (!mediaItem || !mediaItem.tmdb_id) return;
+
+        // Check if ignored
+        if (await this._isIgnored(mediaItem)) {
+            console.log('Trakt: Item is ignored, skipping push.');
+            return;
+        }
 
         const type = mediaItem.type === 'tv' || mediaItem.type === 'series' ? 'shows' : 'movies';
         const payload = {

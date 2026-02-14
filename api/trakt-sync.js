@@ -13,7 +13,7 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { user_id, tmdb_id: targetTmdbId } = req.body;
+    const { user_id, tmdb_id: targetTmdbId, direction } = req.body;
     if (!user_id) return res.status(400).json({ error: 'Missing user_id' });
 
     try {
@@ -38,7 +38,11 @@ export default async function handler(req, res) {
             .single();
 
         if (intError || !integration) throw new Error('Trakt integration not found');
-        const syncMode = integration.sync_mode || 'both';
+
+        // Use provided direction or fallback to integration's sync_mode
+        let syncMode = direction || integration.sync_mode || 'both';
+        if (syncMode === 'push') syncMode = 'up_only';
+        if (syncMode === 'pull') syncMode = 'down_only';
 
         let accessToken = integration.access_token;
 

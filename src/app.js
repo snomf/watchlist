@@ -1105,20 +1105,50 @@ async function openMovieModal(tmdbId, type) {
                     if (ignoreToggle) ignoreToggle.onchange = () => updateAction({ ignore_trakt: ignoreToggle.checked });
                     if (autoPullToggle) autoPullToggle.onchange = () => updateAction({ auto_pull: autoPullToggle.checked });
 
-                    // 4. TRIGGER AUTO-PULL if enabled
+                    // 4. Manual Sync Buttons
+                    const syncBtn = document.getElementById('trakt-manual-sync-btn');
+                    const pushBtn = document.getElementById('trakt-manual-push-btn');
+                    const pullBtn = document.getElementById('trakt-manual-pull-btn');
+
+                    const triggerManualSync = async (direction = 'both') => {
+                        const icon = direction === 'push' ? 'fa-cloud-upload-alt' : (direction === 'pull' ? 'fa-cloud-download-alt' : 'fa-sync-alt');
+                        const label = direction.charAt(0).toUpperCase() + direction.slice(1);
+
+                        import('./trakt-sync.js').then(({ traktSync }) => {
+                            if (traktSync) traktSync.notify(`${label}ing with Trakt...`);
+                        });
+
+                        try {
+                            const res = await fetch('/api/trakt-sync', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ user_id: currentUser.id, tmdb_id: tmdbId, direction })
+                            });
+                            const result = await res.json();
+                            if (result.success) {
+                                import('./trakt-sync.js').then(({ traktSync }) => {
+                                    if (traktSync) traktSync.notify(`${label} successful!`);
+                                });
+                                // Refresh current data from Supabase to show updates
+                                openMovieModal(tmdbId, type);
+                            }
+                        } catch (e) {
+                            console.error('Manual sync error:', e);
+                        }
+                    };
+
+                    if (syncBtn) syncBtn.onclick = () => triggerManualSync('both');
+                    if (pushBtn) pushBtn.onclick = () => triggerManualSync('push');
+                    if (pullBtn) pullBtn.onclick = () => triggerManualSync('pull');
+
+                    // 5. TRIGGER CONTINUOUS SYNC if enabled
                     if (userAction?.auto_pull && !userAction?.ignore_trakt) {
-                        console.log('Auto-pulling Trakt updates for:', currentMediaItem.title);
+                        console.log('Continuous syncing with Trakt for:', currentMediaItem.title);
                         fetch('/api/trakt-sync', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ user_id: currentUser.id, tmdb_id: tmdbId })
-                        }).then(r => r.json()).then(res => {
-                            if (res.success) {
-                                // Potentially refresh modal data here if needed, 
-                                // though most updates affect background state (watched/episodes)
-                                console.log('Auto-pull successful');
-                            }
-                        }).catch(e => console.error('Auto-pull error:', e));
+                        }).then(r => r.json()).catch(e => console.error('Auto-sync error:', e));
                     }
                 } else {
                     traktContainer.classList.add('hidden');
@@ -3105,7 +3135,7 @@ function setupWatchedButtons() {
 
             if (isReject) {
                 import('./trakt-sync.js').then(({ traktSync }) => {
-                    if (traktSync) traktSync.notify('Marked as Not Interested');
+                    if (traktSync) traktSync.notify('Removed Item');
                 });
                 modal.classList.add('hidden'); // Close modal on reject
                 document.body.style.overflow = 'auto';
