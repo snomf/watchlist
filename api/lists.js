@@ -22,9 +22,6 @@ export default async function handler(req, res) {
         if (req.method === 'GET') {
             const { type } = req.query;
 
-            if (!type) {
-                return res.status(400).json({ error: 'type parameter is required (want_to_watch or currently_watching)' });
-            }
 
             if (type === 'want_to_watch' || !type || type === 'all') {
                 // Fetch all items marked as want_to_watch
@@ -114,7 +111,6 @@ export default async function handler(req, res) {
 
             return res.status(400).json({ error: 'Invalid type. Use want_to_watch or currently_watching' });
 
-            return res.status(400).json({ error: 'Invalid type. Use want_to_watch or currently_watching' });
         }
 
         return res.status(405).json({ error: 'method not allowed' });
