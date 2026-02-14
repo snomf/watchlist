@@ -651,7 +651,7 @@ function renderCarousel(containerId, mediaItems) {
  */
 let currentMediaItem = null; // To store the full media item for the open modal
 
-async function openMovieModal(tmdbId, type) {
+async function openMovieModal(tmdbId, type, skipSync = false) {
     const modal = document.getElementById('movie-modal');
     if (!modal) return;
     const currentUser = auth.getCurrentUser(); // Define early
@@ -1063,6 +1063,17 @@ async function openMovieModal(tmdbId, type) {
 
                     // Fetch user specific actions for this media if it exists
                     let userAction = null;
+
+                    // Fallback: If currentMediaItem represents a DB item but ID is missing, try fetching by TMDB ID
+                    if (!currentMediaItem.id) {
+                        const { data: dbItem } = await supabase
+                            .from('media')
+                            .select('id')
+                            .eq('tmdb_id', tmdbId)
+                            .maybeSingle();
+                        if (dbItem) currentMediaItem.id = dbItem.id;
+                    }
+
                     if (currentMediaItem.id) {
                         const { data } = await supabase
                             .from('user_media_actions')
@@ -1071,6 +1082,9 @@ async function openMovieModal(tmdbId, type) {
                             .eq('media_id', currentMediaItem.id)
                             .maybeSingle();
                         userAction = data;
+                        console.log('[Trakt] Loaded actions for', currentMediaItem.title, ':', userAction);
+                    } else {
+                        console.log('[Trakt] No DB ID found for item:', currentMediaItem.title);
                     }
 
                     if (ignoreToggle) ignoreToggle.checked = userAction?.ignore_trakt || false;
@@ -1156,13 +1170,29 @@ async function openMovieModal(tmdbId, type) {
                     if (pullBtn) pullBtn.onclick = () => triggerManualSync('pull');
 
                     // 5. TRIGGER CONTINUOUS SYNC if enabled
-                    if (userAction?.auto_pull && !userAction?.ignore_trakt) {
+                    if (!skipSync && userAction?.auto_pull && !userAction?.ignore_trakt) {
                         console.log('Continuous syncing with Trakt for:', currentMediaItem.title);
                         fetch('/api/trakt-sync', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ user_id: currentUser.id, tmdb_id: tmdbId })
-                        }).then(r => r.json()).catch(e => console.error('Auto-sync error:', e));
+                        })
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.success) {
+                                    console.log('[Trakt] Continuous sync successful for:', currentMediaItem.title);
+                                    import('./trakt-sync.js').then(({ traktSync }) => {
+                                        if (traktSync) traktSync.notify('Trakt Synced');
+                                    });
+                                    // Refresh current modal to show updates if it's still open
+                                    if (!traktContainer.classList.contains('hidden')) {
+                                        openMovieModal(tmdbId, type, true);
+                                    }
+                                }
+                            })
+                            .catch(e => console.error('Auto-sync error:', e));
+                    } else {
+                        console.log('[Trakt] Continuous sync skipped. Skip:', skipSync, 'Auto-pull:', userAction?.auto_pull);
                     }
                 } else {
                     traktContainer.classList.add('hidden');
