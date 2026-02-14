@@ -2568,8 +2568,7 @@ async function fetchUserMediaAction(mediaId, userId) {
     // We can query `users` table cache or just query users table.
     // Optimization: Cache user IDs.
 
-    // Get the user ID from user_profiles table using the handle (which is user_id in DB)
-    const { data: user } = await supabase.from('user_profiles').select('id').eq('user_id', userId).single();
+    const { data: user } = await supabase.from('users').select('id').eq('handle', userId).single();
     if (!user) return null;
 
     const { data, error } = await supabase

@@ -19,13 +19,13 @@ export default async function handler(req, res) {
     try {
         // 1. Get User info to determine handle and columns
         const { data: userInfo, error: userError } = await supabase
-            .from('user_profiles')
-            .select('user_id')
+            .from('users')
+            .select('handle')
             .eq('id', user_id)
             .single();
 
         if (userError || !userInfo) throw new Error('User not found');
-        const handle = userInfo.user_id; // Using user_id as the handle
+        const handle = userInfo.handle;
         const viewer = handle === 'juainny' ? 'user1' : 'user2';
         const ratingColumn = `${handle}_rating`;
 
