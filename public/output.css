@@ -856,9 +856,6 @@ video {
 .h-10 {
   height: 2.5rem;
 }
-.h-12 {
-  height: 3rem;
-}
 .h-14 {
   height: 3.5rem;
 }
@@ -1560,10 +1557,6 @@ video {
 }
 .bg-orange-500\/10 {
   background-color: rgb(249 115 22 / 0.1);
-}
-.bg-orange-600 {
-  --tw-bg-opacity: 1;
-  background-color: rgb(234 88 12 / var(--tw-bg-opacity, 1));
 }
 .bg-orange-600\/20 {
   background-color: rgb(234 88 12 / 0.2);
@@ -2709,6 +2702,12 @@ img {
 
 .focus\:ring-teal-500\/50:focus {
   --tw-ring-color: rgb(20 184 166 / 0.5);
+}
+
+.active\:scale-95:active {
+  --tw-scale-x: .95;
+  --tw-scale-y: .95;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
 .disabled\:cursor-not-allowed:disabled {

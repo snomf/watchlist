@@ -8,34 +8,34 @@
  */
 
 const DOCK_ITEMS = [
-    {
-        id: 'kino',
-        label: 'Kino',
-        href: 'https://kino.juainny.com',
-        img: '/public/K.png',
-        color: '#7C3AED',
-    },
-    {
-        id: 'watchlist',
-        label: 'Watchlist',
-        href: 'https://watchlist.juainny.com',
-        img: '/public/favicon.ico',
-        color: '#EA580C',
-    },
-    {
-        id: 'mm',
-        label: 'MM',
-        href: 'https://mm.juainny.com',
-        img: '/dist/icon_old.png',
-        color: '#1D4ED8',
-    },
+  {
+    id: 'kino',
+    label: 'Kino',
+    href: 'https://kino.juainny.com',
+    img: '/K.png',
+    color: '#7C3AED',
+  },
+  {
+    id: 'watchlist',
+    label: 'Watchlist',
+    href: 'https://watchlist.juainny.com',
+    img: '/favicon.ico',
+    color: '#EA580C',
+  },
+  {
+    id: 'mm',
+    label: 'Marvel Marathon',
+    href: 'https://mm.juainny.com',
+    img: '/icon_old.png',
+    color: '#eb0a0eaa',
+  },
 ];
 
 let isOpen = false;
 let dockEl = null;
 
 function buildDockHTML(activeId) {
-    return `
+  return `
     <div id="app-dock" style="
       position: fixed;
       bottom: 24px;
@@ -192,20 +192,20 @@ function buildDockHTML(activeId) {
 }
 
 function setOpen(open) {
-    isOpen = open;
-    const collapsed = document.getElementById('dock-collapsed');
-    const expanded = document.getElementById('dock-expanded');
-    if (!collapsed || !expanded) return;
-    collapsed.style.display = open ? 'none' : 'flex';
-    expanded.style.display = open ? 'flex' : 'none';
+  isOpen = open;
+  const collapsed = document.getElementById('dock-collapsed');
+  const expanded = document.getElementById('dock-expanded');
+  if (!collapsed || !expanded) return;
+  collapsed.style.display = open ? 'none' : 'flex';
+  expanded.style.display = open ? 'flex' : 'none';
 }
 
 export function dockHide() {
-    if (dockEl) dockEl.style.display = 'none';
+  if (dockEl) dockEl.style.display = 'none';
 }
 
 export function dockShow() {
-    if (dockEl) dockEl.style.display = '';
+  if (dockEl) dockEl.style.display = '';
 }
 
 // Expose globally for player.js to call without an import
@@ -213,30 +213,30 @@ window.dockHide = dockHide;
 window.dockShow = dockShow;
 
 export function initDock(activeId = '') {
-    // Inject a wrapper div into <body>
-    const wrapper = document.createElement('div');
-    wrapper.innerHTML = buildDockHTML(activeId);
-    document.body.appendChild(wrapper);
-    dockEl = document.getElementById('app-dock');
+  // Inject a wrapper div into <body>
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = buildDockHTML(activeId);
+  document.body.appendChild(wrapper);
+  dockEl = document.getElementById('app-dock');
 
-    // Toggle button
-    const toggleBtn = document.getElementById('dock-toggle-btn');
-    if (toggleBtn) toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setOpen(!isOpen);
-    });
+  // Toggle button
+  const toggleBtn = document.getElementById('dock-toggle-btn');
+  if (toggleBtn) toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setOpen(!isOpen);
+  });
 
-    // Close button inside expanded
-    const closeBtn = document.getElementById('dock-close-btn');
-    if (closeBtn) closeBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setOpen(false);
-    });
+  // Close button inside expanded
+  const closeBtn = document.getElementById('dock-close-btn');
+  if (closeBtn) closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setOpen(false);
+  });
 
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-        if (isOpen && !e.target.closest('#app-dock')) {
-            setOpen(false);
-        }
-    });
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (isOpen && !e.target.closest('#app-dock')) {
+      setOpen(false);
+    }
+  });
 }

@@ -1267,16 +1267,40 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                 // Clone to strip any previous listener
                 const newWatchNowBtn = watchNowBtn.cloneNode(true);
                 watchNowBtn.parentNode.replaceChild(newWatchNowBtn, watchNowBtn);
-                newWatchNowBtn.addEventListener('click', () => {
+                newWatchNowBtn.addEventListener('click', async () => {
                     const item = currentMediaItem;
                     if (!item) return;
                     const isTV = item.type === 'tv' || item.type === 'series';
+
+                    let season = currentSeasonNumber || 1;
+                    let episode = 1;
+
+                    if (isTV && currentSeasons && currentSeasons.length > 0) {
+                        const sortedSeasons = [...currentSeasons].sort((a, b) => a.season_number - b.season_number);
+                        let found = false;
+
+                        for (const s of sortedSeasons) {
+                            for (let e = 1; e <= s.episode_count; e++) {
+                                const juainnyWatchedPath = currentEpisodeProgress.some(p => p.season_number === s.season_number && p.episode_number === e && p.viewer === 'user1' && p.watched);
+                                const erickWatchedPath = currentEpisodeProgress.some(p => p.season_number === s.season_number && p.episode_number === e && p.viewer === 'user2' && p.watched);
+
+                                if (!(juainnyWatchedPath && erickWatchedPath)) {
+                                    season = s.season_number;
+                                    episode = e;
+                                    found = true;
+                                    break;
+                                }
+                            }
+                            if (found) break;
+                        }
+                    }
+
                     openPlayer({
                         tmdbId: item.tmdb_id,
                         type: isTV ? 'tv' : 'movie',
                         title: item.title || item.name,
-                        season: currentSeasonNumber || 1,
-                        episode: 1,
+                        season: season,
+                        episode: episode,
                         internalId: item.id || currentInternalMediaId
                     });
                 });
@@ -2208,9 +2232,9 @@ async function renderSeasonEpisodes(seasonNumber) {
                     <!-- Dark hover overlay for the image (pass-through clicks) -->
                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20"></div>
                     
-                    <!-- Play button (only covers center) -->
-                    <button class="episode-play-btn absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-all bg-white text-black shadow-xl hover:scale-110">
-                        <i class="fas fa-play text-sm ml-0.5"></i>
+                    <!-- Play button (Small circular button in center) -->
+                    <button class="episode-play-btn absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-all bg-white text-black shadow-xl hover:scale-110 active:scale-95">
+                        <i class="fas fa-play text-xs ml-0.5"></i>
                     </button>
 
                     <button class="unwatch-btn absolute top-2 right-2 bg-danger text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition z-30 ${isWatched && isEditMode ? '' : 'hidden'}">
