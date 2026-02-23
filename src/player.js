@@ -8,15 +8,20 @@ import { supabase } from './supabase-client.js';
 
 // ── Sources ─────────────────────────────────────────────────────────────────
 const SOURCES = [
-    { name: 'VidSrc', id: 'vidsrc' },
     { name: 'RiveStream', id: 'rivestream' },
+    { name: 'VidSrc', id: 'vidsrc' },
     { name: '2Embed', id: '2embed' },
     { name: 'MoviesAPI', id: 'moviesapi' },
     { name: 'MultiEmbed', id: 'multiembed' },
     { name: 'SmashyStream', id: 'smashystream' },
 ];
 
-let activeSource = SOURCES[0];
+function getStoredSource() {
+    const savedId = localStorage.getItem('player_preferred_source');
+    return SOURCES.find(s => s.id === savedId) || SOURCES[0];
+}
+
+let activeSource = getStoredSource();
 let currentItem = null; // { tmdbId, type, title, season, episode, internalId }
 
 // ── Build Embed URL ──────────────────────────────────────────────────────────
@@ -88,6 +93,7 @@ function updateSourceMenu() {
     list.querySelectorAll('.player-source-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             activeSource = SOURCES.find(s => s.id === btn.dataset.source) || SOURCES[0];
+            localStorage.setItem('player_preferred_source', activeSource.id);
             const labelEl = document.getElementById('player-source-label');
             if (labelEl) labelEl.textContent = activeSource.name;
             updateIframeSrc();
@@ -128,6 +134,7 @@ export function openPlayer(item) {
 
     updateIframeSrc();
     updateSourceMenu();
+    updatePlayerUrl(item);
 
     overlay.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -146,6 +153,29 @@ export function openPlayer(item) {
     if (window.dockHide) window.dockHide();
 }
 
+function updatePlayerUrl(item) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('play', item.tmdbId);
+    url.searchParams.set('type', item.type);
+    if (item.type === 'tv') {
+        url.searchParams.set('s', item.season);
+        url.searchParams.set('e', item.episode);
+    } else {
+        url.searchParams.delete('s');
+        url.searchParams.delete('e');
+    }
+    window.history.pushState({}, '', url);
+}
+
+function clearPlayerUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('play');
+    url.searchParams.delete('type');
+    url.searchParams.delete('s');
+    url.searchParams.delete('e');
+    window.history.pushState({}, '', url);
+}
+
 // ── Close Player ─────────────────────────────────────────────────────────────
 function closePlayer() {
     const overlay = getOverlay();
@@ -157,6 +187,7 @@ function closePlayer() {
 
     overlay.classList.add('hidden');
     document.body.style.overflow = '';
+    clearPlayerUrl();
 
     // Restore dock
     if (window.dockShow) window.dockShow();

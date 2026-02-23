@@ -1050,6 +1050,7 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                 favorited_by: [],
                 watched: false,
             };
+            currentInternalMediaId = currentMediaItem.id || null;
 
             // --- Trakt Settings UI & Auto-Pull ---
             const traktContainer = document.getElementById('trakt-settings-container');
@@ -3587,37 +3588,47 @@ async function initializeApp() {
         // Hide the loading spinner
         if (loadingSpinner) loadingSpinner.style.display = 'none';
 
-        // Check for shared URL
+        // Check for shared URL / Deep Link
         const sharedTmdbId = urlParams.get('tmdb_id');
-        const sharedType = urlParams.get('type'); // Optional: 'movie' or 'tv'
-        if (sharedTmdbId) {
+        const sharedType = urlParams.get('type');
+        const playId = urlParams.get('play');
+        const playType = urlParams.get('type') || 'movie';
+        const playS = urlParams.get('s');
+        const playE = urlParams.get('e');
+
+        if (playId) {
+            // Fetch basic info to open player
+            const endpoint = playType === 'tv' ? 'tv' : 'movie';
+            fetch(`https://api.themoviedb.org/3/${endpoint}/${playId}?api_key=${TMDB_API_KEY}`)
+                .then(r => r.json())
+                .then(async data => {
+                    const dbItem = await supabase.from('media').select('id').eq('tmdb_id', playId).maybeSingle();
+                    openPlayer({
+                        tmdbId: playId,
+                        type: playType,
+                        title: data.title || data.name,
+                        season: playS ? parseInt(playS) : 1,
+                        episode: playE ? parseInt(playE) : 1,
+                        internalId: dbItem?.data?.id || null
+                    });
+                });
+        } else if (sharedTmdbId) {
             const item = allMedia.find(i => i.tmdb_id == sharedTmdbId);
             if (item) {
                 openMovieModal(item.tmdb_id, sharedType || item.type || item.media_type || 'movie');
             } else if (sharedType) {
-                // If type is provided, we can jump straight in
                 openMovieModal(sharedTmdbId, sharedType);
             } else {
-                // Try to determine type if not in DB and not provided in URL
+                // Try to resolve type
                 try {
-                    // Try movie first
                     const movieResp = await fetch(`https://api.themoviedb.org/3/movie/${sharedTmdbId}?api_key=${TMDB_API_KEY}`);
                     if (movieResp.ok) {
                         openMovieModal(sharedTmdbId, 'movie');
                     } else {
-                        // Fallback to tv
-                        const tvResp = await fetch(`https://api.themoviedb.org/3/tv/${sharedTmdbId}?api_key=${TMDB_API_KEY}`);
-                        if (tvResp.ok) {
-                            openMovieModal(sharedTmdbId, 'tv');
-                        }
+                        openMovieModal(sharedTmdbId, 'tv');
                     }
-                } catch (e) {
-                    console.error('Error finding shared item type:', e);
-                }
+                } catch (e) { }
             }
-            // Clean URL
-            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            window.history.replaceState({ path: newUrl }, '', newUrl);
         }
 
         // Setup search bar
