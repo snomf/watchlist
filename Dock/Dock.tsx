@@ -54,13 +54,13 @@ export const Dock: React.FC<DockProps> = ({
                             key="open-btn"
                             initial={{ scale: 0, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1, rotate: 0 }}
-                            exit={{ scale: 0, opacity: 0, rotate: 180 }}
+                            exit={{ scale: 0, opacity: 0, rotate: -180 }}
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => setIsOpen(true)}
-                            className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-full text-white shadow-xl hover:bg-white/20 transition-colors group"
+                            className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-full text-white shadow-xl hover:bg-white/20 transition-all group"
                         >
-                            <Layers size={24} className="group-hover:rotate-90 transition-transform duration-500" />
+                            <Layers size={24} className="group-hover:rotate-180 transition-transform duration-500" />
                         </motion.button>
                     ) : (
                         <motion.div
@@ -73,7 +73,7 @@ export const Dock: React.FC<DockProps> = ({
                             {dockItems.map((item) => {
                                 const isActive = activeId === item.id;
                                 const colorClass = item.color || 'bg-gray-500';
-                                const Icon = item.icon;
+                                const Icon = item.icon as React.ComponentType<any> | undefined;
                                 return (
                                     <div key={item.id} className="relative group flex flex-col items-center">
                                         <button

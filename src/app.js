@@ -1276,15 +1276,17 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                     let episode = 1;
 
                     if (isTV && currentSeasons && currentSeasons.length > 0) {
+                        const currentUser = auth.getCurrentUser();
+                        const viewerId = (currentUser?.handle === 'juainny' || !currentUser) ? 'user1' : 'user2';
+
                         const sortedSeasons = [...currentSeasons].sort((a, b) => a.season_number - b.season_number);
                         let found = false;
 
                         for (const s of sortedSeasons) {
                             for (let e = 1; e <= s.episode_count; e++) {
-                                const juainnyWatchedPath = currentEpisodeProgress.some(p => p.season_number === s.season_number && p.episode_number === e && p.viewer === 'user1' && p.watched);
-                                const erickWatchedPath = currentEpisodeProgress.some(p => p.season_number === s.season_number && p.episode_number === e && p.viewer === 'user2' && p.watched);
+                                const isWatched = currentEpisodeProgress.some(p => p.season_number === s.season_number && p.episode_number === e && p.viewer === viewerId && p.watched);
 
-                                if (!(juainnyWatchedPath && erickWatchedPath)) {
+                                if (!isWatched) {
                                     season = s.season_number;
                                     episode = e;
                                     found = true;
@@ -2213,7 +2215,7 @@ async function renderSeasonEpisodes(seasonNumber) {
             const stillUrl = episode.still_path ? `https://image.tmdb.org/t/p/w500${episode.still_path}` : 'https://placehold.co/500x281?text=No+Image';
 
             const card = document.createElement('div');
-            card.className = `episode-card flex-shrink-0 w-[calc(100vw-4rem)] sm:w-72 md:w-80 relative rounded-lg overflow-hidden shadow-md bg-bg-primary cursor-pointer snap-start ${isWatched && isEditMode ? 'shake' : ''}`;
+            card.className = `episode-card group flex-shrink-0 w-[calc(100vw-4rem)] sm:w-72 md:w-80 relative rounded-lg overflow-hidden shadow-md bg-bg-primary cursor-pointer snap-start ${isWatched && isEditMode ? 'shake' : ''}`;
             card.style.maxWidth = '400px'; // Cap maximum width
             card.dataset.episodeNumber = episode.episode_number;
             card.dataset.seasonNumber = seasonNumber;
@@ -2232,10 +2234,18 @@ async function renderSeasonEpisodes(seasonNumber) {
                     <!-- Dark hover overlay for the image (pass-through clicks) -->
                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20"></div>
                     
-                    <!-- Play button (Small circular button in center) -->
-                    <button class="episode-play-btn absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-all bg-white text-black shadow-xl hover:scale-110 active:scale-95">
-                        <i class="fas fa-play text-xs ml-0.5"></i>
-                    </button>
+                    <!-- Buttons Container (Center) -->
+                    <div class="absolute inset-0 flex items-center justify-center gap-4 opacity-0 group-hover:opacity-100 transition-all z-30">
+                        <!-- Play button -->
+                        <button class="episode-play-btn w-12 h-12 rounded-full flex items-center justify-center bg-white text-black shadow-xl hover:scale-110 active:scale-95 transition-transform">
+                            <i class="fas fa-play text-sm ml-0.5"></i>
+                        </button>
+                        
+                        <!-- Watch toggle button -->
+                        <button class="episode-watch-toggle-btn w-12 h-12 rounded-full flex items-center justify-center ${isWatched ? 'bg-success text-white' : 'bg-white/20 backdrop-blur-md text-white'} shadow-xl hover:scale-110 active:scale-95 transition-transform border border-white/20" title="${isWatched ? 'Mark as Unwatched' : 'Mark as Watched'}">
+                            <i class="fas fa-${isWatched ? 'check-double' : 'check'} text-sm"></i>
+                        </button>
+                    </div>
 
                     <button class="unwatch-btn absolute top-2 right-2 bg-danger text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition z-30 ${isWatched && isEditMode ? '' : 'hidden'}">
                         <i class="fas fa-times text-xs"></i>
@@ -2263,22 +2273,37 @@ async function renderSeasonEpisodes(seasonNumber) {
                 });
             }
 
-            // Click listener for the card to toggle watch (only if NOT in edit mode)
+            // Click listener for the watch toggle button
+            const watchToggleBtn = card.querySelector('.episode-watch-toggle-btn');
+            if (watchToggleBtn) {
+                watchToggleBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleEpisodeWatched(seasonNumber, episode.episode_number, !isWatched);
+                });
+            }
+
+            // Click listener for the card to toggle watch (only if NOT in edit mode and NOT clicking buttons)
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.unwatch-btn')) return;
                 if (e.target.closest('.episode-play-btn')) return;
+                if (e.target.closest('.episode-watch-toggle-btn')) return;
                 if (isEditMode) return;
+                // For regular clicks, maybe just open the player? Or keep it as watch toggle?
+                // User said "There is no watch button for each episode", implying they want a specific button.
+                // I'll keep the card click as watch toggle for convenience unless it's annoying.
                 if (!isWatched) {
                     toggleEpisodeWatched(seasonNumber, episode.episode_number, true);
                 }
             });
 
-            // Click listener for unwatch button
+            // Click listener for unwatch button (legacy edit mode)
             const unwatchBtn = card.querySelector('.unwatch-btn');
-            unwatchBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                toggleEpisodeWatched(seasonNumber, episode.episode_number, false);
-            });
+            if (unwatchBtn) {
+                unwatchBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleEpisodeWatched(seasonNumber, episode.episode_number, false);
+                });
+            }
 
             carousel.appendChild(card);
         });
@@ -2531,6 +2556,7 @@ function updateEpisodeCardVisuals(seasonNumber, episodeNumber, watched) {
     const img = card.querySelector('img');
     const checkIcon = card.querySelector('.fa-check')?.parentElement;
     const unwatchBtn = card.querySelector('.unwatch-btn');
+    const watchToggleBtn = card.querySelector('.episode-watch-toggle-btn');
 
     if (watched) {
         img.classList.remove('opacity-100');
@@ -2541,6 +2567,12 @@ function updateEpisodeCardVisuals(seasonNumber, episodeNumber, watched) {
             iconDiv.innerHTML = '<i class="fas fa-check text-success text-4xl drop-shadow-lg"></i>';
             card.querySelector('.aspect-video').appendChild(iconDiv);
         }
+        if (watchToggleBtn) {
+            watchToggleBtn.classList.remove('bg-white/20', 'text-white');
+            watchToggleBtn.classList.add('bg-success', 'text-white');
+            watchToggleBtn.innerHTML = '<i class="fas fa-check-double text-sm"></i>';
+            watchToggleBtn.title = 'Mark as Unwatched';
+        }
         if (isEditMode) {
             card.classList.add('shake');
             unwatchBtn.classList.remove('hidden');
@@ -2549,6 +2581,12 @@ function updateEpisodeCardVisuals(seasonNumber, episodeNumber, watched) {
         img.classList.remove('opacity-50');
         img.classList.add('opacity-100');
         if (checkIcon) checkIcon.remove();
+        if (watchToggleBtn) {
+            watchToggleBtn.classList.remove('bg-success');
+            watchToggleBtn.classList.add('bg-white/20', 'text-white');
+            watchToggleBtn.innerHTML = '<i class="fas fa-check text-sm"></i>';
+            watchToggleBtn.title = 'Mark as Watched';
+        }
         card.classList.remove('shake');
         unwatchBtn.classList.add('hidden');
     }
