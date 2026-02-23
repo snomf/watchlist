@@ -66,7 +66,7 @@ function buildDockHTML(activeId) {
           transition: background 0.2s, transform 0.3s;
           box-shadow: 0 4px 24px rgba(0,0,0,0.4);
         ">
-          <i class="fas fa-th"></i>
+          <i class="fas fa-layer-group"></i>
         </button>
       </div>
 
@@ -182,6 +182,12 @@ function buildDockHTML(activeId) {
       #dock-toggle-btn:hover {
         background: rgba(255,255,255,0.18) !important;
         transform: scale(1.08) !important;
+      }
+      #dock-toggle-btn:hover i {
+        transform: rotate(180deg);
+      }
+      #dock-toggle-btn i {
+        transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       }
       #dock-close-btn:hover {
         background: rgba(255,255,255,0.1) !important;

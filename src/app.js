@@ -49,6 +49,13 @@ async function syncWithTMDB(localMedia) {
         const syncPromises = batch.map(async (item) => {
             if (!item.tmdb_id || !item.type) return item;
 
+            // PERFORMANCE: Skip sync if we already have the essential data
+            const hasEssentialData = item.poster_path && item.release_year && item.runtime && item.content_rating !== 'N/A';
+            if (hasEssentialData) {
+                // console.log(`Skipping sync for ${item.title} (already has data)`);
+                return item;
+            }
+
             const endpoint = item.type === 'movie' ? 'movie' : 'tv';
             // Add append_to_response to get complete metadata
             const appendToResponse = 'release_dates,content_ratings,external_ids';
@@ -1264,6 +1271,22 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
             // --- Watch Now Button ---
             const watchNowBtn = document.getElementById('watch-now-btn');
             if (watchNowBtn) {
+                // Determine label: "Watch" or "Continue"
+                const currentUser = auth.getCurrentUser();
+                const viewerId = (currentUser?.handle === 'juainny' || !currentUser) ? 'user1' : 'user2';
+
+                let hasProgress = false;
+                if (currentMediaItem.type === 'tv' || currentMediaItem.type === 'series') {
+                    hasProgress = currentEpisodeProgress.some(p => p.viewer === viewerId && p.watched);
+                } else {
+                    // For movies, if it's already watched, it's not "Continue", but let's stick to the logic
+                    // If movie is halfway (implied by currently_watching state)
+                    hasProgress = isCurrentlyWatching;
+                }
+
+                const label = hasProgress ? 'Continue' : 'Watch';
+                watchNowBtn.querySelector('span').textContent = label;
+
                 // Clone to strip any previous listener
                 const newWatchNowBtn = watchNowBtn.cloneNode(true);
                 watchNowBtn.parentNode.replaceChild(newWatchNowBtn, watchNowBtn);
@@ -2282,18 +2305,22 @@ async function renderSeasonEpisodes(seasonNumber) {
                 });
             }
 
-            // Click listener for the card to toggle watch (only if NOT in edit mode and NOT clicking buttons)
+            // Click listener for the card (optional: can open player instead)
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.unwatch-btn')) return;
                 if (e.target.closest('.episode-play-btn')) return;
                 if (e.target.closest('.episode-watch-toggle-btn')) return;
                 if (isEditMode) return;
-                // For regular clicks, maybe just open the player? Or keep it as watch toggle?
-                // User said "There is no watch button for each episode", implying they want a specific button.
-                // I'll keep the card click as watch toggle for convenience unless it's annoying.
-                if (!isWatched) {
-                    toggleEpisodeWatched(seasonNumber, episode.episode_number, true);
-                }
+
+                // Clicking the card now plays the episode instead of toggling watch
+                openPlayer({
+                    tmdbId: currentTmdbId,
+                    type: 'tv',
+                    title: currentMediaItem?.title || currentMediaItem?.name || '',
+                    season: seasonNumber,
+                    episode: episode.episode_number,
+                    internalId: currentInternalMediaId
+                });
             });
 
             // Click listener for unwatch button (legacy edit mode)
