@@ -10,6 +10,7 @@ import { setupEasterEggs } from './features/easter-eggs.js';
 import { initWheelPicker } from './features/wheel-picker.js';
 import { auth } from './auth.js';
 import { traktSync } from './trakt-sync.js';
+import { openPlayer } from './player.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -1259,6 +1260,27 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
             // --- Watched Status ---
             updateWatchedButtonUI(currentMediaItem);
 
+            // --- Watch Now Button ---
+            const watchNowBtn = document.getElementById('watch-now-btn');
+            if (watchNowBtn) {
+                // Clone to strip any previous listener
+                const newWatchNowBtn = watchNowBtn.cloneNode(true);
+                watchNowBtn.parentNode.replaceChild(newWatchNowBtn, watchNowBtn);
+                newWatchNowBtn.addEventListener('click', () => {
+                    const item = currentMediaItem;
+                    if (!item) return;
+                    const isTV = item.type === 'tv' || item.type === 'series';
+                    openPlayer({
+                        tmdbId: item.tmdb_id,
+                        type: isTV ? 'tv' : 'movie',
+                        title: item.title || item.name,
+                        season: currentSeasonNumber || 1,
+                        episode: 1,
+                        internalId: item.id || currentInternalMediaId
+                    });
+                });
+            }
+
             function setupReadOnlyNotes(notesId, content) {
                 const notesInput = document.getElementById(notesId);
                 if (notesInput) {
@@ -2182,6 +2204,12 @@ async function renderSeasonEpisodes(seasonNumber) {
                             <i class="fas fa-check text-success text-4xl drop-shadow-lg"></i>
                         </div>
                     ` : ''}
+                    <!-- Play overlay button -->
+                    <button class="episode-play-btn absolute inset-0 flex items-center justify-center z-30 opacity-0 hover:opacity-100 transition-opacity bg-black/40 group">
+                        <span class="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
+                            <i class="fas fa-play text-sm ml-0.5"></i>
+                        </span>
+                    </button>
                     <button class="unwatch-btn absolute top-2 right-2 bg-danger text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition z-30 ${isWatched && isEditMode ? '' : 'hidden'}">
                         <i class="fas fa-times text-xs"></i>
                     </button>
@@ -2192,9 +2220,26 @@ async function renderSeasonEpisodes(seasonNumber) {
                 </div>
             `;
 
+            // Click listener for the play button (opens player for this specific episode)
+            const playBtn = card.querySelector('.episode-play-btn');
+            if (playBtn) {
+                playBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openPlayer({
+                        tmdbId: currentTmdbId,
+                        type: 'tv',
+                        title: currentMediaItem?.title || currentMediaItem?.name || '',
+                        season: seasonNumber,
+                        episode: episode.episode_number,
+                        internalId: currentInternalMediaId
+                    });
+                });
+            }
+
             // Click listener for the card to toggle watch (only if NOT in edit mode)
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.unwatch-btn')) return;
+                if (e.target.closest('.episode-play-btn')) return;
                 if (isEditMode) return;
                 if (!isWatched) {
                     toggleEpisodeWatched(seasonNumber, episode.episode_number, true);
