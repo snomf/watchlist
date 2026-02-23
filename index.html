@@ -345,6 +345,12 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-4 my-4">
+                            <!-- Watch Now Button -->
+                            <button id="watch-now-btn"
+                                class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-5 rounded-full transition flex items-center gap-2 shadow-lg">
+                                <i class="fas fa-play text-sm"></i>
+                                <span>Watch Now</span>
+                            </button>
                             <div class="relative">
                                 <button id="favorite-btn"
                                     class="bg-yellow-500 hover:bg-yellow-600 text-text-primary font-bold py-2 px-4 rounded-full transition flex items-center justify-center">
@@ -1196,6 +1202,83 @@
             </div>
             <div id="wallpaper-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto flex-1 p-2">
                 <!-- Injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- MEDIA PLAYER OVERLAY                                              -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div id="media-player-overlay" class="hidden fixed inset-0 z-[200] bg-black flex flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 h-14 bg-[#0a0a0a] border-b border-white/5 flex-none">
+            <!-- Logo + Title -->
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0">
+                    <span class="text-white font-bold text-sm">W</span>
+                </div>
+                <span id="player-title" class="text-white/80 font-semibold text-sm truncate">Watchlist Player</span>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <!-- Source Switcher -->
+                <div class="relative">
+                    <button id="player-source-toggle"
+                        class="flex items-center gap-2 bg-black/40 hover:bg-black/60 border border-white/10 text-white/90 px-4 py-2 rounded-full transition text-sm font-medium">
+                        <i class="fas fa-layer-group text-xs"></i>
+                        <span id="player-source-label">VidSrc</span>
+                        <i class="fas fa-chevron-down text-xs"></i>
+                    </button>
+                    <!-- Source dropdown -->
+                    <div id="player-source-menu"
+                        class="hidden absolute top-full right-0 mt-2 w-48 bg-gray-900/95 border border-white/10 rounded-xl shadow-2xl overflow-hidden z-[201] backdrop-blur-xl">
+                        <div
+                            class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-white/5">
+                            Select Source</div>
+                        <div id="player-source-list"></div>
+                    </div>
+                </div>
+
+                <!-- Close -->
+                <button id="player-close-btn"
+                    class="bg-black/40 hover:bg-red-500/80 border border-white/10 text-white p-2.5 rounded-full transition"
+                    title="Close Player">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Iframe -->
+        <div class="flex-1 bg-black relative">
+            <iframe id="media-player-iframe" src="about:blank" class="w-full h-full border-0" allowfullscreen
+                allow="autoplay; encrypted-media; gyroscope; accelerometer; picture-in-picture; clipboard-write; fullscreen"
+                title="Watchlist Player"></iframe>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- PLAYER SAVE PROMPT MODAL                                          -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div id="player-save-modal" class="hidden fixed inset-0 z-[210] flex items-center justify-center p-4"
+        style="background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);">
+        <div class="bg-bg-secondary border border-border-primary rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-orange-600/20 rounded-full flex items-center justify-center">
+                    <i class="fas fa-bookmark text-orange-500"></i>
+                </div>
+                <h3 class="text-lg font-bold text-text-primary">Save Progress?</h3>
+            </div>
+            <p id="player-save-message" class="text-text-secondary mb-6 leading-relaxed"></p>
+            <div class="flex flex-col gap-3">
+                <button id="player-save-yes"
+                    class="w-full bg-success hover:opacity-80 text-white font-bold py-3 rounded-lg transition flex items-center justify-center gap-2">
+                    <i class="fas fa-check"></i> Yes, mark as watched
+                </button>
+                <button id="player-save-no"
+                    class="w-full bg-transparent hover:bg-white/5 text-text-muted font-semibold py-2 rounded-lg transition text-sm border border-border-primary">
+                    No thanks
+                </button>
             </div>
         </div>
     </div>

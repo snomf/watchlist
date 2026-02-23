@@ -10,7 +10,8 @@ import { setupEasterEggs } from './features/easter-eggs.js';
 import { initWheelPicker } from './features/wheel-picker.js';
 import { auth } from './auth.js';
 import { traktSync } from './trakt-sync.js';
-import { openPlayer } from './player.js';
+import { openPlayer, initPlayer } from './player.js';
+import { initDock } from './dock.js';
 
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
@@ -2204,12 +2205,14 @@ async function renderSeasonEpisodes(seasonNumber) {
                             <i class="fas fa-check text-success text-4xl drop-shadow-lg"></i>
                         </div>
                     ` : ''}
-                    <!-- Play overlay button -->
-                    <button class="episode-play-btn absolute inset-0 flex items-center justify-center z-30 opacity-0 hover:opacity-100 transition-opacity bg-black/40 group">
-                        <span class="bg-white text-black rounded-full w-10 h-10 flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform">
-                            <i class="fas fa-play text-sm ml-0.5"></i>
-                        </span>
+                    <!-- Dark hover overlay for the image (pass-through clicks) -->
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20"></div>
+                    
+                    <!-- Play button (only covers center) -->
+                    <button class="episode-play-btn absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-all bg-white text-black shadow-xl hover:scale-110">
+                        <i class="fas fa-play text-sm ml-0.5"></i>
                     </button>
+
                     <button class="unwatch-btn absolute top-2 right-2 bg-danger text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-red-700 transition z-30 ${isWatched && isEditMode ? '' : 'hidden'}">
                         <i class="fas fa-times text-xs"></i>
                     </button>
@@ -4795,3 +4798,9 @@ function checkWelcomeModal() {
         if (e.target === modal) closeModal();
     });
 }
+
+// Initialize Dock and Player globally for main app
+document.addEventListener('DOMContentLoaded', () => {
+    initDock('watchlist');
+    initPlayer();
+});
