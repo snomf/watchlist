@@ -1322,7 +1322,7 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                     }
 
                     openPlayer({
-                        tmdbId: item.tmdb_id,
+                        tmdbId: tmdbId,
                         type: isTV ? 'tv' : 'movie',
                         title: item.title || item.name,
                         season: season,

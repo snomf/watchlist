@@ -5,11 +5,13 @@
  */
 
 import { supabase } from './supabase-client.js';
+import { auth } from './auth.js';
 
 // ── Sources ─────────────────────────────────────────────────────────────────
 const SOURCES = [
     { name: 'RiveStream', id: 'rivestream' },
     { name: 'VidSrc', id: 'vidsrc' },
+    { name: 'Aether', id: 'aether' },
     { name: '2Embed', id: '2embed' },
     { name: 'MoviesAPI', id: 'moviesapi' },
     { name: 'MultiEmbed', id: 'multiembed' },
@@ -17,8 +19,28 @@ const SOURCES = [
 ];
 
 function getStoredSource() {
-    const savedId = localStorage.getItem('player_preferred_source');
+    const currentUser = auth.getCurrentUser();
+    let savedId = localStorage.getItem('player_preferred_source');
+    
+    if (currentUser && currentUser.preferred_source) {
+        savedId = currentUser.preferred_source;
+    }
+    
     return SOURCES.find(s => s.id === savedId) || SOURCES[0];
+}
+
+async function setPreferredSource(sourceId) {
+    localStorage.setItem('player_preferred_source', sourceId);
+    
+    const currentUser = auth.getCurrentUser();
+    if (currentUser) {
+        currentUser.preferred_source = sourceId;
+        try {
+            await supabase.from('users').update({ preferred_source: sourceId }).eq('id', currentUser.id);
+        } catch (err) {
+            console.error('[Player] Failed to save preferred source to profile:', err);
+        }
+    }
 }
 
 let activeSource = getStoredSource();
@@ -30,6 +52,11 @@ function buildEmbedUrl(source, item) {
     const isMovie = type === 'movie';
 
     switch (source.id) {
+        case 'aether':
+            return isMovie
+                ? `https://embed.aether.mom/movie/${tmdbId}`
+                : `https://embed.aether.mom/tv/${tmdbId}/${season}/${episode}`;
+
         case 'vidsrc':
             return isMovie
                 ? `https://vidsrc.xyz/embed/movie?tmdb=${tmdbId}`
@@ -79,26 +106,44 @@ function updateIframeSrc() {
 function updateSourceMenu() {
     const list = document.getElementById('player-source-list');
     if (!list) return;
+
+    const labelEl = document.getElementById('player-source-label');
+    if (labelEl && labelEl.textContent !== activeSource.name) {
+        labelEl.textContent = activeSource.name;
+    }
+
     list.innerHTML = SOURCES.map(s => `
-    <button
-      data-source="${s.id}"
-      class="player-source-btn w-full text-left px-4 py-3 text-sm flex items-center gap-3 transition hover:bg-white/10
-             ${activeSource.id === s.id ? 'text-orange-400 font-bold bg-orange-500/10' : 'text-gray-300'}"
-    >
-      <i class="fas fa-tv text-xs ${activeSource.id === s.id ? 'text-orange-400' : 'text-gray-500'}"></i>
-      ${s.name}
-    </button>
+    <div class="flex items-center justify-between w-full hover:bg-white/10 transition px-4 py-2 group">
+      <button
+        data-source="${s.id}"
+        class="player-source-btn flex-1 text-left text-sm flex items-center gap-3 
+               ${activeSource.id === s.id ? 'text-orange-400 font-bold' : 'text-gray-300'}"
+      >
+        <i class="fas fa-tv text-xs ${activeSource.id === s.id ? 'text-orange-400' : 'text-gray-500'}"></i>
+        ${s.name}
+      </button>
+      <button data-fav="${s.id}" class="player-fav-btn text-gray-500 hover:text-yellow-400 p-2 -mr-2 transition" title="Set as default source">
+        <i class="${getStoredSource().id === s.id ? 'fas text-yellow-500' : 'far text-gray-500'} fa-star"></i>
+      </button>
+    </div>
   `).join('');
 
     list.querySelectorAll('.player-source-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             activeSource = SOURCES.find(s => s.id === btn.dataset.source) || SOURCES[0];
-            localStorage.setItem('player_preferred_source', activeSource.id);
-            const labelEl = document.getElementById('player-source-label');
             if (labelEl) labelEl.textContent = activeSource.name;
             updateIframeSrc();
             updateSourceMenu();
             closeSourceMenu();
+        });
+    });
+
+    list.querySelectorAll('.player-fav-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const sourceId = btn.dataset.fav;
+            await setPreferredSource(sourceId);
+            updateSourceMenu(); // re-render to show updated star
         });
     });
 }
@@ -118,7 +163,7 @@ function closeSourceMenu() {
 export function openPlayer(item) {
     // item: { tmdbId, type, title, season, episode, internalId }
     currentItem = item;
-    activeSource = SOURCES[0];
+    activeSource = getStoredSource();
 
     const overlay = getOverlay();
     if (!overlay) return;
@@ -294,14 +339,39 @@ async function markAsWatched(item) {
 
 async function playNextEpisode() {
     if (!currentItem || currentItem.type !== 'tv') return;
+    
     // Mark current as watched before switching
     await markAsWatched(currentItem);
 
-    // Increment episode
-    const nextItem = { ...currentItem, episode: currentItem.episode + 1 };
-    openPlayer(nextItem);
-    // Note: This doesn't handle season rollover yet as we don't have the episode count here.
-    // However, the user can use the modal to switch seasons.
+    try {
+        const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+        const res = await fetch(`https://api.themoviedb.org/3/tv/${currentItem.tmdbId}/season/${currentItem.season}?api_key=${TMDB_API_KEY}`);
+        const seasonData = await res.json();
+        
+        let nextSeason = currentItem.season;
+        let nextEpisode = currentItem.episode + 1;
+        
+        if (seasonData.episodes && nextEpisode > seasonData.episodes.length) {
+            const showRes = await fetch(`https://api.themoviedb.org/3/tv/${currentItem.tmdbId}?api_key=${TMDB_API_KEY}`);
+            const showData = await showRes.json();
+            
+            const hasNextSeason = showData.seasons && showData.seasons.find(s => s.season_number === nextSeason + 1);
+            if (hasNextSeason) {
+                nextSeason++;
+                nextEpisode = 1;
+            } else {
+                console.log('Series finale reached');
+                return;
+            }
+        }
+
+        const nextItem = { ...currentItem, season: nextSeason, episode: nextEpisode };
+        openPlayer(nextItem);
+    } catch (err) {
+        console.error('[Player] Failed to calculate next episode:', err);
+        const nextItem = { ...currentItem, episode: currentItem.episode + 1 };
+        openPlayer(nextItem);
+    }
 }
 
 async function playPrevEpisode() {
