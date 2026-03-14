@@ -20,14 +20,18 @@ const SOURCES = [
 
 function getStoredSource() {
     const currentUser = auth.getCurrentUser();
-    if (currentUser && currentUser.preferred_source) {
-        return currentUser.preferred_source;
+    if (currentUser) {
+        return currentUser.preferred_source || null;
     }
     return localStorage.getItem('player_preferred_source');
 }
 
 async function setPreferredSource(sourceId) {
-    localStorage.setItem('player_preferred_source', sourceId);
+    if (sourceId === null) {
+        localStorage.removeItem('player_preferred_source');
+    } else {
+        localStorage.setItem('player_preferred_source', sourceId);
+    }
     
     const currentUser = auth.getCurrentUser();
     if (currentUser) {
@@ -51,8 +55,8 @@ function buildEmbedUrl(source, item) {
     switch (source.id) {
         case 'aether':
             return isMovie
-                ? `https://embed.aether.mom/embed/movie/${tmdbId}`
-                : `https://embed.aether.mom/embed/tv/${tmdbId}/${season}/${episode}`;
+                ? `https://embed.aether.mom/embed/tmdb-movie-${tmdbId}`
+                : `https://embed.aether.mom/embed/tmdb-tv-${tmdbId}/${season}/${episode}`;
 
         case 'vidsrc':
             return isMovie
@@ -139,7 +143,11 @@ function updateSourceMenu() {
         btn.addEventListener('click', async (e) => {
             e.stopPropagation();
             const sourceId = btn.dataset.fav;
-            await setPreferredSource(sourceId);
+            if (getStoredSource() === sourceId) {
+                await setPreferredSource(null); // Toggle off
+            } else {
+                await setPreferredSource(sourceId);
+            }
             updateSourceMenu(); // re-render to show updated star
         });
     });

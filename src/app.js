@@ -1280,9 +1280,7 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                 if (currentMediaItem.type === 'tv' || currentMediaItem.type === 'series') {
                     hasProgress = currentEpisodeProgress.some(p => p.viewer === viewerId && p.watched);
                 } else {
-                    // For movies, if it's already watched, it's not "Continue", but let's stick to the logic
-                    // If movie is halfway (implied by currently_watching state)
-                    hasProgress = isCurrentlyWatching;
+                    hasProgress = !!currentMediaItem?.watched;
                 }
 
                 const label = hasProgress ? 'Continue' : 'Watch';
@@ -1322,7 +1320,7 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                     }
 
                     openPlayer({
-                        tmdbId: tmdbId,
+                        tmdbId: item.tmdb_id || item.id || tmdbId,
                         type: isTV ? 'tv' : 'movie',
                         title: item.title || item.name,
                         season: season,
