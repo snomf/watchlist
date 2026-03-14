@@ -1294,7 +1294,7 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                 newWatchNowBtn.addEventListener('click', async () => {
                     const item = currentMediaItem;
                     if (!item) return;
-                    const isTV = item.type === 'tv' || item.type === 'series';
+                    const isTV = type === 'tv' || type === 'series';
 
                     let season = currentSeasonNumber || 1;
                     let episode = 1;

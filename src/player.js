@@ -20,13 +20,10 @@ const SOURCES = [
 
 function getStoredSource() {
     const currentUser = auth.getCurrentUser();
-    let savedId = localStorage.getItem('player_preferred_source');
-    
     if (currentUser && currentUser.preferred_source) {
-        savedId = currentUser.preferred_source;
+        return currentUser.preferred_source;
     }
-    
-    return SOURCES.find(s => s.id === savedId) || SOURCES[0];
+    return localStorage.getItem('player_preferred_source');
 }
 
 async function setPreferredSource(sourceId) {
@@ -43,7 +40,7 @@ async function setPreferredSource(sourceId) {
     }
 }
 
-let activeSource = getStoredSource();
+let activeSource = SOURCES.find(s => s.id === getStoredSource()) || SOURCES[0];
 let currentItem = null; // { tmdbId, type, title, season, episode, internalId }
 
 // ── Build Embed URL ──────────────────────────────────────────────────────────
@@ -54,8 +51,8 @@ function buildEmbedUrl(source, item) {
     switch (source.id) {
         case 'aether':
             return isMovie
-                ? `https://embed.aether.mom/movie/${tmdbId}`
-                : `https://embed.aether.mom/tv/${tmdbId}/${season}/${episode}`;
+                ? `https://embed.aether.mom/embed/movie/${tmdbId}`
+                : `https://embed.aether.mom/embed/tv/${tmdbId}/${season}/${episode}`;
 
         case 'vidsrc':
             return isMovie
@@ -123,7 +120,7 @@ function updateSourceMenu() {
         ${s.name}
       </button>
       <button data-fav="${s.id}" class="player-fav-btn text-gray-500 hover:text-yellow-400 p-2 -mr-2 transition" title="Set as default source">
-        <i class="${getStoredSource().id === s.id ? 'fas text-yellow-500' : 'far text-gray-500'} fa-star"></i>
+        <i class="${getStoredSource() === s.id ? 'fas text-yellow-500' : 'far text-gray-500'} fa-star"></i>
       </button>
     </div>
   `).join('');
@@ -163,7 +160,7 @@ function closeSourceMenu() {
 export function openPlayer(item) {
     // item: { tmdbId, type, title, season, episode, internalId }
     currentItem = item;
-    activeSource = getStoredSource();
+    activeSource = SOURCES.find(s => s.id === getStoredSource()) || SOURCES[0];
 
     const overlay = getOverlay();
     if (!overlay) return;
