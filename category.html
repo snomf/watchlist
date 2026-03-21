@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon.png">
+
+    <!-- iOS Home Screen Icons -->
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icon.png">
+
+    <!-- iOS Web App Configuration -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Watchlist">
+
+    <title>Watchlist - Category</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/output.css?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/color-thief/2.3.0/color-thief.umd.js"></script>
+</head>
+
+<body class="font-sans text-text-primary bg-bg-primary">
+    <div id="wallpaper-overlay" class="fixed inset-0 bg-black/50 pointer-events-none z-[-1]"></div>
+
+    <div id="loading-spinner" class="fixed inset-0 bg-bg-primary flex flex-col justify-center items-center z-[60]">
+        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-accent-primary"></div>
+        <p id="loading-fact" class="text-text-primary text-lg mt-8 text-center px-4"></p>
+    </div>
+
+    <div class="sticky top-0 z-50">
+        <nav class="px-4 py-2 bg-bg-secondary/80 backdrop-blur-md">
+            <div class="container mx-auto flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <a href="/" class="text-white hover:text-accent-primary transition text-xl">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <div id="logo-container" class="nav-pill flex items-center">
+                        <img src="icon.png" alt="Logo" class="h-8 w-8 mr-2">
+                        <span class="font-bold text-white text-lg" id="category-title">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8 relative z-0">
+        <div id="content-area">
+            <div id="category-movie-grid"
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 mt-4">
+                <!-- Media items will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- The movie modal is loaded via JS or we can keep it here but simplified since we just need the same modal. 
+         For simplicity, we include the script that mounts the app. We could re-use app.js strictly for the modal if abstractable,
+         but we'll just write a modular category.js that re-uses app logic where possible or creates simple cards that link back to the main app modal.
+         Actually, the simplest way is to point the items to index.html with a play or open parameter.
+         Alternatively, category.js will fetch and render identical cards.
+    -->
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="/src/category.js"></script>
+</body>
+</html>

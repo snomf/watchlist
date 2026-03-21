@@ -488,6 +488,22 @@ async function getWantToWatchMedia() {
 }
 
 /**
+ * Fetches media items that are marked as 'paused'.
+ */
+async function getPausedMedia() {
+    const { data, error } = await supabase
+        .from('media')
+        .select('*')
+        .eq('paused', true)
+        .order('created_at', { ascending: false });
+    if (error) {
+        console.error('Error fetching paused media:', error);
+        return [];
+    }
+    return data;
+}
+
+/**
  * Renders a carousel with the given media items.
  * @param {string} containerId - The ID of the carousel container element.
  * @param {Array} mediaItems - The array of media items to render.
@@ -3141,11 +3157,15 @@ function updateWatchedButtonUI(mediaItem) {
     const rejectedBtn = document.getElementById('rejected-btn');
     const currentlyWatchingBtn = document.getElementById('currently-watching-btn');
     const removeCurrentlyWatchingBtn = document.getElementById('remove-currently-watching-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const unpauseBtn = document.getElementById('unpause-btn');
     const bookmarkBtn = document.getElementById('favorite-btn');
 
     // Reset all buttons
     if (currentlyWatchingBtn) currentlyWatchingBtn.classList.add('hidden');
     if (removeCurrentlyWatchingBtn) removeCurrentlyWatchingBtn.classList.add('hidden');
+    if (pauseBtn) pauseBtn.classList.add('hidden');
+    if (unpauseBtn) unpauseBtn.classList.add('hidden');
     if (watchedBtn) {
         watchedBtn.classList.remove('hidden');
         watchedBtn.textContent = 'Watched';
@@ -3158,8 +3178,11 @@ function updateWatchedButtonUI(mediaItem) {
             watchedBtn.textContent = 'Unwatch';
             watchedBtn.classList.replace('bg-success', 'bg-gray-600');
         }
+    } else if (mediaItem.paused) {
+        if (unpauseBtn) unpauseBtn.classList.remove('hidden');
     } else if (mediaItem.currently_watching) {
         if (removeCurrentlyWatchingBtn) removeCurrentlyWatchingBtn.classList.remove('hidden');
+        if (pauseBtn) pauseBtn.classList.remove('hidden');
     } else {
         if (currentlyWatchingBtn) currentlyWatchingBtn.classList.remove('hidden');
     }
@@ -3376,6 +3399,57 @@ function setupWatchedButtons() {
         }
     });
 
+    const pauseBtn = document.getElementById('pause-btn');
+    const unpauseBtn = document.getElementById('unpause-btn');
+
+    if (pauseBtn) {
+        pauseBtn.addEventListener('click', async () => {
+            const { tmdb_id } = currentMediaItem;
+            const { data, error } = await supabase
+                .from('media')
+                .update({ paused: true, currently_watching: false, want_to_watch: false, watched: false })
+                .eq('tmdb_id', tmdb_id)
+                .select()
+                .single();
+
+            if (!error) {
+                currentMediaItem = data;
+                updateWatchedButtonUI(currentMediaItem);
+                
+                // Update grid item as well
+                const index = allMedia.findIndex(item => item.tmdb_id === tmdb_id);
+                if (index > -1) {
+                    allMedia[index] = data;
+                }
+                renderContent();
+            }
+        });
+    }
+
+    if (unpauseBtn) {
+        unpauseBtn.addEventListener('click', async () => {
+            const { tmdb_id } = currentMediaItem;
+            const { data, error } = await supabase
+                .from('media')
+                .update({ paused: false, currently_watching: true, want_to_watch: false, watched: false })
+                .eq('tmdb_id', tmdb_id)
+                .select()
+                .single();
+
+            if (!error) {
+                currentMediaItem = data;
+                updateWatchedButtonUI(currentMediaItem);
+                
+                // Update grid item as well
+                const index = allMedia.findIndex(item => item.tmdb_id === tmdb_id);
+                if (index > -1) {
+                    allMedia[index] = data;
+                }
+                renderContent();
+            }
+        });
+    }
+
     const favBtn = document.getElementById('favorite-btn');
     const bookmarkHeaderBtn = document.getElementById('bookmark-modal-btn');
 
@@ -3526,16 +3600,21 @@ async function initializeApp() {
         const wantToWatchMedia = await getWantToWatchMedia();
         renderCarousel('want-to-watch-carousel', wantToWatchMedia);
 
+        const pausedMedia = await getPausedMedia();
+        renderCarousel('paused-carousel', pausedMedia);
+
         // Set up real-time subscriptions for carousels
         supabase
             .channel('media-carousels')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
-                const [currentlyWatching, wantToWatch] = await Promise.all([
+                const [currentlyWatching, wantToWatch, paused] = await Promise.all([
                     getCurrentlyWatchingMedia(),
-                    getWantToWatchMedia()
+                    getWantToWatchMedia(),
+                    getPausedMedia()
                 ]);
                 renderCarousel('currently-watching-carousel', currentlyWatching);
                 renderCarousel('want-to-watch-carousel', wantToWatch);
+                renderCarousel('paused-carousel', paused);
             })
             .subscribe();
 
@@ -3543,13 +3622,15 @@ async function initializeApp() {
         supabase
             .channel('media')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
-                // Re-render both carousels on any change
-                const [currentlyWatching, wantToWatch] = await Promise.all([
+                // Re-render carousels on any change
+                const [currentlyWatching, wantToWatch, paused] = await Promise.all([
                     getCurrentlyWatchingMedia(),
-                    getWantToWatchMedia()
+                    getWantToWatchMedia(),
+                    getPausedMedia()
                 ]);
                 renderCarousel('currently-watching-carousel', currentlyWatching);
                 renderCarousel('want-to-watch-carousel', wantToWatch);
+                renderCarousel('paused-carousel', paused);
             })
             .subscribe();
         const urlParams = new URLSearchParams(window.location.search);
@@ -3643,6 +3724,7 @@ async function initializeApp() {
         const logoContainer = document.getElementById('logo-container');
         const currentlyWatchingSection = document.getElementById('currently-watching-section');
         const wantToWatchSection = document.getElementById('want-to-watch-section');
+        const pausedSection = document.getElementById('paused-section');
 
         const exitSearchMode = () => {
             searchBar.value = '';
@@ -3652,8 +3734,9 @@ async function initializeApp() {
             currentSort = 'default';
             sortSelect.disabled = false;
             homeBtn.classList.add('hidden');
-            currentlyWatchingSection.classList.remove('hidden');
-            wantToWatchSection.classList.remove('hidden');
+            if (currentlyWatchingSection) currentlyWatchingSection.classList.remove('hidden');
+            if (wantToWatchSection) wantToWatchSection.classList.remove('hidden');
+            if (pausedSection) pausedSection.classList.remove('hidden');
             isSearchMode = false; // Exit search mode
 
             // Show section headers
@@ -3678,8 +3761,9 @@ async function initializeApp() {
                 if (searchTerm === '') {
                     exitSearchMode();
                 } else {
-                    currentlyWatchingSection.classList.add('hidden');
-                    wantToWatchSection.classList.add('hidden');
+                    if (currentlyWatchingSection) currentlyWatchingSection.classList.add('hidden');
+                    if (wantToWatchSection) wantToWatchSection.classList.add('hidden');
+                    if (pausedSection) pausedSection.classList.add('hidden');
                     isSearchMode = true; // Enter search mode
 
                     // Hide section headers
