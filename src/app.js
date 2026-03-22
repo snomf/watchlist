@@ -3868,6 +3868,15 @@ function setupUserMenu() {
         userMenuBtn.addEventListener('click', () => {
             userMenu.classList.toggle('hidden');
         });
+
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                auth.logout();
+                window.location.reload();
+            });
+        }
     }
 }
 
