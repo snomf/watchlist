@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             .from('media')
             .select('*')
             .eq(filterCol, true)
-            .order('updated_at', { ascending: false });
+            .order('created_at', { ascending: false });
 
         if (error) throw error;
 
