@@ -3157,8 +3157,8 @@ function updateWatchedButtonUI(mediaItem) {
     const rejectedBtn = document.getElementById('rejected-btn');
     const currentlyWatchingBtn = document.getElementById('currently-watching-btn');
     const removeCurrentlyWatchingBtn = document.getElementById('remove-currently-watching-btn');
-    const pauseBtn = document.getElementById('pause-btn');
-    const unpauseBtn = document.getElementById('unpause-btn');
+    const pauseBtn = document.getElementById('pause-modal-btn');
+    const unpauseBtn = document.getElementById('unpause-modal-btn');
     const bookmarkBtn = document.getElementById('favorite-btn');
 
     // Reset all buttons
@@ -3399,11 +3399,11 @@ function setupWatchedButtons() {
         }
     });
 
-    const pauseBtn = document.getElementById('pause-btn');
-    const unpauseBtn = document.getElementById('unpause-btn');
+    const pauseBtn = document.getElementById('pause-modal-btn');
+    const unpauseBtn = document.getElementById('unpause-modal-btn');
 
     if (pauseBtn) {
-        pauseBtn.addEventListener('click', async () => {
+        pauseBtn.onclick = async () => {
             const { tmdb_id } = currentMediaItem;
             const { data, error } = await supabase
                 .from('media')
@@ -3423,11 +3423,11 @@ function setupWatchedButtons() {
                 }
                 renderContent();
             }
-        });
+        };
     }
 
     if (unpauseBtn) {
-        unpauseBtn.addEventListener('click', async () => {
+        unpauseBtn.onclick = async () => {
             const { tmdb_id } = currentMediaItem;
             const { data, error } = await supabase
                 .from('media')
@@ -3447,7 +3447,7 @@ function setupWatchedButtons() {
                 }
                 renderContent();
             }
-        });
+        };
     }
 
     const favBtn = document.getElementById('favorite-btn');
@@ -3594,27 +3594,23 @@ async function initializeApp() {
         }
 
         // --- 2. Render Carousels ---
-        const currentlyWatchingMedia = await getCurrentlyWatchingMedia();
+        const [currentlyWatchingMedia, wantToWatchMedia] = await Promise.all([
+            getCurrentlyWatchingMedia(),
+            getWantToWatchMedia()
+        ]);
         renderCarousel('currently-watching-carousel', currentlyWatchingMedia);
-
-        const wantToWatchMedia = await getWantToWatchMedia();
         renderCarousel('want-to-watch-carousel', wantToWatchMedia);
-
-        const pausedMedia = await getPausedMedia();
-        renderCarousel('paused-carousel', pausedMedia);
 
         // Set up real-time subscriptions for carousels
         supabase
             .channel('media-carousels')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
-                const [currentlyWatching, wantToWatch, paused] = await Promise.all([
+                const [currentlyWatching, wantToWatch] = await Promise.all([
                     getCurrentlyWatchingMedia(),
-                    getWantToWatchMedia(),
-                    getPausedMedia()
+                    getWantToWatchMedia()
                 ]);
                 renderCarousel('currently-watching-carousel', currentlyWatching);
                 renderCarousel('want-to-watch-carousel', wantToWatch);
-                renderCarousel('paused-carousel', paused);
             })
             .subscribe();
 
@@ -3623,14 +3619,12 @@ async function initializeApp() {
             .channel('media')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'media' }, async (payload) => {
                 // Re-render carousels on any change
-                const [currentlyWatching, wantToWatch, paused] = await Promise.all([
+                const [currentlyWatching, wantToWatch] = await Promise.all([
                     getCurrentlyWatchingMedia(),
-                    getWantToWatchMedia(),
-                    getPausedMedia()
+                    getWantToWatchMedia()
                 ]);
                 renderCarousel('currently-watching-carousel', currentlyWatching);
                 renderCarousel('want-to-watch-carousel', wantToWatch);
-                renderCarousel('paused-carousel', paused);
             })
             .subscribe();
         const urlParams = new URLSearchParams(window.location.search);
@@ -3736,7 +3730,6 @@ async function initializeApp() {
             homeBtn.classList.add('hidden');
             if (currentlyWatchingSection) currentlyWatchingSection.classList.remove('hidden');
             if (wantToWatchSection) wantToWatchSection.classList.remove('hidden');
-            if (pausedSection) pausedSection.classList.remove('hidden');
             isSearchMode = false; // Exit search mode
 
             // Show section headers
@@ -3763,7 +3756,6 @@ async function initializeApp() {
                 } else {
                     if (currentlyWatchingSection) currentlyWatchingSection.classList.add('hidden');
                     if (wantToWatchSection) wantToWatchSection.classList.add('hidden');
-                    if (pausedSection) pausedSection.classList.add('hidden');
                     isSearchMode = true; // Enter search mode
 
                     // Hide section headers
@@ -3867,6 +3859,13 @@ function setupUserMenu() {
     if (userMenuBtn && userMenu) {
         userMenuBtn.addEventListener('click', () => {
             userMenu.classList.toggle('hidden');
+        });
+
+        // Close menu when clicking any item
+        userMenu.addEventListener('click', (e) => {
+            if (e.target.closest('a')) {
+                userMenu.classList.add('hidden');
+            }
         });
 
         const logoutBtn = document.getElementById('logout-btn');

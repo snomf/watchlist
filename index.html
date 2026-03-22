@@ -105,6 +105,17 @@
                                 class="block px-4 py-2 text-sm text-danger hover:bg-bg-tertiary">
                                 <i class="fas fa-sign-out-alt mr-2"></i>Log Out / Switch
                             </a>
+                            <div class="h-px bg-border-primary my-1"></div>
+                            <div class="px-4 py-2 text-xs font-bold text-text-muted uppercase tracking-wider">Library</div>
+                            <a href="category.html?type=currently-watching" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                                <i class="fas fa-play-circle mr-2"></i>Currently Watching
+                            </a>
+                            <a href="category.html?type=want-to-watch" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                                <i class="fas fa-clock mr-2"></i>Want to Watch
+                            </a>
+                            <a href="category.html?type=paused" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                                <i class="fas fa-pause-circle mr-2"></i>Paused Items
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -218,9 +229,6 @@
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-2">
                         <h2 class="text-2xl font-bold">Currently Watching</h2>
-                        <a href="category.html?type=currently-watching" class="text-text-muted hover:text-white transition" title="View All">
-                            <i class="fas fa-chevron-right text-lg"></i>
-                        </a>
                     </div>
                     <button id="edit-currently-watching-btn"
                         class="text-text-primary hover:text-accent-primary transition p-2 flex-shrink-0">
@@ -239,9 +247,6 @@
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-2">
                         <h2 class="text-2xl font-bold">Want to Watch</h2>
-                        <a href="category.html?type=want-to-watch" class="text-text-muted hover:text-white transition" title="View All">
-                            <i class="fas fa-chevron-right text-lg"></i>
-                        </a>
                     </div>
                     <button id="edit-want-to-watch-btn"
                         class="text-text-primary hover:text-accent-primary transition p-2 flex-shrink-0">
@@ -255,26 +260,7 @@
                 </div>
             </div>
 
-            <!-- Paused Section -->
-            <div id="paused-section" class="mb-8">
-                <div class="flex justify-between items-center mb-4">
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-2xl font-bold">Paused</h2>
-                        <a href="category.html?type=paused" class="text-text-muted hover:text-white transition" title="View All">
-                            <i class="fas fa-chevron-right text-lg"></i>
-                        </a>
-                    </div>
-                    <button id="edit-paused-btn"
-                        class="text-text-primary hover:text-accent-primary transition p-2 flex-shrink-0">
-                        <i class="fas fa-pencil-alt"></i>
-                    </button>
-                </div>
-                <div class="relative">
-                    <div id="paused-carousel" class="flex overflow-x-auto gap-6 pb-4">
-                        <!-- Carousel items will be dynamically inserted here -->
-                    </div>
-                </div>
-            </div>
+
 
             <h2 id="watched-items-header" class="text-2xl font-bold mb-4">Watched Items</h2>
             <div id="movie-grid"
@@ -337,6 +323,16 @@
                                 class="text-text-primary hover:text-yellow-400 transition bg-white/10 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center z-30 transition-shadow duration-300 cursor-pointer shadow-lg border border-white/10"
                                 title="Add to Watchlist">
                                 <i class="fas fa-bookmark text-lg"></i>
+                            </button>
+                            <button id="pause-modal-btn"
+                                class="hidden text-text-primary hover:text-yellow-500 transition bg-white/10 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center z-30 transition-shadow duration-300 cursor-pointer shadow-lg border border-white/10"
+                                title="Pause">
+                                <i class="fas fa-pause text-sm"></i>
+                            </button>
+                            <button id="unpause-modal-btn"
+                                class="hidden text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center z-30 transition-shadow duration-300 cursor-pointer shadow-lg border border-white/10"
+                                title="Resume">
+                                <i class="fas fa-play text-sm"></i>
                             </button>
                             <button id="share-modal-btn"
                                 class="text-text-primary hover:text-accent-primary transition bg-white/10 backdrop-blur-sm rounded-full w-10 h-10 flex items-center justify-center z-30 transition-shadow duration-300 cursor-pointer shadow-lg border border-white/10"
@@ -500,14 +496,6 @@
                                 <button id="remove-currently-watching-btn"
                                     class="hidden w-full bg-danger hover:opacity-80 text-text-primary font-bold py-3 px-4 rounded-lg transition">
                                     Remove from Currently Watching
-                                </button>
-                                <button id="pause-btn"
-                                    class="hidden w-full bg-yellow-600 hover:bg-yellow-700 text-text-primary font-bold py-3 px-4 rounded-lg transition mt-2">
-                                    Pause
-                                </button>
-                                <button id="unpause-btn"
-                                    class="hidden w-full bg-blue-600 hover:bg-blue-700 text-text-primary font-bold py-3 px-4 rounded-lg transition mt-2">
-                                    Resume (Unpause)
                                 </button>
                                 <div class="flex gap-2">
                                     <button id="watched-btn"
