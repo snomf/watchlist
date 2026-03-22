@@ -3627,7 +3627,7 @@ async function initializeApp() {
                 renderCarousel('want-to-watch-carousel', wantToWatch);
             })
             .subscribe();
-        const urlParams = new URLSearchParams(window.location.search);
+        const params = new URLSearchParams(window.location.search);
         const shouldHardReset = urlParams.get('hardrefresh') === 'true';
 
         if (shouldHardReset) {
@@ -3808,6 +3808,14 @@ async function initializeApp() {
 
         setupUserMenu();
         setupCarouselEditMode();
+        setupCategoryNavigation();
+
+        // Check for category in URL
+        const categoryParams = new URLSearchParams(window.location.search);
+        const categoryParam = categoryParams.get('category') || categoryParams.get('type');
+        if (categoryParam && categoryParam !== 'all') {
+            showCategory(categoryParam);
+        }
 
         // Refresh avatars after settings are loaded
         refreshAllReactionAvatars();
@@ -4994,3 +5002,102 @@ document.addEventListener('DOMContentLoaded', () => {
     initDock('watchlist');
     initPlayer();
 });
+
+/**
+ * Sets up listeners for category expansion links.
+ */
+function setupCategoryNavigation() {
+    document.addEventListener('click', (e) => {
+        const link = e.target.closest('.category-link');
+        if (link) {
+            e.preventDefault();
+            const category = link.getAttribute('data-category');
+            showCategory(category);
+            
+            // Update URL without reload
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('category', category);
+            window.history.pushState({ category }, '', newUrl);
+        }
+    });
+
+    const backBtn = document.getElementById('category-back-btn');
+    if (backBtn) {
+        backBtn.addEventListener('click', () => {
+            exitCategoryView();
+        });
+    }
+
+    window.addEventListener('popstate', (e) => {
+        if (e.state && e.state.category) {
+            showCategory(e.state.category);
+        } else {
+            exitCategoryView();
+        }
+    });
+}
+
+function exitCategoryView() {
+    const mainDashboard = document.getElementById('main-dashboard');
+    const categorySubpage = document.getElementById('category-subpage');
+    if (mainDashboard && categorySubpage) {
+        mainDashboard.classList.remove('hidden');
+        categorySubpage.classList.add('hidden');
+        
+        // Clear category from URL
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.delete('category');
+        newUrl.searchParams.delete('type');
+        window.history.pushState({}, '', newUrl);
+        
+        // Refresh home content in case anything changed
+        renderContent();
+    }
+}
+
+async function showCategory(categoryType) {
+    const mainDashboard = document.getElementById('main-dashboard');
+    const categorySubpage = document.getElementById('category-subpage');
+    const categoryTitle = document.getElementById('category-subpage-title');
+    const categoryGrid = document.getElementById('category-subpage-grid');
+
+    if (!mainDashboard || !categorySubpage) return;
+
+    // Show subpage, hide home
+    mainDashboard.classList.add('hidden');
+    categorySubpage.classList.remove('hidden');
+
+    // Set title
+    const titles = {
+        'currently-watching': 'Currently Watching',
+        'want-to-watch': 'Want to Watch',
+        'paused': 'Paused Items'
+    };
+    categoryTitle.textContent = titles[categoryType] || 'Category';
+
+    // Show loading state
+    categoryGrid.innerHTML = '<div class="col-span-full flex justify-center py-12"><div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent-primary"></div></div>';
+
+    // Fetch data
+    let mediaItems = [];
+    if (categoryType === 'currently-watching') {
+        mediaItems = await getCurrentlyWatchingMedia();
+    } else if (categoryType === 'want-to-watch') {
+        mediaItems = await getWantToWatchMedia();
+    } else if (categoryType === 'paused') {
+        mediaItems = await getPausedMedia();
+    }
+
+    // Render grid
+    categoryGrid.innerHTML = '';
+    if (mediaItems.length === 0) {
+        categoryGrid.innerHTML = '<p class="text-text-muted col-span-full text-center py-12 text-lg">No items found in this category.</p>';
+        return;
+    }
+
+    mediaItems.forEach(item => {
+        const card = createMovieCard(item);
+        // Use the existing movie-card classes for consistency
+        categoryGrid.appendChild(card);
+    });
+}

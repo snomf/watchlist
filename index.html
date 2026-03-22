@@ -107,13 +107,13 @@
                             </a>
                             <div class="h-px bg-border-primary my-1"></div>
                             <div class="px-4 py-2 text-xs font-bold text-text-muted uppercase tracking-wider">Library</div>
-                            <a href="category.html?type=currently-watching" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                            <a href="#" data-category="currently-watching" class="category-link block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
                                 <i class="fas fa-play-circle mr-2"></i>Currently Watching
                             </a>
-                            <a href="category.html?type=want-to-watch" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                            <a href="#" data-category="want-to-watch" class="category-link block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
                                 <i class="fas fa-clock mr-2"></i>Want to Watch
                             </a>
-                            <a href="category.html?type=paused" class="block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
+                            <a href="#" data-category="paused" class="category-link block px-4 py-2 text-sm text-text-primary hover:bg-bg-tertiary">
                                 <i class="fas fa-pause-circle mr-2"></i>Paused Items
                             </a>
                         </div>
@@ -173,7 +173,8 @@
     </div>
 
     <div class="container mx-auto p-4 md:p-8 relative z-0">
-        <div class="flex justify-center items-center mb-6 gap-2 px-2 sm:px-0">
+        <div id="main-dashboard">
+            <div class="flex justify-center items-center mb-6 gap-2 px-2 sm:px-0">
             <input type="text" id="search-bar"
                 class="bg-bg-secondary text-text-primary rounded-full px-4 py-2 w-full max-w-md shadow-md"
                 placeholder="Search for movies or shows...">
@@ -229,9 +230,9 @@
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-2">
                         <h2 class="text-2xl font-bold">Currently Watching</h2>
-                        <a href="category.html?type=currently-watching" class="text-text-muted hover:text-white transition" title="View All">
+                        <button data-category="currently-watching" class="category-link text-text-muted hover:text-white transition" title="View All">
                             <i class="fas fa-chevron-right text-lg"></i>
-                        </a>
+                        </button>
                     </div>
                     <button id="edit-currently-watching-btn"
                         class="text-text-primary hover:text-accent-primary transition p-2 flex-shrink-0">
@@ -250,9 +251,9 @@
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex items-center gap-2">
                         <h2 class="text-2xl font-bold">Want to Watch</h2>
-                        <a href="category.html?type=want-to-watch" class="text-text-muted hover:text-white transition" title="View All">
+                        <button data-category="want-to-watch" class="category-link text-text-muted hover:text-white transition" title="View All">
                             <i class="fas fa-chevron-right text-lg"></i>
-                        </a>
+                        </button>
                     </div>
                     <button id="edit-want-to-watch-btn"
                         class="text-text-primary hover:text-accent-primary transition p-2 flex-shrink-0">
@@ -275,6 +276,22 @@
             </div>
             <div id="movie-list" class="hidden">
                 <!-- List items will be dynamically inserted here -->
+            </div>
+            </div>
+        </div>
+
+        <!-- Embedded Category Subpage (Initially Hidden) -->
+        <div id="category-subpage" class="hidden">
+            <div class="flex items-center gap-4 mb-8">
+                <button id="category-back-btn" class="text-text-primary hover:text-accent-primary transition bg-bg-secondary p-3 rounded-full shadow-lg border border-white/5">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <h2 id="category-subpage-title" class="text-3xl font-bold">Category Title</h2>
+            </div>
+            
+            <div id="category-subpage-grid"
+                class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+                <!-- Media items will be dynamically inserted here -->
             </div>
         </div>
     </div>

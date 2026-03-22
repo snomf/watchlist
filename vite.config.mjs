@@ -12,7 +12,6 @@ export default defineConfig({
         stats: resolve(__dirname, 'stats.html'),
         sync: resolve(__dirname, 'sync.html'),
         callback: resolve(__dirname, 'callback.html'),
-        category: resolve(__dirname, 'category.html'),
         'favorite-removal-modal': resolve(__dirname, 'favorite-removal-modal.html'),
       },
     },
