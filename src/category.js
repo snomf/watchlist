@@ -1,4 +1,4 @@
-import { supabase } from './auth.js';
+import { supabase } from './supabase-client.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const urlParams = new URLSearchParams(window.location.search);
