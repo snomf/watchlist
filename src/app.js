@@ -3628,7 +3628,7 @@ async function initializeApp() {
             })
             .subscribe();
         const params = new URLSearchParams(window.location.search);
-        const shouldHardReset = urlParams.get('hardrefresh') === 'true';
+        const shouldHardReset = params.get('hardrefresh') === 'true';
 
         if (shouldHardReset) {
             await seedDatabaseFromLocal();
