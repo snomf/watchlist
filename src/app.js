@@ -3662,12 +3662,12 @@ async function initializeApp() {
         if (loadingSpinner) loadingSpinner.style.display = 'none';
 
         // Check for shared URL / Deep Link
-        const sharedTmdbId = urlParams.get('tmdb_id');
-        const sharedType = urlParams.get('type');
-        const playId = urlParams.get('play');
-        const playType = urlParams.get('type') || 'movie';
-        const playS = urlParams.get('s');
-        const playE = urlParams.get('e');
+        const sharedTmdbId = params.get('tmdb_id');
+        const sharedType = params.get('type');
+        const playId = params.get('play');
+        const playType = params.get('type') || 'movie';
+        const playS = params.get('s');
+        const playE = params.get('e');
 
         if (playId) {
             // Fetch basic info to open player
