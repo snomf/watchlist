@@ -195,6 +195,10 @@ async function saveSettings(closeModal = true) {
 
     const wallpaperUrl = selectedWallpaper;
 
+    // Default Visibility
+    const visibilitySelect = document.getElementById('default-visibility-select');
+    const defaultVisibility = visibilitySelect ? visibilitySelect.value : 'shared';
+
     // Device Name
     const deviceNameInput = document.getElementById('device-name-input');
     const deviceName = deviceNameInput ? deviceNameInput.value.trim() : '';
@@ -210,7 +214,8 @@ async function saveSettings(closeModal = true) {
 
     const { error } = await supabase.from('settings').update({
         theme: selectedTheme,
-        wallpaper_url: wallpaperUrl
+        wallpaper_url: wallpaperUrl,
+        default_visibility: defaultVisibility
     }).eq('id', 1);
 
     if (error) {
@@ -229,7 +234,7 @@ async function saveSettings(closeModal = true) {
 export async function loadAndApplySettings() {
     const { data, error } = await supabase
         .from('settings')
-        .select('theme, wallpaper_url, hide_search_results_without_images, juainny_avatar, erick_avatar')
+        .select('theme, wallpaper_url, hide_search_results_without_images, juainny_avatar, erick_avatar, default_visibility')
         .eq('id', 1)
         .single();
 
@@ -241,7 +246,7 @@ export async function loadAndApplySettings() {
     }
 
     // Apply Theme
-    const { theme, wallpaper_url, hide_search_results_without_images, juainny_avatar, erick_avatar } = data;
+    const { theme, wallpaper_url, hide_search_results_without_images, juainny_avatar, erick_avatar, default_visibility } = data;
     document.documentElement.setAttribute('data-theme', theme || 'night');
 
     // Initialize selectedWallpaper with current DB value so we don't lose it on save
@@ -276,6 +281,10 @@ export async function loadAndApplySettings() {
     // Set the toggle
     const searchToggle = document.getElementById('hide-search-images-toggle');
     if (searchToggle) searchToggle.checked = !!hide_search_results_without_images;
+
+    // Set Default Visibility
+    const visibilitySelect = document.getElementById('default-visibility-select');
+    if (visibilitySelect) visibilitySelect.value = default_visibility || 'shared';
 
     // Apply wallpaper
     const wallpaperOverlay = document.getElementById('wallpaper-overlay');

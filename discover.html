@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Discover - Watchlist</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+        integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/output.css?v=2">
+    <style>
+        /* Custom scrollbar for horizontal carousels */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .cinematic-hero {
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            position: relative;
+            height: 70vh;
+            display: flex;
+            align-items: flex-end;
+        }
+        .cinematic-overlay {
+            background: linear-gradient(to top, var(--color-bg-primary) 0%, transparent 100%);
+            position: absolute;
+            inset: 0;
+        }
+        .hero-content {
+            position: relative;
+            z-index: 10;
+            padding: 3rem 4rem;
+            max-width: 800px;
+        }
+        @media (max-width: 768px) {
+            .hero-content {
+                padding: 2rem 1.5rem;
+            }
+        }
+        /* Match Apple TV+ premium hover effect */
+        .discover-card {
+            transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.3s ease;
+        }
+        .discover-card:hover {
+            transform: scale(1.05) translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        
+        /* Kino Banner */
+        #kino-banner {
+            background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%);
+            border-bottom: 1px solid #7f1d1d;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body class="bg-bg-primary text-text-primary font-sans antialiased overflow-x-hidden selection:bg-accent-primary selection:text-white">
+
+    <!-- Kino Live Banner (Hidden by default) -->
+    <div id="kino-banner" class="hidden fixed top-0 left-0 right-0 py-2 px-4 flex items-center justify-between text-white font-semibold cursor-pointer hover:brightness-110 transition">
+        <div class="flex items-center">
+            <span class="flex h-3 w-3 relative mr-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+            </span>
+            <span>Kino Watchparty Live! <span id="kino-users" class="font-normal opacity-80 text-sm ml-2"></span></span>
+        </div>
+        <button id="join-kino-btn" class="bg-white text-red-600 px-4 py-1 rounded-full text-sm font-bold shadow-sm hover:scale-105 transition">Join Party</button>
+    </div>
+
+    <!-- Top Bar -->
+    <div id="top-bar-container" class="fixed top-0 left-0 right-0 z-[40] transition-all duration-300 bg-bg-primary/90 backdrop-blur-md border-b border-border-primary">
+        <nav class="px-4 py-2">
+            <div class="container mx-auto flex items-center justify-between h-16">
+                <div class="flex items-center gap-2">
+                    <div id="logo-container" class="nav-pill flex items-center cursor-pointer" onclick="window.location.href='/'">
+                        <img src="icon.png" alt="Logo" class="h-8 w-8 mr-2">
+                        <span class="font-bold text-white text-lg">Watchlist</span>
+                    </div>
+                    <a href="discover.html" class="nav-pill flex items-center text-white font-bold ml-2 relative bg-white/10">
+                        <i class="fas fa-compass mr-2 text-accent-primary"></i>Discover
+                    </a>
+                </div>
+                <div class="nav-pill user-pill">
+                    <div class="relative">
+                        <button id="user-menu-btn" class="flex items-center text-sm text-white focus:outline-none">
+                            <span id="device-name" class="ml-2 font-semibold">Loading...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <main id="discover-main" class="pt-16 pb-20 opacity-0 transition-opacity duration-500">
+        <!-- Hero Section -->
+        <section id="hero-section" class="cinematic-hero mb-12">
+            <div class="cinematic-overlay"></div>
+            <div class="hero-content w-full">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="px-2 py-1 bg-accent-primary/80 text-white text-xs font-bold rounded uppercase tracking-wider backdrop-blur-sm" id="hero-type">Featured</span>
+                </div>
+                <h1 id="hero-title" class="text-4xl md:text-6xl font-extrabold text-white mb-4 drop-shadow-lg" style="text-shadow: 0 4px 8px rgba(0,0,0,0.5);">Loading...</h1>
+                <p id="hero-overview" class="text-gray-300 text-lg md:text-xl max-w-2xl mb-8 line-clamp-3 drop-shadow-md" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);"></p>
+                <div class="flex items-center gap-4">
+                    <button id="hero-play-btn" class="px-8 py-3 bg-white text-black rounded-lg font-bold hover:bg-gray-200 transition flex items-center gap-2 shadow-lg hover:scale-105 transform">
+                        <i class="fas fa-play"></i> Watch Now
+                    </button>
+                    <button id="hero-add-btn" class="px-8 py-3 bg-bg-secondary/80 backdrop-blur-md text-white border border-border-primary rounded-lg font-bold hover:bg-bg-tertiary transition flex items-center gap-2 shadow-lg hover:scale-105 transform">
+                        <i class="fas fa-plus"></i> Add to List
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Horizontal Lists Container -->
+        <div id="discover-lists" class="container mx-auto px-4 md:px-8 space-y-12">
+            <!-- Dynamically populated rows will go here -->
+        </div>
+    </main>
+
+    <!-- Modal Container for Details (Reusing logic) -->
+    <div id="modal-container"></div>
+
+    <!-- Scripts -->
+    <script type="module" src="/src/discover.js"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import { auth } from './auth.js';
 
 // ── Sources ─────────────────────────────────────────────────────────────────
 const SOURCES = [
+    { name: 'AIOStreams (Debrid)', id: 'aiostreams' },
     { name: 'RiveStream', id: 'rivestream' },
     { name: 'VidSrc', id: 'vidsrc' },
     { name: 'Aether', id: 'aether' },
@@ -97,11 +98,55 @@ function buildEmbedUrl(source, item) {
 // ── DOM Helpers ──────────────────────────────────────────────────────────────
 function getOverlay() { return document.getElementById('media-player-overlay'); }
 function getIframe() { return document.getElementById('media-player-iframe'); }
+function getVideo() { return document.getElementById('media-player-video'); }
 
-function updateIframeSrc() {
+let plyrInstance = null;
+
+async function updateIframeSrc() {
     const iframe = getIframe();
-    if (!iframe || !currentItem) return;
-    iframe.src = buildEmbedUrl(activeSource, currentItem);
+    const video = getVideo();
+    if (!iframe || !video || !currentItem) return;
+    
+    if (activeSource.id === 'aiostreams') {
+        iframe.classList.add('hidden');
+        iframe.src = 'about:blank';
+        video.classList.remove('hidden');
+        
+        try {
+            const { tmdbId, type, season = 1, episode = 1 } = currentItem;
+            const res = await fetch(`/api/streams?tmdbId=${tmdbId}&type=${type}&season=${season}&episode=${episode}`);
+            const data = await res.json();
+            
+            if (data.streams && data.streams.length > 0) {
+                // Find best stream with a URL
+                const stream = data.streams.find(s => s.url) || data.streams[0];
+                if (stream.url) {
+                    if (!plyrInstance) {
+                        plyrInstance = new window.Plyr(video);
+                    }
+                    video.src = stream.url;
+                    video.play().catch(e => console.log('Auto-play blocked', e));
+                } else {
+                    alert('Stream found but no direct URL provided by Torbox/AIOStreams.');
+                }
+            } else {
+                alert('No Debrid streams found.');
+            }
+        } catch (err) {
+            console.error('Failed to resolve AIOStreams:', err);
+            alert('Failed to resolve streams.');
+        }
+    } else {
+        if (plyrInstance) {
+            plyrInstance.stop();
+        }
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+        video.classList.add('hidden');
+        iframe.classList.remove('hidden');
+        iframe.src = buildEmbedUrl(activeSource, currentItem);
+    }
 }
 
 function updateSourceMenu() {
@@ -234,6 +279,14 @@ function closePlayer() {
     // Nuke the iframe src to stop playback/buffering
     const iframe = getIframe();
     if (iframe) iframe.src = 'about:blank';
+    
+    const video = getVideo();
+    if (video) {
+        if (plyrInstance) plyrInstance.stop();
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+    }
 
     overlay.classList.add('hidden');
     document.body.style.overflow = '';

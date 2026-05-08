@@ -164,6 +164,11 @@ let filteredMedia = []; // To hold the currently visible media
 let currentFilter = 'all';
 let currentView = 'grid';
 let currentSort = 'default';
+let currentVisibilityFilters = {
+    'currently-watching': 'all',
+    'want-to-watch': 'all',
+    'watched': 'all'
+};
 let allFlairs = []; // Store all available flairs
 let mediaFlairsMap = new Map(); // Store flairs for each media item (mediaId -> flairs[])
 let isSearchMode = false; // Track if we're currently in search mode
@@ -197,6 +202,21 @@ async function searchTMDB(query) {
     }
 }
 
+function filterByVisibility(items, sectionName) {
+    const filter = currentVisibilityFilters[sectionName] || 'all';
+    const currentUser = auth.getCurrentUser();
+    const userHandle = currentUser ? currentUser.handle.toLowerCase() : '';
+    
+    if (filter === 'all') {
+        return items.filter(item => item.visibility === 'shared' || item.visibility === userHandle || !item.visibility);
+    } else if (filter === 'shared') {
+        return items.filter(item => item.visibility === 'shared' || !item.visibility);
+    } else if (filter === 'individual') {
+        return items.filter(item => item.visibility === userHandle);
+    }
+    return items;
+}
+
 function renderContent() {
     // console.log('Rendering content. Current Filter:', currentFilter, 'Media Count:', currentMedia.length); // DEBUG
     const movieGrid = document.getElementById('movie-grid');
@@ -223,6 +243,8 @@ function renderContent() {
             return false;
         });
     }
+
+    filteredMedia = filterByVisibility(filteredMedia, 'watched');
 
     // 2. Sort the media
     // Sort watched items by updated_at (most recently modified first)
@@ -1411,6 +1433,37 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                     .update({ backdrop_path: data.backdrop_path })
                     .eq('tmdb_id', tmdbId);
                 if (updateError) console.error('Error updating backdrop path:', updateError);
+            }
+
+            // --- Visibility Toggle Setup ---
+            const visibilityToggle = document.getElementById('modal-visibility-toggle');
+            if (visibilityToggle) {
+                const isIndividual = currentMediaItem.visibility && currentMediaItem.visibility !== 'shared';
+                
+                const sharedBtn = visibilityToggle.querySelector('[data-visibility="shared"]');
+                const individualBtn = visibilityToggle.querySelector('[data-visibility="individual"]');
+                
+                if (isIndividual) {
+                    sharedBtn.classList.remove('btn-active', 'bg-accent-primary', 'text-white');
+                    individualBtn.classList.add('btn-active', 'bg-accent-primary', 'text-white');
+                } else {
+                    sharedBtn.classList.add('btn-active', 'bg-accent-primary', 'text-white');
+                    individualBtn.classList.remove('btn-active', 'bg-accent-primary', 'text-white');
+                }
+
+                // Add click listeners
+                sharedBtn.onclick = () => updateMediaVisibility('shared');
+                individualBtn.onclick = () => {
+                    const currentUser = auth.getCurrentUser();
+                    if (currentUser) {
+                        const confirmMsg = "This will hide this item from the other user. Are you sure?";
+                        if (confirm(confirmMsg)) {
+                            updateMediaVisibility(currentUser.handle.toLowerCase());
+                        }
+                    } else {
+                        alert("Please log in to set individual visibility.");
+                    }
+                };
             }
 
             // --- Reactions Setup ---
@@ -2887,6 +2940,33 @@ function setupFilterControls() {
     });
 }
 
+function setupVisibilityControls() {
+    document.querySelectorAll('.visibility-filter').forEach(container => {
+        container.addEventListener('click', async (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const filter = e.target.dataset.visibility;
+                const section = container.dataset.section;
+                if (currentVisibilityFilters[section] === filter) return;
+
+                currentVisibilityFilters[section] = filter;
+
+                container.querySelectorAll('button').forEach(btn => btn.classList.remove('btn-active'));
+                e.target.classList.add('btn-active');
+
+                if (section === 'currently-watching') {
+                    const currentlyWatchingMedia = await getCurrentlyWatchingMedia();
+                    renderCarousel('currently-watching-carousel', filterByVisibility(currentlyWatchingMedia, section));
+                } else if (section === 'want-to-watch') {
+                    const wantToWatchMedia = await getWantToWatchMedia();
+                    renderCarousel('want-to-watch-carousel', filterByVisibility(wantToWatchMedia, section));
+                } else if (section === 'watched') {
+                    renderContent();
+                }
+            }
+        });
+    });
+}
+
 function updateFavoriteGlow(mediaItem) {
     const modalContent = document.querySelector('.movie-modal-content');
     const movieCard = document.querySelector(`.movie-card[data-tmdb-id="${mediaItem.tmdb_id}"]`);
@@ -3244,9 +3324,16 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
     }
 
     // If item does not exist, create it
+    const { data: settingsData } = await supabase.from('settings').select('default_visibility').single();
+    let initialVisibility = settingsData?.default_visibility || 'shared';
+    if (initialVisibility === 'individual') {
+        const currentUser = auth.getCurrentUser();
+        initialVisibility = currentUser ? currentUser.handle.toLowerCase() : 'shared';
+    }
+
     const { data: newItem, error: insertError } = await supabase
         .from('media')
-        .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath, source: 'added' })
+        .insert({ tmdb_id: tmdbId, type: itemType, title: title, poster_path: posterPath, source: 'added', visibility: initialVisibility })
         .select()
         .single();
 
@@ -3257,6 +3344,53 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
     return newItem;
 }
 
+async function updateMediaVisibility(newVisibility) {
+    if (!currentMediaItem || !currentMediaItem.id) return;
+    
+    // Update local state
+    currentMediaItem.visibility = newVisibility;
+    
+    // Update DB
+    const { error } = await supabase
+        .from('media')
+        .update({ visibility: newVisibility })
+        .eq('id', currentMediaItem.id);
+        
+    if (error) {
+        console.error('Error updating visibility:', error);
+        alert('Failed to update visibility.');
+        return;
+    }
+
+    // Update UI toggle
+    const visibilityToggle = document.getElementById('modal-visibility-toggle');
+    if (visibilityToggle) {
+        const sharedBtn = visibilityToggle.querySelector('[data-visibility="shared"]');
+        const individualBtn = visibilityToggle.querySelector('[data-visibility="individual"]');
+        
+        if (newVisibility === 'shared') {
+            sharedBtn.classList.add('btn-active', 'bg-accent-primary', 'text-white');
+            individualBtn.classList.remove('btn-active', 'bg-accent-primary', 'text-white');
+        } else {
+            sharedBtn.classList.remove('btn-active', 'bg-accent-primary', 'text-white');
+            individualBtn.classList.add('btn-active', 'bg-accent-primary', 'text-white');
+        }
+    }
+    
+    // Find index in currentMedia and allMedia and update
+    const updateInArray = (arr) => {
+        const index = arr.findIndex(item => item.id === currentMediaItem.id);
+        if (index !== -1) arr[index].visibility = newVisibility;
+    };
+    updateInArray(allMedia);
+    updateInArray(currentMedia);
+    
+    renderContent();
+    const cw = await getCurrentlyWatchingMedia();
+    const wtw = await getWantToWatchMedia();
+    renderCarousel('currently-watching-carousel', filterByVisibility(cw, 'currently-watching'));
+    renderCarousel('want-to-watch-carousel', filterByVisibility(wtw, 'want-to-watch'));
+}
 
 function setupWatchedButtons() {
     const watchedBtn = document.getElementById('watched-btn');
@@ -3598,8 +3732,8 @@ async function initializeApp() {
             getCurrentlyWatchingMedia(),
             getWantToWatchMedia()
         ]);
-        renderCarousel('currently-watching-carousel', currentlyWatchingMedia);
-        renderCarousel('want-to-watch-carousel', wantToWatchMedia);
+        renderCarousel('currently-watching-carousel', filterByVisibility(currentlyWatchingMedia, 'currently-watching'));
+        renderCarousel('want-to-watch-carousel', filterByVisibility(wantToWatchMedia, 'want-to-watch'));
 
         // Set up real-time subscriptions for carousels
         supabase
@@ -3609,8 +3743,8 @@ async function initializeApp() {
                     getCurrentlyWatchingMedia(),
                     getWantToWatchMedia()
                 ]);
-                renderCarousel('currently-watching-carousel', currentlyWatching);
-                renderCarousel('want-to-watch-carousel', wantToWatch);
+                renderCarousel('currently-watching-carousel', filterByVisibility(currentlyWatching, 'currently-watching'));
+                renderCarousel('want-to-watch-carousel', filterByVisibility(wantToWatch, 'want-to-watch'));
             })
             .subscribe();
 
@@ -3623,8 +3757,8 @@ async function initializeApp() {
                     getCurrentlyWatchingMedia(),
                     getWantToWatchMedia()
                 ]);
-                renderCarousel('currently-watching-carousel', currentlyWatching);
-                renderCarousel('want-to-watch-carousel', wantToWatch);
+                renderCarousel('currently-watching-carousel', filterByVisibility(currentlyWatching, 'currently-watching'));
+                renderCarousel('want-to-watch-carousel', filterByVisibility(wantToWatch, 'want-to-watch'));
             })
             .subscribe();
         const params = new URLSearchParams(window.location.search);
@@ -3792,6 +3926,7 @@ async function initializeApp() {
         setupModalCloseButton();
         setupRatingAndNotesListeners();
         setupFilterControls();
+        setupVisibilityControls();
         setupWheelPickerButton();
         setupViewControls();
         setupFavoriteButton();
@@ -3809,6 +3944,7 @@ async function initializeApp() {
         setupUserMenu();
         setupCarouselEditMode();
         setupCategoryNavigation();
+        setupKinoIndicator();
 
         // Check for category in URL
         const categoryParams = new URLSearchParams(window.location.search);
@@ -3856,6 +3992,33 @@ async function initializeApp() {
 
 // --- EASTER EGG ---
 
+
+async function setupKinoIndicator() {
+    const navIndicator = document.getElementById('kino-live-indicator-nav');
+    if (!navIndicator) return;
+    
+    const updateBanner = async () => {
+        // Fetch active sessions
+        const { data: sessions } = await supabase
+            .from('kino_sessions')
+            .select('*')
+            .eq('is_active', true)
+            .order('updated_at', { ascending: false });
+
+        if (sessions && sessions.length > 0) {
+            navIndicator.classList.remove('hidden');
+        } else {
+            navIndicator.classList.add('hidden');
+        }
+    };
+
+    await updateBanner();
+
+    supabase
+        .channel('kino-tracker-nav')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'kino_sessions' }, updateBanner)
+        .subscribe();
+}
 
 /**
  * Sets up the event listener for the user menu button.
