@@ -440,11 +440,20 @@
                         </div>
                         <div class="flex items-center gap-4 my-4">
                             <!-- Watch Now Button -->
-                            <button id="watch-now-btn"
-                                class="bg-white hover:bg-gray-200 text-black font-bold py-2 px-5 rounded-full transition flex items-center gap-2 shadow-lg">
-                                <i class="fas fa-play text-sm"></i>
-                                <span>Watch Now</span>
-                            </button>
+                            <div class="flex items-center gap-2">
+                                <button id="watch-now-btn"
+                                    class="bg-white hover:bg-gray-200 text-black w-10 h-10 rounded-full transition flex items-center justify-center shadow-lg" title="Open Web Player">
+                                    <i class="fas fa-play text-sm"></i>
+                                </button>
+                                <div class="flex bg-bg-tertiary border border-border-primary rounded-full overflow-hidden shadow-lg">
+                                    <button id="torbox-picker-btn" class="px-4 py-2 hover:bg-white/10 text-text-primary text-sm font-semibold flex items-center gap-2 transition border-r border-border-primary">
+                                        <i class="fas fa-bolt text-yellow-400"></i> Stream Picker
+                                    </button>
+                                    <button id="torbox-quick-copy-btn" class="px-3 py-2 hover:bg-white/10 text-text-muted hover:text-white transition" title="Copy best stream link">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
                             <div class="relative">
                                 <button id="favorite-btn"
                                     class="bg-yellow-500 hover:bg-yellow-600 text-text-primary font-bold py-2 px-4 rounded-full transition flex items-center justify-center">
@@ -1387,16 +1396,6 @@
             <iframe id="media-player-iframe" src="about:blank" class="w-full h-full border-0" allowfullscreen
                 allow="autoplay; encrypted-media; gyroscope; accelerometer; picture-in-picture; clipboard-write; fullscreen"
                 title="Watchlist Player"></iframe>
-            <video id="media-player-video" class="w-full h-full border-0 hidden" controls crossorigin playsinline>
-            </video>
-            <div id="player-error-overlay" class="hidden absolute inset-0 bg-black/90 z-20 flex flex-col items-center justify-center p-6 text-center">
-                <div class="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
-                    <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-2">Format Not Supported</h3>
-                <p class="text-gray-400 max-w-sm mb-8">This browser cannot play MKV/DTS files natively. Use an external player for the best experience.</p>
-                <div id="external-player-btns" class="flex flex-wrap justify-center gap-3"></div>
-            </div>
         </div>
     </div>
 
@@ -1430,6 +1429,58 @@
     <div id="toast-container" class="fixed bottom-6 right-6 z-[300] flex flex-col gap-3 pointer-events-none"></div>
 
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
+    <!-- Stream Picker Modal -->
+    <div id="stream-picker-modal" class="hidden fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 sm:p-0" style="background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);">
+        <div class="bg-bg-secondary border border-border-primary rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[85vh] animate-slide-up sm:animate-fade-in-up">
+            <div class="flex items-center justify-between p-4 sm:p-6 border-b border-white/5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                        <i class="fas fa-bolt text-yellow-400 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Stream Picker</h3>
+                        <p class="text-xs text-gray-400">Resolving high-quality streams via Debrid</p>
+                    </div>
+                </div>
+                <button id="close-stream-picker-btn" class="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-2 sm:p-4">
+                <div id="stream-picker-loading" class="flex flex-col items-center justify-center py-12">
+                    <div class="w-8 h-8 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <p class="text-gray-400 text-sm animate-pulse">Finding streams...</p>
+                </div>
+                <div id="stream-picker-list" class="hidden flex flex-col gap-2">
+                    <!-- Stream items injected here -->
+                </div>
+                <div id="stream-picker-empty" class="hidden flex-col items-center justify-center py-12 text-center">
+                    <i class="fas fa-ghost text-4xl text-gray-600 mb-3"></i>
+                    <p class="text-gray-400">No streams found for this title.</p>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-6 border-t border-white/5 bg-black/20">
+                <p class="text-xs text-gray-400 mb-3 font-semibold uppercase tracking-wider">Open in App</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <button class="mzelo-btn flex items-center justify-center gap-2 bg-[#ff3366]/20 hover:bg-[#ff3366]/30 text-[#ff3366] border border-[#ff3366]/20 py-2.5 px-4 rounded-xl text-sm font-bold transition" data-room="spideryay">
+                        <i class="fas fa-spider"></i> Spideryay
+                    </button>
+                    <button class="mzelo-btn flex items-center justify-center gap-2 bg-green-500/20 hover:bg-green-500/30 text-green-500 border border-green-500/20 py-2.5 px-4 rounded-xl text-sm font-bold transition" data-room="tree">
+                        <i class="fas fa-tree"></i> Tree
+                    </button>
+                    <button class="kino-btn flex items-center justify-center gap-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/20 py-2.5 px-4 rounded-xl text-sm font-bold transition">
+                        <i class="fas fa-film"></i> Kino
+                    </button>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-3 text-center">Clicking an app will copy the best stream link to your clipboard and open the destination.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application Scripts -->
     <script type="module" src="/src/app.js"></script>
 </body>
 

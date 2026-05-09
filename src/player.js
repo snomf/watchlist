@@ -9,7 +9,6 @@ import { auth } from './auth.js';
 
 // ── Sources ─────────────────────────────────────────────────────────────────
 const SOURCES = [
-    { name: 'AIOStreams (Debrid)', id: 'aiostreams' },
     { name: 'RiveStream', id: 'rivestream' },
     { name: 'VidSrc', id: 'vidsrc' },
     { name: 'Aether', id: 'aether' },
@@ -98,104 +97,12 @@ function buildEmbedUrl(source, item) {
 // ── DOM Helpers ──────────────────────────────────────────────────────────────
 function getOverlay() { return document.getElementById('media-player-overlay'); }
 function getIframe() { return document.getElementById('media-player-iframe'); }
-function getVideo() { return document.getElementById('media-player-video'); }
 
-let plyrInstance = null;
-
-async function updateIframeSrc() {
+function updateIframeSrc() {
     const iframe = getIframe();
-    const video = getVideo();
-    const errorOverlay = document.getElementById('player-error-overlay');
-    if (!iframe || !video || !currentItem) return;
+    if (!iframe || !currentItem) return;
     
-    if (errorOverlay) errorOverlay.classList.add('hidden');
-    
-    if (activeSource.id === 'aiostreams') {
-        iframe.classList.add('hidden');
-        iframe.src = 'about:blank';
-        video.classList.remove('hidden');
-        
-        try {
-            const { tmdbId, type, season = 1, episode = 1 } = currentItem;
-            const res = await fetch(`/api/streams?tmdbId=${tmdbId}&type=${type}&season=${season}&episode=${episode}`);
-            const data = await res.json();
-            
-            if (data.streams && data.streams.length > 0) {
-                // Find best stream with a URL
-                const stream = data.streams.find(s => s.url) || data.streams[0];
-                if (stream.url) {
-                    if (!plyrInstance) {
-                        plyrInstance = new window.Plyr(video);
-                    }
-                    
-                    video.src = stream.url;
-                    
-                    // Add an event listener to catch format errors
-                    video.onerror = () => {
-                        const err = video.error;
-                        if (err && err.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
-                            showPlayerError(stream.url);
-                        }
-                    };
-
-                    video.play().catch(e => {
-                        console.log('Auto-play blocked or format not supported', e);
-                        // If it fails to play immediately and it's a known problematic format, show overlay
-                        if (stream.url.toLowerCase().endsWith('.mkv')) {
-                             showPlayerError(stream.url);
-                        }
-                    });
-                } else {
-                    alert('Stream found but no direct URL provided by Torbox/AIOStreams. It might be a Torrent/Magnet link.');
-                }
-            } else {
-                alert('No Debrid streams found.');
-            }
-        } catch (err) {
-            console.error('Failed to resolve AIOStreams:', err);
-            alert('Failed to resolve streams.');
-        }
-    } else {
-        if (plyrInstance) {
-            plyrInstance.stop();
-        }
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-        video.classList.add('hidden');
-        iframe.classList.remove('hidden');
-        iframe.src = buildEmbedUrl(activeSource, currentItem);
-    }
-}
-
-function showPlayerError(url) {
-    const overlay = document.getElementById('player-error-overlay');
-    const btnContainer = document.getElementById('external-player-btns');
-    if (!overlay || !btnContainer) return;
-
-    overlay.classList.remove('hidden');
-    
-    const players = [
-        { name: 'VLC', icon: 'fa-play-circle', link: `vlc://${url}` },
-        { name: 'Infuse', icon: 'fa-play', link: `infuse://x-callback-url/play?url=${encodeURIComponent(url)}` },
-        { name: 'Copy Link', icon: 'fa-copy', link: '#' }
-    ];
-
-    btnContainer.innerHTML = players.map(p => `
-        <a href="${p.link}" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg text-sm font-bold transition">
-            <i class="fas ${p.icon}"></i> ${p.name}
-        </a>
-    `).join('');
-
-    const copyBtn = btnContainer.querySelector('a:last-child');
-    if (copyBtn) {
-        copyBtn.onclick = (e) => {
-            e.preventDefault();
-            navigator.clipboard.writeText(url);
-            copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-            setTimeout(() => { copyBtn.innerHTML = '<i class="fas fa-copy"></i> Copy Link'; }, 2000);
-        };
-    }
+    iframe.src = buildEmbedUrl(activeSource, currentItem);
 }
 
 function updateSourceMenu() {
@@ -328,14 +235,6 @@ function closePlayer() {
     // Nuke the iframe src to stop playback/buffering
     const iframe = getIframe();
     if (iframe) iframe.src = 'about:blank';
-    
-    const video = getVideo();
-    if (video) {
-        if (plyrInstance) plyrInstance.stop();
-        video.pause();
-        video.removeAttribute('src');
-        video.load();
-    }
 
     overlay.classList.add('hidden');
     document.body.style.overflow = '';

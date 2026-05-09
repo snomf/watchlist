@@ -1310,7 +1310,7 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
             // --- Watch Now Button ---
             const watchNowBtn = document.getElementById('watch-now-btn');
             if (watchNowBtn) {
-                // Determine label: "Watch" or "Continue"
+                // Determine if we should open player at a specific episode
                 const currentUser = auth.getCurrentUser();
                 const viewerId = (currentUser?.handle === 'juainny' || !currentUser) ? 'user1' : 'user2';
 
@@ -1320,9 +1320,6 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                 } else {
                     hasProgress = !!currentMediaItem?.watched;
                 }
-
-                const label = hasProgress ? 'Continue' : 'Watch';
-                watchNowBtn.querySelector('span').textContent = label;
 
                 // Clone to strip any previous listener
                 const newWatchNowBtn = watchNowBtn.cloneNode(true);
@@ -1365,6 +1362,72 @@ async function openMovieModal(tmdbId, type, skipSync = false) {
                         episode: episode,
                         internalId: item.id || currentInternalMediaId
                     });
+                });
+            }
+
+            // --- TorBox Picker Buttons ---
+            const torboxPickerBtn = document.getElementById('torbox-picker-btn');
+            const torboxQuickCopyBtn = document.getElementById('torbox-quick-copy-btn');
+
+            if (torboxPickerBtn) {
+                const newTorboxPickerBtn = torboxPickerBtn.cloneNode(true);
+                torboxPickerBtn.parentNode.replaceChild(newTorboxPickerBtn, torboxPickerBtn);
+                newTorboxPickerBtn.addEventListener('click', () => {
+                    const item = currentMediaItem;
+                    if (!item) return;
+                    const isTV = type === 'tv' || type === 'series';
+                    openStreamPicker({
+                        tmdbId: item.tmdb_id || item.id || tmdbId,
+                        type: isTV ? 'tv' : 'movie',
+                        title: item.title || item.name,
+                        season: currentSeasonNumber || 1, // Will get overriden if there's progress later, but keep simple for now
+                        episode: 1
+                    });
+                });
+            }
+
+            if (torboxQuickCopyBtn) {
+                const newTorboxQuickCopyBtn = torboxQuickCopyBtn.cloneNode(true);
+                torboxQuickCopyBtn.parentNode.replaceChild(newTorboxQuickCopyBtn, torboxQuickCopyBtn);
+                newTorboxQuickCopyBtn.addEventListener('click', async () => {
+                    const item = currentMediaItem;
+                    if (!item) return;
+                    const isTV = type === 'tv' || type === 'series';
+                    const originalHTML = newTorboxQuickCopyBtn.innerHTML;
+                    newTorboxQuickCopyBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-yellow-400"></i>';
+                    newTorboxQuickCopyBtn.disabled = true;
+
+                    try {
+                        const season = currentSeasonNumber || 1;
+                        const episode = 1;
+                        const tmdb = item.tmdb_id || item.id || tmdbId;
+                        const t = isTV ? 'tv' : 'movie';
+                        const res = await fetch(`/api/streams?tmdbId=${tmdb}&type=${t}&season=${season}&episode=${episode}`);
+                        const data = await res.json();
+                        
+                        if (data.streams && data.streams.length > 0) {
+                            const stream = data.streams.find(s => s.url) || data.streams[0];
+                            if (stream.url) {
+                                await navigator.clipboard.writeText(stream.url);
+                                newTorboxQuickCopyBtn.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                                setTimeout(() => {
+                                    newTorboxQuickCopyBtn.innerHTML = originalHTML;
+                                    newTorboxQuickCopyBtn.disabled = false;
+                                }, 2000);
+                            } else {
+                                throw new Error('No URL in stream');
+                            }
+                        } else {
+                            throw new Error('No streams found');
+                        }
+                    } catch (err) {
+                        console.error('Quick copy failed:', err);
+                        newTorboxQuickCopyBtn.innerHTML = '<i class="fas fa-times text-red-500"></i>';
+                        setTimeout(() => {
+                            newTorboxQuickCopyBtn.innerHTML = originalHTML;
+                            newTorboxQuickCopyBtn.disabled = false;
+                        }, 2000);
+                    }
                 });
             }
 
@@ -5411,3 +5474,131 @@ async function showCategory(categoryType) {
         categoryGrid.appendChild(card);
     });
 }
+
+window.openStreamPicker = async function(item) {
+    const modal = document.getElementById('stream-picker-modal');
+    const loading = document.getElementById('stream-picker-loading');
+    const list = document.getElementById('stream-picker-list');
+    const empty = document.getElementById('stream-picker-empty');
+    
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    loading.classList.remove('hidden');
+    list.classList.add('hidden');
+    empty.classList.add('hidden');
+    list.innerHTML = '';
+    
+    let topStreamUrl = '';
+
+    try {
+        const season = item.season || 1;
+        const episode = item.episode || 1;
+        const tmdb = item.tmdbId;
+        const t = item.type;
+        const res = await fetch(`/api/streams?tmdbId=${tmdb}&type=${t}&season=${season}&episode=${episode}`);
+        const data = await res.json();
+        
+        if (data.streams && data.streams.length > 0) {
+            topStreamUrl = data.streams[0].url;
+            
+            data.streams.forEach(stream => {
+                if (!stream.url) return;
+                
+                // Parse quality, size, etc.
+                let quality = 'SD';
+                let size = '';
+                let info = stream.name || 'Stream';
+                
+                if (stream.title) {
+                    if (stream.title.includes('4K') || stream.title.includes('2160p')) quality = '4K';
+                    else if (stream.title.includes('1080p')) quality = '1080p';
+                    else if (stream.title.includes('720p')) quality = '720p';
+                    
+                    const sizeMatch = stream.title.match(/([0-9.]+)\s*(GB|MB)/i);
+                    if (sizeMatch) size = sizeMatch[0];
+                    
+                    const codecMatch = stream.title.match(/(x265|x264|HEVC)/i);
+                    if (codecMatch) info += ` • ${codecMatch[0]}`;
+                }
+                
+                const el = document.createElement('div');
+                el.className = 'flex items-center justify-between p-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl transition';
+                el.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-[10px] font-bold rounded uppercase whitespace-nowrap">${quality}</span>
+                        <div class="flex flex-col min-w-0">
+                            <span class="text-sm font-semibold text-white truncate">${info}</span>
+                            <span class="text-xs text-gray-500">${size || 'Unknown Size'}</span>
+                        </div>
+                    </div>
+                    <button class="copy-stream-btn w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition flex-shrink-0" data-url="${stream.url}">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                `;
+                list.appendChild(el);
+            });
+            
+            list.classList.remove('hidden');
+            loading.classList.add('hidden');
+            
+            // Wire up copy buttons
+            list.querySelectorAll('.copy-stream-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const url = e.currentTarget.dataset.url;
+                    await navigator.clipboard.writeText(url);
+                    const icon = e.currentTarget.querySelector('i');
+                    icon.className = 'fas fa-check text-green-500';
+                    setTimeout(() => icon.className = 'fas fa-copy', 2000);
+                });
+            });
+            
+        } else {
+            empty.classList.remove('hidden');
+            loading.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error('Failed to fetch streams:', err);
+        empty.classList.remove('hidden');
+        loading.classList.add('hidden');
+    }
+
+    // App Button wiring
+    const mzeloBtns = modal.querySelectorAll('.mzelo-btn');
+    const kinoBtn = modal.querySelector('.kino-btn');
+    
+    mzeloBtns.forEach(btn => {
+        // Remove old listeners by cloning
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', async () => {
+            if (topStreamUrl) await navigator.clipboard.writeText(topStreamUrl);
+            window.open(`https://mzelo.com/app/rooms/${newBtn.dataset.room}`, '_blank');
+        });
+    });
+    
+    if (kinoBtn) {
+        const newKinoBtn = kinoBtn.cloneNode(true);
+        kinoBtn.parentNode.replaceChild(newKinoBtn, kinoBtn);
+        newKinoBtn.addEventListener('click', async () => {
+            if (topStreamUrl) await navigator.clipboard.writeText(topStreamUrl);
+            window.open('https://kino.juainny.com', '_blank');
+        });
+    }
+
+    // Close Modal
+    const closeBtn = document.getElementById('close-stream-picker-btn');
+    if (closeBtn) {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        newCloseBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+    }
+    
+    // Close on backdrop
+    modal.onclick = (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+    }
+};
