@@ -4042,8 +4042,6 @@ async function setupKinoIndicator() {
         .subscribe();
 }
 
-}
-
 let isDiscoverMode = false;
 
 function setupModeToggle() {
