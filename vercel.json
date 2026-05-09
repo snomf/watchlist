@@ -16,10 +16,6 @@
     {
       "source": "/sync",
       "destination": "/sync.html"
-    },
-    {
-      "source": "/discover",
-      "destination": "/discover.html"
     }
   ]
 }

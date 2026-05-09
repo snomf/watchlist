@@ -3298,9 +3298,9 @@ async function ensureMediaItemExists(tmdbId, type, title, posterPath = null) {
         .from('media')
         .select('*')
         .eq('tmdb_id', tmdbId)
-        .single();
+        .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
         console.error('Error checking for media item:', error);
         return null;
     }
@@ -3870,8 +3870,16 @@ async function initializeApp() {
             const watchedItemsHeader = document.getElementById('watched-items-header');
             if (watchedItemsHeader) watchedItemsHeader.classList.remove('hidden');
 
-            renderContent();
-            refreshAllReactionAvatars(); // Refresh avatars after render
+            if (isDiscoverMode) {
+                const discoverArea = document.getElementById('discover-area');
+                if (discoverArea) discoverArea.classList.remove('hidden');
+                document.getElementById('content-area').classList.add('hidden');
+                const filtersRow = document.getElementById('filter-controls')?.closest('.flex.flex-col.md\\:flex-row');
+                if (filtersRow) filtersRow.classList.add('hidden');
+            } else {
+                renderContent();
+                refreshAllReactionAvatars(); // Refresh avatars after render
+            }
         };
 
         // Use both 'input' and 'keyup' events for better compatibility
@@ -3896,6 +3904,12 @@ async function initializeApp() {
                     const watchedItemsHeader = document.getElementById('watched-items-header');
                     if (watchedItemsHeader) watchedItemsHeader.classList.add('hidden');
 
+                    if (isDiscoverMode) {
+                        const discoverArea = document.getElementById('discover-area');
+                        if (discoverArea) discoverArea.classList.add('hidden');
+                        document.getElementById('content-area').classList.remove('hidden');
+                    }
+
                     // console.log('Executing search for:', searchTerm); // DEBUG
                     const searchResults = await searchTMDB(searchTerm);
                     currentMedia = searchResults;
@@ -3903,6 +3917,7 @@ async function initializeApp() {
                     currentFilter = 'all'; // Fix: Reset filter to show all search results
                     sortSelect.disabled = true;
                     renderContent();
+                    homeBtn.classList.remove('hidden');
                 }
             } catch (error) {
                 console.error('Error in search handler:', error);
@@ -3945,6 +3960,7 @@ async function initializeApp() {
         setupCarouselEditMode();
         setupCategoryNavigation();
         setupKinoIndicator();
+        setupModeToggle();
 
         // Check for category in URL
         const categoryParams = new URLSearchParams(window.location.search);
@@ -3998,17 +4014,23 @@ async function setupKinoIndicator() {
     if (!navIndicator) return;
     
     const updateBanner = async () => {
-        // Fetch active sessions
-        const { data: sessions } = await supabase
-            .from('kino_sessions')
-            .select('*')
-            .eq('is_active', true)
-            .order('updated_at', { ascending: false });
+        try {
+            // Fetch active sessions
+            const { data: sessions, error } = await supabase
+                .from('kino_sessions')
+                .select('*')
+                .eq('is_active', true)
+                .order('updated_at', { ascending: false });
 
-        if (sessions && sessions.length > 0) {
-            navIndicator.classList.remove('hidden');
-        } else {
-            navIndicator.classList.add('hidden');
+            if (error) throw error;
+
+            if (sessions && sessions.length > 0) {
+                navIndicator.classList.remove('hidden');
+            } else {
+                navIndicator.classList.add('hidden');
+            }
+        } catch (err) {
+            console.warn('Kino sessions not available:', err.message);
         }
     };
 
@@ -4018,6 +4040,133 @@ async function setupKinoIndicator() {
         .channel('kino-tracker-nav')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'kino_sessions' }, updateBanner)
         .subscribe();
+}
+
+}
+
+let isDiscoverMode = false;
+
+function setupModeToggle() {
+    const toggleBtn = document.getElementById('mode-toggle-btn');
+    const modeIcon = document.getElementById('mode-icon');
+    const modeText = document.getElementById('mode-text');
+    const contentArea = document.getElementById('content-area');
+    const discoverArea = document.getElementById('discover-area');
+    const searchBar = document.getElementById('search-bar');
+    
+    if (!toggleBtn || !discoverArea || !contentArea) return;
+
+    toggleBtn.addEventListener('click', async () => {
+        isDiscoverMode = !isDiscoverMode;
+        
+        // Find the filters row (which contains filter-controls and sort)
+        const filterControls = document.getElementById('filter-controls');
+        const filtersRow = filterControls ? filterControls.closest('.flex.flex-col.md\\:flex-row') : null;
+        
+        // View controls container
+        const viewControls = document.getElementById('view-controls');
+        const viewControlsRow = viewControls ? viewControls.closest('.flex.items-center.gap-2.justify-between') : null;
+
+        if (isDiscoverMode) {
+            modeIcon.className = 'fas fa-search mr-2';
+            modeText.textContent = 'Discover';
+            contentArea.classList.add('hidden');
+            if (filtersRow) filtersRow.classList.add('hidden');
+            if (viewControlsRow) viewControlsRow.classList.add('hidden');
+            discoverArea.classList.remove('hidden');
+            
+            if (searchBar) searchBar.placeholder = 'Search new movies or shows...';
+            
+            // Only load once
+            if (discoverArea.innerHTML.trim() === '<!-- Discover items will be populated here -->') {
+                await loadDiscoverContent();
+            }
+        } else {
+            modeIcon.className = 'fas fa-film mr-2';
+            modeText.textContent = 'Watchlist';
+            discoverArea.classList.add('hidden');
+            contentArea.classList.remove('hidden');
+            if (filtersRow) filtersRow.classList.remove('hidden');
+            if (viewControlsRow) viewControlsRow.classList.remove('hidden');
+            
+            if (searchBar) searchBar.placeholder = 'Search for movies or shows...';
+        }
+    });
+}
+
+async function loadDiscoverContent() {
+    const discoverArea = document.getElementById('discover-area');
+    discoverArea.innerHTML = '<div class="flex justify-center items-center py-20"><i class="fas fa-spinner fa-spin text-4xl text-accent-primary"></i></div>';
+    
+    try {
+        const [trendingRes, moviesRes, tvRes] = await Promise.all([
+            searchTMDBRaw('/trending/all/day?language=en-US'),
+            searchTMDBRaw('/discover/movie?language=en-US&sort_by=popularity.desc'),
+            searchTMDBRaw('/discover/tv?language=en-US&sort_by=popularity.desc')
+        ]);
+
+        const trending = trendingRes.results.filter(item => item.backdrop_path && item.poster_path);
+        const movies = moviesRes.results.filter(item => item.backdrop_path && item.poster_path);
+        const tv = tvRes.results.filter(item => item.backdrop_path && item.poster_path);
+
+        discoverArea.innerHTML = '';
+
+        renderDiscoverRow('Trending Today', trending, discoverArea);
+        renderDiscoverRow('Popular Movies', movies, discoverArea, 'movie');
+        renderDiscoverRow('Popular TV Shows', tv, discoverArea, 'tv');
+
+    } catch (error) {
+        console.error('Error loading discover content:', error);
+        discoverArea.innerHTML = '<div class="text-center text-red-500 py-10">Failed to load discover content.</div>';
+    }
+}
+
+async function searchTMDBRaw(endpoint) {
+    const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+    const response = await fetch(`https://api.themoviedb.org/3${endpoint}&api_key=${TMDB_API_KEY}`);
+    return await response.json();
+}
+
+function renderDiscoverRow(title, items, container, forceType = null) {
+    const rowWrapper = document.createElement('div');
+    rowWrapper.className = 'flex flex-col mb-8';
+
+    const header = document.createElement('h2');
+    header.className = 'text-2xl font-bold mb-4 text-white pl-2 border-l-4 border-accent-primary';
+    header.textContent = title;
+
+    const scrollContainer = document.createElement('div');
+    scrollContainer.className = 'flex gap-4 overflow-x-auto hide-scrollbar pb-4 pt-2 px-2';
+    scrollContainer.style.scrollSnapType = 'x mandatory';
+    
+    items.forEach(item => {
+        const type = item.media_type || forceType || 'movie';
+        const itemTitle = item.title || item.name;
+        const poster = `https://image.tmdb.org/t/p/w500${item.poster_path}`;
+
+        const card = document.createElement('div');
+        card.className = 'movie-card flex-none w-36 md:w-48 relative rounded-lg overflow-hidden cursor-pointer bg-bg-secondary aspect-[2/3] shadow-md transition-transform hover:scale-105';
+        card.style.scrollSnapAlign = 'start';
+        card.innerHTML = `
+            <img src="${poster}" alt="${itemTitle}" class="w-full h-full object-cover" loading="lazy">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                <p class="text-white font-bold text-sm leading-tight line-clamp-2">${itemTitle}</p>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="text-xs text-yellow-400 font-bold"><i class="fas fa-star mr-1"></i>${item.vote_average ? item.vote_average.toFixed(1) : 'NR'}</span>
+                </div>
+            </div>
+        `;
+
+        card.onclick = () => {
+            openMovieModal(item.id, type);
+        };
+
+        scrollContainer.appendChild(card);
+    });
+
+    rowWrapper.appendChild(header);
+    rowWrapper.appendChild(scrollContainer);
+    container.appendChild(rowWrapper);
 }
 
 /**

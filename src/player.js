@@ -124,10 +124,22 @@ async function updateIframeSrc() {
                     if (!plyrInstance) {
                         plyrInstance = new window.Plyr(video);
                     }
+                    
                     video.src = stream.url;
-                    video.play().catch(e => console.log('Auto-play blocked', e));
+                    
+                    // Add an event listener to catch format errors
+                    video.onerror = () => {
+                        const err = video.error;
+                        if (err && err.code === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED
+                            alert('This stream format is not supported by your browser (e.g. MKV). Please try another stream or source.');
+                        }
+                    };
+
+                    video.play().catch(e => {
+                        console.log('Auto-play blocked or format not supported', e);
+                    });
                 } else {
-                    alert('Stream found but no direct URL provided by Torbox/AIOStreams.');
+                    alert('Stream found but no direct URL provided by Torbox/AIOStreams. It might be a Torrent/Magnet link.');
                 }
             } else {
                 alert('No Debrid streams found.');

@@ -13,7 +13,6 @@ export default defineConfig({
         sync: resolve(__dirname, 'sync.html'),
         callback: resolve(__dirname, 'callback.html'),
         'favorite-removal-modal': resolve(__dirname, 'favorite-removal-modal.html'),
-        discover: resolve(__dirname, 'discover.html'),
       },
     },
   },
